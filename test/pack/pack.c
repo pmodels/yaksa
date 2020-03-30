@@ -85,7 +85,7 @@ int main(int argc, char **argv)
             --argc;
             ++argv;
             segments = atoi(*argv);
-        } else if (!strcmp(*argv, "-pack-order")) {
+        } else if (!strcmp(*argv, "-ordering")) {
             --argc;
             ++argv;
             if (!strcmp(*argv, "normal"))
@@ -124,7 +124,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "   -seed        random seed (changes the datatypes generated)\n");
         fprintf(stderr, "   -iters       number of iterations\n");
         fprintf(stderr, "   -segments    number of segments to chop the packing into\n");
-        fprintf(stderr, "   -pack-order  packing order of segments (normal, reverse, random)\n");
+        fprintf(stderr, "   -ordering  packing order of segments (normal, reverse, random)\n");
         fprintf(stderr, "   -overlap     should packing overlap (none, regular, irregular)\n");
         exit(1);
     }
