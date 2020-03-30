@@ -154,8 +154,7 @@ For performance testing, we recommend the following flags:
 
 -------------------------------------------------------------------------------
 
-6. Developer Builds
-===================
+# Developer Builds
 
 For Yaksa developers who want to directly work on the primary version control
 system, there are a few additional steps involved (people using the release
