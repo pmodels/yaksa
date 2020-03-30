@@ -1,6 +1,12 @@
 ## Pull Request Description
 
 <!--
+By submitting a PR, you are confirming that you have read and agree to
+the terms in the Yaksa contributor license agreement
+(https://github.com/pmodels/yaksa/wiki/Yaksa-Contributor-License-Agreement).
+-->
+
+<!--
 Insert description of the work in this merge request (above this comment),
 particularly focused on _why_ the work is necessary, not _what_ you did.
 -->
