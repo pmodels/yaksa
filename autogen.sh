@@ -55,16 +55,3 @@ else
     echo "error"
     error "unable to correctly generate maint/Version shell helper"
 fi
-
-########################################################################
-## Building the README
-########################################################################
-echo_n "Updating the README... "
-. ./maint/Version
-if [ -f README.md ] ; then
-    sed -e "s/%VERSION%/${YAKSA_VERSION}/g" README.md > README
-    echo "done"
-else
-    echo "error"
-    error "README.md file not present (perhaps we are running in a release tarball source tree?)"
-fi
