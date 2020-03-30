@@ -8,8 +8,8 @@ import sys
 
 
 ##### global settings
-counts = [ 17, 1018, 1024, 65530, 1048576 ]
-types = [ "int", "char", "double", "double_int", "short_int", "int:2,double:3", "int:3,double:2" ]
+counts = [ 17, 1075, 65536 ]
+types = [ "int", "short_int", "int:3,double:2" ]
 seed = 1
 
 
@@ -117,14 +117,9 @@ if __name__ == '__main__':
     gen_simple_tests("test/simple/testlist")
 
     gen_pack_iov_tests("pack", "test/pack/testlist", "create")
+    gen_pack_iov_tests("pack_cuda_sbuf_tbuf", "test/pack/testlist.cuda", "create")
+    gen_pack_iov_tests("pack_cuda_dbuf_tbuf", "test/pack/testlist.cuda", "append")
+    gen_pack_iov_tests("pack_cuda_sbuf_dbuf_tbuf", "test/pack/testlist.cuda", "append")
     gen_pack_iov_tests("iov", "test/iov/testlist", "create")
 
     gen_flatten_tests("test/flatten/testlist")
-
-    gen_pack_iov_tests("pack_cuda_sbuf", "test/pack/testlist.cuda", "create")
-    gen_pack_iov_tests("pack_cuda_dbuf", "test/pack/testlist.cuda", "append")
-    gen_pack_iov_tests("pack_cuda_tbuf", "test/pack/testlist.cuda", "append")
-    gen_pack_iov_tests("pack_cuda_sbuf_dbuf", "test/pack/testlist.cuda", "append")
-    gen_pack_iov_tests("pack_cuda_sbuf_tbuf", "test/pack/testlist.cuda", "append")
-    gen_pack_iov_tests("pack_cuda_dbuf_tbuf", "test/pack/testlist.cuda", "append")
-    gen_pack_iov_tests("pack_cuda_sbuf_dbuf_tbuf", "test/pack/testlist.cuda", "append")
