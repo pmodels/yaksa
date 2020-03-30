@@ -82,7 +82,7 @@ int main(int argc, char **argv)
             --argc;
             ++argv;
             segments = atoi(*argv);
-        } else if (!strcmp(*argv, "-iov-order")) {
+        } else if (!strcmp(*argv, "-ordering")) {
             --argc;
             ++argv;
             if (!strcmp(*argv, "normal"))
@@ -121,7 +121,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "   -seed        random seed (changes the datatypes generated)\n");
         fprintf(stderr, "   -iters       number of iterations\n");
         fprintf(stderr, "   -segments    number of segments to chop the iov into\n");
-        fprintf(stderr, "   -iov-order   iov order of segments (normal, reverse, random)\n");
+        fprintf(stderr, "   -ordering   iov order of segments (normal, reverse, random)\n");
         fprintf(stderr, "   -overlap     should iovs overlap (none, regular, irregular)\n");
         exit(1);
     }

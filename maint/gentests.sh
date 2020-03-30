@@ -40,7 +40,7 @@ for count in ${counts[@]} ; do
 	else
 	    iters=128
 	fi
-	add_to_testlist "pack -datatype $t -count $count -seed $seed -iters $iters -segments 1 -pack-order normal -overlap none"
+	add_to_testlist "pack -datatype $t -count $count -seed $seed -iters $iters -segments 1 -ordering normal -overlap none"
 	seed=$((seed + 1))
     done
 done
@@ -54,7 +54,7 @@ for count in ${counts[@]} ; do
 	else
 	    iters=128
 	fi
-	add_to_testlist "pack -datatype $t -count $count -seed $seed -iters $iters -segments 64 -pack-order normal -overlap none"
+	add_to_testlist "pack -datatype $t -count $count -seed $seed -iters $iters -segments 64 -ordering normal -overlap none"
 	seed=$((seed + 1))
     done
 done
@@ -68,7 +68,7 @@ for count in ${counts[@]} ; do
 	else
 	    iters=128
 	fi
-	add_to_testlist "pack -datatype $t -count $count -seed $seed -iters $iters -segments 64 -pack-order reverse -overlap none"
+	add_to_testlist "pack -datatype $t -count $count -seed $seed -iters $iters -segments 64 -ordering reverse -overlap none"
 	seed=$((seed + 1))
     done
 done
@@ -82,7 +82,7 @@ for count in ${counts[@]} ; do
 	else
 	    iters=128
 	fi
-	add_to_testlist "pack -datatype $t -count $count -seed $seed -iters $iters -segments 64 -pack-order random -overlap none"
+	add_to_testlist "pack -datatype $t -count $count -seed $seed -iters $iters -segments 64 -ordering random -overlap none"
 	seed=$((seed + 1))
     done
 done
@@ -96,7 +96,7 @@ for count in ${counts[@]} ; do
 	else
 	    iters=128
 	fi
-	add_to_testlist "pack -datatype $t -count $count -seed $seed -iters $iters -segments 64 -pack-order normal -overlap regular"
+	add_to_testlist "pack -datatype $t -count $count -seed $seed -iters $iters -segments 64 -ordering normal -overlap regular"
 	seed=$((seed + 1))
     done
 done
@@ -110,7 +110,7 @@ for count in ${counts[@]} ; do
 	else
 	    iters=128
 	fi
-	add_to_testlist "pack -datatype $t -count $count -seed $seed -iters $iters -segments 64 -pack-order normal -overlap irregular"
+	add_to_testlist "pack -datatype $t -count $count -seed $seed -iters $iters -segments 64 -ordering normal -overlap irregular"
 	seed=$((seed + 1))
     done
 done
@@ -129,7 +129,7 @@ for count in ${counts[@]} ; do
 	else
 	    iters=128
 	fi
-	add_to_testlist "iov -datatype $t -count $count -seed $seed -iters $iters -segments 1 -iov-order normal -overlap none"
+	add_to_testlist "iov -datatype $t -count $count -seed $seed -iters $iters -segments 1 -ordering normal -overlap none"
 	seed=$((seed + 1))
     done
 done
@@ -143,7 +143,7 @@ for count in ${counts[@]} ; do
 	else
 	    iters=128
 	fi
-	add_to_testlist "iov -datatype $t -count $count -seed $seed -iters $iters -segments 64 -iov-order normal -overlap none"
+	add_to_testlist "iov -datatype $t -count $count -seed $seed -iters $iters -segments 64 -ordering normal -overlap none"
 	seed=$((seed + 1))
     done
 done
@@ -157,7 +157,7 @@ for count in ${counts[@]} ; do
 	else
 	    iters=128
 	fi
-	add_to_testlist "iov -datatype $t -count $count -seed $seed -iters $iters -segments 64 -iov-order reverse -overlap none"
+	add_to_testlist "iov -datatype $t -count $count -seed $seed -iters $iters -segments 64 -ordering reverse -overlap none"
 	seed=$((seed + 1))
     done
 done
@@ -171,7 +171,7 @@ for count in ${counts[@]} ; do
 	else
 	    iters=128
 	fi
-	add_to_testlist "iov -datatype $t -count $count -seed $seed -iters $iters -segments 64 -iov-order random -overlap none"
+	add_to_testlist "iov -datatype $t -count $count -seed $seed -iters $iters -segments 64 -ordering random -overlap none"
 	seed=$((seed + 1))
     done
 done
@@ -185,7 +185,7 @@ for count in ${counts[@]} ; do
 	else
 	    iters=128
 	fi
-	add_to_testlist "iov -datatype $t -count $count -seed $seed -iters $iters -segments 64 -iov-order normal -overlap regular"
+	add_to_testlist "iov -datatype $t -count $count -seed $seed -iters $iters -segments 64 -ordering normal -overlap regular"
 	seed=$((seed + 1))
     done
 done
@@ -199,7 +199,7 @@ for count in ${counts[@]} ; do
 	else
 	    iters=128
 	fi
-	add_to_testlist "iov -datatype $t -count $count -seed $seed -iters $iters -segments 64 -iov-order normal -overlap irregular"
+	add_to_testlist "iov -datatype $t -count $count -seed $seed -iters $iters -segments 64 -ordering normal -overlap irregular"
 	seed=$((seed + 1))
     done
 done
