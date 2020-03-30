@@ -197,6 +197,7 @@ if test "${have_cuda}" = "yes" ; then
 fi
 
 cat <<EOF
+
 ##################################################################
 # Final status of compiled yaksa modules
 ##################################################################
@@ -204,5 +205,9 @@ cat <<EOF
 Backends supported: ${backends}
 CUDA backend specific options:
       CUDA SM: ${with_cuda_sm}
+
+##################################################################
+# End of yaksa build
+##################################################################
 
 EOF
