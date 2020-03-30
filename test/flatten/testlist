@@ -1,4 +1,3 @@
-# flatten tests
 flatten -datatype int -count 17 -seed 421 -iters 32768
 flatten -datatype char -count 17 -seed 422 -iters 32768
 flatten -datatype double -count 17 -seed 423 -iters 32768
@@ -34,3 +33,4 @@ flatten -datatype double_int -count 1048576 -seed 452 -iters 128
 flatten -datatype short_int -count 1048576 -seed 453 -iters 128
 flatten -datatype int:2,double:3 -count 1048576 -seed 454 -iters 128
 flatten -datatype int:3,double:2 -count 1048576 -seed 455 -iters 128
+

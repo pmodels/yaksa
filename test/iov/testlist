@@ -1,4 +1,4 @@
-# iov tests
+# iov (segments 1, pack order normal, overlap none)
 iov -datatype int -count 17 -seed 211 -iters 32768 -segments 1 -ordering normal -overlap none
 iov -datatype char -count 17 -seed 212 -iters 32768 -segments 1 -ordering normal -overlap none
 iov -datatype double -count 17 -seed 213 -iters 32768 -segments 1 -ordering normal -overlap none
@@ -35,7 +35,7 @@ iov -datatype short_int -count 1048576 -seed 243 -iters 128 -segments 1 -orderin
 iov -datatype int:2,double:3 -count 1048576 -seed 244 -iters 128 -segments 1 -ordering normal -overlap none
 iov -datatype int:3,double:2 -count 1048576 -seed 245 -iters 128 -segments 1 -ordering normal -overlap none
 
-# offset tests
+# iov (segments 64, pack order normal, overlap none)
 iov -datatype int -count 17 -seed 246 -iters 32768 -segments 64 -ordering normal -overlap none
 iov -datatype char -count 17 -seed 247 -iters 32768 -segments 64 -ordering normal -overlap none
 iov -datatype double -count 17 -seed 248 -iters 32768 -segments 64 -ordering normal -overlap none
@@ -72,7 +72,7 @@ iov -datatype short_int -count 1048576 -seed 278 -iters 128 -segments 64 -orderi
 iov -datatype int:2,double:3 -count 1048576 -seed 279 -iters 128 -segments 64 -ordering normal -overlap none
 iov -datatype int:3,double:2 -count 1048576 -seed 280 -iters 128 -segments 64 -ordering normal -overlap none
 
-# reverse offset tests
+# iov (segments 64, pack order reverse, overlap none)
 iov -datatype int -count 17 -seed 281 -iters 32768 -segments 64 -ordering reverse -overlap none
 iov -datatype char -count 17 -seed 282 -iters 32768 -segments 64 -ordering reverse -overlap none
 iov -datatype double -count 17 -seed 283 -iters 32768 -segments 64 -ordering reverse -overlap none
@@ -109,7 +109,7 @@ iov -datatype short_int -count 1048576 -seed 313 -iters 128 -segments 64 -orderi
 iov -datatype int:2,double:3 -count 1048576 -seed 314 -iters 128 -segments 64 -ordering reverse -overlap none
 iov -datatype int:3,double:2 -count 1048576 -seed 315 -iters 128 -segments 64 -ordering reverse -overlap none
 
-# random offset tests
+# iov (segments 64, pack order random, overlap none)
 iov -datatype int -count 17 -seed 316 -iters 32768 -segments 64 -ordering random -overlap none
 iov -datatype char -count 17 -seed 317 -iters 32768 -segments 64 -ordering random -overlap none
 iov -datatype double -count 17 -seed 318 -iters 32768 -segments 64 -ordering random -overlap none
@@ -146,7 +146,7 @@ iov -datatype short_int -count 1048576 -seed 348 -iters 128 -segments 64 -orderi
 iov -datatype int:2,double:3 -count 1048576 -seed 349 -iters 128 -segments 64 -ordering random -overlap none
 iov -datatype int:3,double:2 -count 1048576 -seed 350 -iters 128 -segments 64 -ordering random -overlap none
 
-# overlapping ioving/unioving tests
+# iov (segments 64, pack order normal, overlap regular)
 iov -datatype int -count 17 -seed 351 -iters 32768 -segments 64 -ordering normal -overlap regular
 iov -datatype char -count 17 -seed 352 -iters 32768 -segments 64 -ordering normal -overlap regular
 iov -datatype double -count 17 -seed 353 -iters 32768 -segments 64 -ordering normal -overlap regular
@@ -183,7 +183,7 @@ iov -datatype short_int -count 1048576 -seed 383 -iters 128 -segments 64 -orderi
 iov -datatype int:2,double:3 -count 1048576 -seed 384 -iters 128 -segments 64 -ordering normal -overlap regular
 iov -datatype int:3,double:2 -count 1048576 -seed 385 -iters 128 -segments 64 -ordering normal -overlap regular
 
-# irregular overlapping ioving/unioving tests
+# iov (segments 64, pack order normal, overlap irregular)
 iov -datatype int -count 17 -seed 386 -iters 32768 -segments 64 -ordering normal -overlap irregular
 iov -datatype char -count 17 -seed 387 -iters 32768 -segments 64 -ordering normal -overlap irregular
 iov -datatype double -count 17 -seed 388 -iters 32768 -segments 64 -ordering normal -overlap irregular
@@ -219,3 +219,4 @@ iov -datatype double_int -count 1048576 -seed 417 -iters 128 -segments 64 -order
 iov -datatype short_int -count 1048576 -seed 418 -iters 128 -segments 64 -ordering normal -overlap irregular
 iov -datatype int:2,double:3 -count 1048576 -seed 419 -iters 128 -segments 64 -ordering normal -overlap irregular
 iov -datatype int:3,double:2 -count 1048576 -seed 420 -iters 128 -segments 64 -ordering normal -overlap irregular
+

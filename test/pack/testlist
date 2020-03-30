@@ -1,4 +1,4 @@
-# pack tests
+# pack (segments 1, pack order normal, overlap none)
 pack -datatype int -count 17 -seed 1 -iters 32768 -segments 1 -ordering normal -overlap none
 pack -datatype char -count 17 -seed 2 -iters 32768 -segments 1 -ordering normal -overlap none
 pack -datatype double -count 17 -seed 3 -iters 32768 -segments 1 -ordering normal -overlap none
@@ -35,7 +35,7 @@ pack -datatype short_int -count 1048576 -seed 33 -iters 128 -segments 1 -orderin
 pack -datatype int:2,double:3 -count 1048576 -seed 34 -iters 128 -segments 1 -ordering normal -overlap none
 pack -datatype int:3,double:2 -count 1048576 -seed 35 -iters 128 -segments 1 -ordering normal -overlap none
 
-# offset tests
+# pack (segments 64, pack order normal, overlap none)
 pack -datatype int -count 17 -seed 36 -iters 32768 -segments 64 -ordering normal -overlap none
 pack -datatype char -count 17 -seed 37 -iters 32768 -segments 64 -ordering normal -overlap none
 pack -datatype double -count 17 -seed 38 -iters 32768 -segments 64 -ordering normal -overlap none
@@ -72,7 +72,7 @@ pack -datatype short_int -count 1048576 -seed 68 -iters 128 -segments 64 -orderi
 pack -datatype int:2,double:3 -count 1048576 -seed 69 -iters 128 -segments 64 -ordering normal -overlap none
 pack -datatype int:3,double:2 -count 1048576 -seed 70 -iters 128 -segments 64 -ordering normal -overlap none
 
-# reverse offset tests
+# pack (segments 64, pack order reverse, overlap none)
 pack -datatype int -count 17 -seed 71 -iters 32768 -segments 64 -ordering reverse -overlap none
 pack -datatype char -count 17 -seed 72 -iters 32768 -segments 64 -ordering reverse -overlap none
 pack -datatype double -count 17 -seed 73 -iters 32768 -segments 64 -ordering reverse -overlap none
@@ -109,7 +109,7 @@ pack -datatype short_int -count 1048576 -seed 103 -iters 128 -segments 64 -order
 pack -datatype int:2,double:3 -count 1048576 -seed 104 -iters 128 -segments 64 -ordering reverse -overlap none
 pack -datatype int:3,double:2 -count 1048576 -seed 105 -iters 128 -segments 64 -ordering reverse -overlap none
 
-# random offset tests
+# pack (segments 64, pack order random, overlap none)
 pack -datatype int -count 17 -seed 106 -iters 32768 -segments 64 -ordering random -overlap none
 pack -datatype char -count 17 -seed 107 -iters 32768 -segments 64 -ordering random -overlap none
 pack -datatype double -count 17 -seed 108 -iters 32768 -segments 64 -ordering random -overlap none
@@ -146,7 +146,7 @@ pack -datatype short_int -count 1048576 -seed 138 -iters 128 -segments 64 -order
 pack -datatype int:2,double:3 -count 1048576 -seed 139 -iters 128 -segments 64 -ordering random -overlap none
 pack -datatype int:3,double:2 -count 1048576 -seed 140 -iters 128 -segments 64 -ordering random -overlap none
 
-# overlapping packing/unpacking tests
+# pack (segments 64, pack order normal, overlap regular)
 pack -datatype int -count 17 -seed 141 -iters 32768 -segments 64 -ordering normal -overlap regular
 pack -datatype char -count 17 -seed 142 -iters 32768 -segments 64 -ordering normal -overlap regular
 pack -datatype double -count 17 -seed 143 -iters 32768 -segments 64 -ordering normal -overlap regular
@@ -183,7 +183,7 @@ pack -datatype short_int -count 1048576 -seed 173 -iters 128 -segments 64 -order
 pack -datatype int:2,double:3 -count 1048576 -seed 174 -iters 128 -segments 64 -ordering normal -overlap regular
 pack -datatype int:3,double:2 -count 1048576 -seed 175 -iters 128 -segments 64 -ordering normal -overlap regular
 
-# irregular overlapping packing/unpacking tests
+# pack (segments 64, pack order normal, overlap irregular)
 pack -datatype int -count 17 -seed 176 -iters 32768 -segments 64 -ordering normal -overlap irregular
 pack -datatype char -count 17 -seed 177 -iters 32768 -segments 64 -ordering normal -overlap irregular
 pack -datatype double -count 17 -seed 178 -iters 32768 -segments 64 -ordering normal -overlap irregular
@@ -219,3 +219,4 @@ pack -datatype double_int -count 1048576 -seed 207 -iters 128 -segments 64 -orde
 pack -datatype short_int -count 1048576 -seed 208 -iters 128 -segments 64 -ordering normal -overlap irregular
 pack -datatype int:2,double:3 -count 1048576 -seed 209 -iters 128 -segments 64 -ordering normal -overlap irregular
 pack -datatype int:3,double:2 -count 1048576 -seed 210 -iters 128 -segments 64 -ordering normal -overlap irregular
+
