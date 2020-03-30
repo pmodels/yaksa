@@ -4,7 +4,7 @@
 ##     See COPYRIGHT in top-level directory
 ##
 
-m4_define([YAKSA_VERSION_m4],[1.0a1])dnl
+m4_define([YAKSA_VERSION_m4],[unreleased])dnl
 m4_define([YAKSA_RELEASE_DATE_m4],[unreleased development copy])dnl
 
 # For libtool ABI versioning rules see:

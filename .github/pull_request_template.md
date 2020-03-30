@@ -22,3 +22,4 @@ particularly focused on _why_ the work is necessary, not _what_ you did.
 * [ ] Passes whitespace checkers
 * [ ] Passes all tests
 * [ ] Add comments such that someone without knowledge of the code could understand
+* [ ] Have read and agree to the Yaksa CLA terms (https://github.com/pmodels/yaksa/wiki/Yaksa-Contributor-License-Agreement)

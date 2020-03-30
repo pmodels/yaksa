@@ -58,7 +58,11 @@ elif test "$V4" = "p" ; then
 fi
 if test "$V5" -le 9 ; then V5="0$V5" ; fi
 
-YAKSA_NUMVERSION=`expr $V1$V2$V3$V4$V5 + 0`
+if test "${YAKSA_VERSION}" = "unreleased" ; then
+    YAKSA_NUMVERSION=0
+else
+    YAKSA_NUMVERSION=`expr $V1$V2$V3$V4$V5 + 0`
+fi
 AC_SUBST(YAKSA_NUMVERSION)
 
 AC_CONFIG_AUX_DIR(m4)
@@ -193,6 +197,7 @@ if test "${have_cuda}" = "yes" ; then
 fi
 
 cat <<EOF
+
 ##################################################################
 # Final status of compiled yaksa modules
 ##################################################################
@@ -200,5 +205,9 @@ cat <<EOF
 Backends supported: ${backends}
 CUDA backend specific options:
       CUDA SM: ${with_cuda_sm}
+
+##################################################################
+# End of yaksa build
+##################################################################
 
 EOF
