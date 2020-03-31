@@ -261,9 +261,12 @@ for b in builtin_types:
                         display("int n_threads = YAKSURI_CUDAI_THREAD_BLOCK_SIZE;\n")
                         display("int n_blocks = count * cuda->num_elements / YAKSURI_CUDAI_THREAD_BLOCK_SIZE;\n")
                         display("n_blocks += !!(count * cuda->num_elements % YAKSURI_CUDAI_THREAD_BLOCK_SIZE);\n")
+                        OUTFILE.write("\n");
                         display("void *args[4] = { &inbuf, &outbuf, &count, &cuda->md };\n")
-                        display("cerr = cudaLaunchKernel((const void *) yaksuri_cudai_kernel_%s, n_blocks, n_threads, args, 0, yaksuri_cudai_global.stream);\n" % funcprefix)
+                        display("cerr = cudaLaunchKernel((const void *) yaksuri_cudai_kernel_%s,\n" % funcprefix)
+                        display("                        n_blocks, n_threads, args, 0, yaksuri_cudai_global.stream);\n")
                         display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
+                        OUTFILE.write("\n");
                         display("cerr = cudaStreamSynchronize(yaksuri_cudai_global.stream);\n")
                         display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
 
