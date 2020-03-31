@@ -113,7 +113,7 @@ typedef struct yaksi_type_s {
 
 typedef struct yaksi_request_s {
     /* yaksa request associated with this structure */
-    yaksa_request_t request;
+    yaksa_request_t id;
 } yaksi_request_s;
 
 

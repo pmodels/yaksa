@@ -14,7 +14,7 @@ int yaksi_request_alloc(struct yaksi_request_s **request)
     rc = yaksu_pool_elem_alloc(yaksi_global.request_pool, (void **) request, &idx);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    (*request)->request = idx;
+    (*request)->id = idx;
 
   fn_exit:
     return rc;
@@ -26,7 +26,7 @@ int yaksi_request_free(struct yaksi_request_s *request)
 {
     int rc = YAKSA_SUCCESS;
 
-    rc = yaksu_pool_elem_free(yaksi_global.request_pool, request->request);
+    rc = yaksu_pool_elem_free(yaksi_global.request_pool, request->id);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:

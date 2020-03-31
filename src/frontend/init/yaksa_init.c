@@ -112,7 +112,7 @@ int yaksa_init(void)
         rc = yaksi_request_alloc(&request);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
-        assert(request->request == i);
+        assert(request->id == i);
     }
 
 
