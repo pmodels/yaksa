@@ -47,8 +47,7 @@ typedef struct {
 extern yaksi_global_s yaksi_global;
 
 typedef struct yaksi_type_s {
-    /* yaksa type associated with this structure; YAKSA_TYPE__NULL if
-     * none */
+    /* yaksa type associated with this structure */
     yaksa_type_t id;
     yaksu_atomic_int refcount;
 
