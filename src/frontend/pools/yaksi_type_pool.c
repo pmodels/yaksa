@@ -15,7 +15,7 @@ int yaksi_type_alloc(struct yaksi_type_s **type)
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     (*type)->id = idx;
-    (*type)->refcount = 1;
+    yaksu_atomic_store(&(*type)->refcount, 1);
 
   fn_exit:
     return rc;
