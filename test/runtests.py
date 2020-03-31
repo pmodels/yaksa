@@ -87,9 +87,9 @@ def create_summary(testlist, summary_file):
         # if it's a directory, absorb any summary files that might
         # exist.  otherwise, create our part of the summary
         dirname = line.split(' ', 1)[0].rstrip()
-        if (os.path.isdir(dirname) and os.path.isfile(dirname + "/summary.junit.xml")):
+        if (os.path.isdir(dirname) and os.path.isfile(os.path.join(dirname, "summary.junit.xml"))):
             try:
-                tree = ET.parse(dirname + "/summary.junit.xml")
+                tree = ET.parse(os.path.join(dirname, "summary.junit.xml"))
             except:
                 print("error parsing %s/summary.junit.xml" % dirname)
                 sys.exit()
@@ -121,9 +121,9 @@ def create_summary(testlist, summary_file):
         # if it's a directory, absorb any summary files that might
         # exist.  otherwise, create our part of the summary
         dirname = line.split(' ', 1)[0].rstrip()
-        if (os.path.isdir(dirname) and os.path.isfile(dirname + "/summary.junit.xml")):
+        if (os.path.isdir(dirname) and os.path.isfile(os.path.join(dirname, "summary.junit.xml"))):
             try:
-                tree = ET.parse(dirname + "/summary.junit.xml")
+                tree = ET.parse(os.path.join(dirname, "summary.junit.xml"))
             except:
                 print("error parsing %s/summary.junit.xml" % dirname)
                 sys.exit()
