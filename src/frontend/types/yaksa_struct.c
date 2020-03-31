@@ -18,8 +18,6 @@ int yaksi_create_struct(int count, const int *array_of_blocklengths,
     rc = yaksi_type_alloc(&outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    outtype->refcount = 1;
-
     outtype->kind = YAKSI_TYPE_KIND__STRUCT;
 
     outtype->size = 0;

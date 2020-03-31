@@ -18,8 +18,6 @@ int yaksi_create_subarray(int ndims, const int *array_of_sizes, const int *array
     rc = yaksi_type_alloc(&outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    outtype->refcount = 1;
-
     outtype->kind = YAKSI_TYPE_KIND__SUBARRAY;
     outtype->tree_depth = intype->tree_depth + 1;
 

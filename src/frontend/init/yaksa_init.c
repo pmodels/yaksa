@@ -17,7 +17,6 @@
         rc = yaksi_type_get(YAKSA_TYPE__##TYPE, &tmp_type_);            \
         YAKSU_ERR_CHECK(rc, fn_fail);                                   \
                                                                         \
-        tmp_type_->refcount = 1;                                        \
         tmp_type_->kind = YAKSI_TYPE_KIND__BUILTIN;                     \
         tmp_type_->tree_depth = 0;                                      \
         tmp_type_->size = sizeof(c_type);                               \
@@ -47,7 +46,6 @@
         else                                                            \
             element_is_contig = false;                                  \
                                                                         \
-        tmp_type_->refcount = 1;                                        \
         tmp_type_->kind = YAKSI_TYPE_KIND__BUILTIN;                     \
         tmp_type_->tree_depth = 0;                                      \
         tmp_type_->size = sizeof(c_type1) + sizeof(c_type2);            \

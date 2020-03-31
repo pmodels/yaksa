@@ -17,7 +17,6 @@ int yaksi_create_hvector(int count, int blocklength, intptr_t stride, yaksi_type
     rc = yaksi_type_alloc(&outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    outtype->refcount = 1;
     yaksu_atomic_incr(&intype->refcount);
 
     outtype->kind = YAKSI_TYPE_KIND__HVECTOR;
