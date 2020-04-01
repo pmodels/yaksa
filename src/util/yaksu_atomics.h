@@ -36,41 +36,41 @@ static inline void yaksu_atomic_store(yaksu_atomic_int * val, int x)
 
 #include <pthread.h>
 
-extern pthread_mutex_t yaksui_global_mutex;
+extern pthread_mutex_t yaksui_atomic_mutex;
 typedef int yaksu_atomic_int;
 
 static inline int yaksu_atomic_incr(yaksu_atomic_int * val)
 {
-    pthread_mutex_lock(&yaksui_global_mutex);
+    pthread_mutex_lock(&yaksui_atomic_mutex);
     int ret = (*val)++;
-    pthread_mutex_unlock(&yaksui_global_mutex);
+    pthread_mutex_unlock(&yaksui_atomic_mutex);
 
     return ret;
 }
 
 static inline int yaksu_atomic_decr(yaksu_atomic_int * val)
 {
-    pthread_mutex_lock(&yaksui_global_mutex);
+    pthread_mutex_lock(&yaksui_atomic_mutex);
     int ret = (*val)--;
-    pthread_mutex_unlock(&yaksui_global_mutex);
+    pthread_mutex_unlock(&yaksui_atomic_mutex);
 
     return ret;
 }
 
 static inline int yaksu_atomic_load(yaksu_atomic_int * val)
 {
-    pthread_mutex_lock(&yaksui_global_mutex);
+    pthread_mutex_lock(&yaksui_atomic_mutex);
     int ret = (*val);
-    pthread_mutex_unlock(&yaksui_global_mutex);
+    pthread_mutex_unlock(&yaksui_atomic_mutex);
 
     return ret;
 }
 
 static inline void yaksu_atomic_store(yaksu_atomic_int * val, int x)
 {
-    pthread_mutex_lock(&yaksui_global_mutex);
+    pthread_mutex_lock(&yaksui_atomic_mutex);
     *val = x;
-    pthread_mutex_unlock(&yaksui_global_mutex);
+    pthread_mutex_unlock(&yaksui_atomic_mutex);
 }
 
 #endif
