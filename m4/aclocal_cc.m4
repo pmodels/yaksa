@@ -587,7 +587,6 @@ if test "$enable_strict_done" != "yes" ; then
 		;;
              extra)
                 pac_common_strict_flags="$pac_common_strict_flags
-                    -Wcast-qual
                     -Wredundant-decls
                     -Waggregate-return
                     -Wfloat-equal
