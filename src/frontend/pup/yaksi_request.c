@@ -5,8 +5,9 @@
 
 #include "yaksi.h"
 #include "yaksu.h"
+#include "yaksur.h"
 
-int yaksi_request_alloc(struct yaksi_request_s **request)
+int yaksi_request_create(yaksi_request_s ** request)
 {
     int rc = YAKSA_SUCCESS;
     int idx;
@@ -15,6 +16,10 @@ int yaksi_request_alloc(struct yaksi_request_s **request)
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     (*request)->id = idx;
+    yaksu_atomic_store(&(*request)->cc, 0);
+
+    rc = yaksur_request_create_hook(*request);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
     return rc;
@@ -22,9 +27,12 @@ int yaksi_request_alloc(struct yaksi_request_s **request)
     goto fn_exit;
 }
 
-int yaksi_request_free(struct yaksi_request_s *request)
+int yaksi_request_free(yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
+
+    rc = yaksur_request_free_hook(request);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
     rc = yaksu_pool_elem_free(yaksi_global.request_pool, request->id);
     YAKSU_ERR_CHECK(rc, fn_fail);

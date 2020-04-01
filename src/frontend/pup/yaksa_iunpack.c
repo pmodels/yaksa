@@ -21,13 +21,21 @@ int yaksa_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t o
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     yaksi_request_s *yaksi_request = NULL;
-    rc = yaksi_iunpack(inbuf, insize, outbuf, outcount, yaksi_type, outoffset, &yaksi_request);
+    rc = yaksi_request_create(&yaksi_request);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    if (yaksi_request)
+    rc = yaksi_iunpack(inbuf, insize, outbuf, outcount, yaksi_type, outoffset, yaksi_request);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    int cc = yaksu_atomic_load(&yaksi_request->cc);
+    if (cc) {
         *request = yaksi_request->id;
-    else
+    } else {
+        rc = yaksi_request_free(yaksi_request);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
         *request = YAKSA_REQUEST__NULL;
+    }
 
   fn_exit:
     return rc;

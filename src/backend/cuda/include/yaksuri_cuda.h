@@ -12,6 +12,8 @@
 
 #include <stdint.h>
 #include <pthread.h>
+#include <cuda.h>
+#include <cuda_runtime_api.h>
 
 struct yaksuri_cudai_md_s;
 typedef struct {
@@ -20,12 +22,22 @@ typedef struct {
     uintptr_t num_elements;
 } yaksuri_cuda_type_s;
 
+typedef struct {
+    int dummy;
+} yaksuri_cuda_request_s;
+
 struct yaksi_type_s;
+struct yaksi_request_s;
 
 int yaksuri_cuda_init_hook(void);
 int yaksuri_cuda_finalize_hook(void);
 int yaksuri_cuda_type_create_hook(struct yaksi_type_s *type);
 int yaksuri_cuda_type_free_hook(struct yaksi_type_s *type);
+int yaksuri_cuda_request_create_hook(struct yaksi_request_s *request);
+int yaksuri_cuda_request_free_hook(struct yaksi_request_s *request);
+int yaksuri_cuda_request_test(struct yaksi_request_s *request);
+int yaksuri_cuda_request_wait(struct yaksi_request_s *request);
+
 int yaksuri_cuda_is_gpu_memory(const void *buf, int *flag);
 
 #endif /* YAKSURI_CUDA_H_INCLUDED */

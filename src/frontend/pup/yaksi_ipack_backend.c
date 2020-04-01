@@ -36,7 +36,7 @@
     } while (0)
 
 static inline int pack_backend(const void *inbuf, void *outbuf, uintptr_t count,
-                               yaksi_type_s * type, yaksi_request_s ** request)
+                               yaksi_type_s * type, yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -212,7 +212,7 @@ static inline int pack_backend(const void *inbuf, void *outbuf, uintptr_t count,
 }
 
 int yaksi_ipack_backend(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                        yaksi_request_s ** request)
+                        yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
 

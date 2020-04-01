@@ -14,4 +14,5 @@ libyaksa_la_SOURCES += \
 	src/frontend/pup/yaksi_ipack_backend.c \
 	src/frontend/pup/yaksi_iunpack.c \
 	src/frontend/pup/yaksi_iunpack_element.c \
-	src/frontend/pup/yaksi_iunpack_backend.c
+	src/frontend/pup/yaksi_iunpack_backend.c \
+	src/frontend/pup/yaksi_request.c

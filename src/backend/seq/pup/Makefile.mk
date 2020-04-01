@@ -6,6 +6,7 @@
 AM_CPPFLAGS += -I$(top_srcdir)/src/backend/seq/pup
 
 libyaksa_la_SOURCES += \
+	src/backend/seq/pup/yaksuri_seq_request.c \
 	src/backend/seq/pup/yaksuri_seqi_pup.c \
 	src/backend/seq/pup/yaksuri_seqi_pup_char.c \
 	src/backend/seq/pup/yaksuri_seqi_pup_double.c \

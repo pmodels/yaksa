@@ -14,4 +14,5 @@ libyaksa_la_SOURCES += \
 	src/frontend/types/yaksa_indexed.c \
 	src/frontend/types/yaksa_subarray.c \
 	src/frontend/types/yaksa_struct.c \
-	src/frontend/types/yaksa_free.c
+	src/frontend/types/yaksa_free.c \
+	src/frontend/types/yaksi_type.c

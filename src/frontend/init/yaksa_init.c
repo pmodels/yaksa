@@ -106,7 +106,7 @@ int yaksa_init(void)
     for (int i = 0; i < YAKSI_REQUEST__LAST; i++) {
         struct yaksi_request_s *request;
 
-        rc = yaksi_request_alloc(&request);
+        rc = yaksi_request_create(&request);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         assert(request->id == i);

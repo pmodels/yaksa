@@ -22,7 +22,7 @@ struct yaksi_type_s;
 struct yaksi_request_s;
 
 typedef int (*yaksur_pup_fn) (const void *, void *, uintptr_t, struct yaksi_type_s *,
-                              struct yaksi_request_s **);
+                              struct yaksi_request_s *);
 
 typedef struct yaksur_type_s {
     struct {
@@ -45,14 +45,27 @@ typedef struct yaksur_type_s {
 #endif                          /* HAVE_CUDA */
 } yaksur_type_s;
 
+typedef struct {
+    /* give some private space to each backend to store content */
+    yaksuri_seq_request_s seq_priv;
+
+#ifdef HAVE_CUDA
+    yaksuri_cuda_request_s cuda_priv;
+#endif                          /* HAVE_CUDA */
+} yaksur_request_s;
+
 int yaksur_init_hook(void);
 int yaksur_finalize_hook(void);
 int yaksur_type_create_hook(struct yaksi_type_s *type);
 int yaksur_type_free_hook(struct yaksi_type_s *type);
+int yaksur_request_create_hook(struct yaksi_request_s *request);
+int yaksur_request_free_hook(struct yaksi_request_s *request);
 
 int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, struct yaksi_type_s *type,
-                 struct yaksi_request_s **request);
+                 struct yaksi_request_s *request);
 int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, struct yaksi_type_s *type,
-                   struct yaksi_request_s **request);
+                   struct yaksi_request_s *request);
+int yaksur_request_test(struct yaksi_request_s *request);
+int yaksur_request_wait(struct yaksi_request_s *request);
 
 #endif /* YAKSUR_H_INCLUDED */

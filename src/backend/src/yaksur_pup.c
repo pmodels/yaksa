@@ -8,7 +8,7 @@
 #include "yaksu.h"
 
 int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                 yaksi_request_s ** request)
+                 yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -50,7 +50,7 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
 }
 
 int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                   yaksi_request_s ** request)
+                   yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -83,6 +83,44 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
         YAKSU_ERR_CHECK(rc, fn_fail);
     } else {
         rc = YAKSA_ERR__NOT_SUPPORTED;
+    }
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
+int yaksur_request_test(yaksi_request_s * request)
+{
+    int rc = YAKSA_SUCCESS;
+
+    rc = yaksuri_seq_request_test(request);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+#ifdef HAVE_CUDA
+    rc = yaksuri_cuda_request_test(request);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+#endif /* HAVE_CUDA */
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
+int yaksur_request_wait(yaksi_request_s * request)
+{
+    int rc = YAKSA_SUCCESS;
+
+    while (yaksu_atomic_load(&request->cc)) {
+        rc = yaksuri_seq_request_test(request);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+#ifdef HAVE_CUDA
+        rc = yaksuri_cuda_request_test(request);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+#endif /* HAVE_CUDA */
     }
 
   fn_exit:

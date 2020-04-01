@@ -115,6 +115,10 @@ typedef struct yaksi_type_s {
 typedef struct yaksi_request_s {
     /* yaksa request associated with this structure */
     yaksa_request_t id;
+    yaksu_atomic_int cc;        /* completion counter */
+
+    /* give some private space for the backend to store content */
+    yaksur_request_s backend_priv;
 } yaksi_request_s;
 
 
@@ -170,19 +174,19 @@ int yaksi_free(yaksi_type_s * type);
 
 int yaksi_ipack(const void *inbuf, uintptr_t incount, yaksi_type_s * type, uintptr_t inoffset,
                 void *outbuf, uintptr_t max_pack_bytes, uintptr_t * actual_pack_bytes,
-                yaksi_request_s ** request);
+                yaksi_request_s * request);
 int yaksi_ipack_backend(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                        yaksi_request_s ** request);
+                        yaksi_request_s * request);
 int yaksi_ipack_element(const void *inbuf, yaksi_type_s * type, uintptr_t inoffset, void *outbuf,
                         uintptr_t max_pack_bytes, uintptr_t * actual_pack_bytes,
-                        yaksi_request_s ** request);
+                        yaksi_request_s * request);
 
 int yaksi_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t outcount,
-                  yaksi_type_s * type, uintptr_t outoffset, yaksi_request_s ** request);
+                  yaksi_type_s * type, uintptr_t outoffset, yaksi_request_s * request);
 int yaksi_iunpack_backend(const void *inbuf, void *outbuf, uintptr_t outcount, yaksi_type_s * type,
-                          yaksi_request_s ** request);
+                          yaksi_request_s * request);
 int yaksi_iunpack_element(const void *inbuf, uintptr_t insize, void *outbuf, yaksi_type_s * type,
-                          uintptr_t outoffset, yaksi_request_s ** request);
+                          uintptr_t outoffset, yaksi_request_s * request);
 
 int yaksi_iov_len(uintptr_t count, yaksi_type_s * type, uintptr_t * iov_len);
 
@@ -194,7 +198,7 @@ int yaksi_type_free(yaksi_type_s * type);
 int yaksi_type_get(yaksa_type_t type, yaksi_type_s ** yaksi_type);
 
 /* request pool */
-int yaksi_request_alloc(yaksi_request_s ** request);
+int yaksi_request_create(yaksi_request_s ** request);
 int yaksi_request_free(yaksi_request_s * request);
 int yaksi_request_get(yaksa_request_t request, yaksi_request_s ** yaksi_request);
 
