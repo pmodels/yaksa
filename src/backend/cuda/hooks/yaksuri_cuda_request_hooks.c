@@ -13,6 +13,9 @@ int yaksuri_cuda_request_create_hook(yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
 
+    cudaError_t cerr = cudaEventCreate(&request->backend_priv.cuda_priv.event);
+    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
   fn_exit:
     return rc;
   fn_fail:
@@ -22,6 +25,9 @@ int yaksuri_cuda_request_create_hook(yaksi_request_s * request)
 int yaksuri_cuda_request_free_hook(yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
+
+    cudaError_t cerr = cudaEventDestroy(request->backend_priv.cuda_priv.event);
+    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
   fn_exit:
     return rc;

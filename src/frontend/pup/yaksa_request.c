@@ -24,6 +24,11 @@ int yaksa_request_test(yaksa_request_t request, int *completed)
 
     *completed = !yaksu_atomic_load(&yaksi_request->cc);
 
+    if (*completed) {
+        rc = yaksi_request_free(yaksi_request);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+    }
+
   fn_exit:
     return rc;
   fn_fail:
@@ -44,6 +49,10 @@ int yaksa_request_wait(yaksa_request_t request)
         rc = yaksur_request_wait(yaksi_request);
         YAKSU_ERR_CHECK(rc, fn_fail);
     }
+
+    assert(!yaksu_atomic_load(&yaksi_request->cc));
+    rc = yaksi_request_free(yaksi_request);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
     return rc;

@@ -23,7 +23,7 @@ typedef struct {
 } yaksuri_cuda_type_s;
 
 typedef struct {
-    int dummy;
+    cudaEvent_t event;
 } yaksuri_cuda_request_s;
 
 struct yaksi_type_s;

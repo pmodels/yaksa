@@ -244,11 +244,12 @@ for b in builtin_types:
                     # generic variables
                     display("int rc = YAKSA_SUCCESS;\n");
                     display("cudaError_t cerr;\n");
+                    display("yaksuri_cuda_request_s *cuda_request = (yaksuri_cuda_request_s *) &request->backend_priv.cuda_priv;\n")
                     OUTFILE.write("\n");
 
                     # shortcut for builtin datatypes
                     if (len(darray) == 0):
-                        display("cerr = cudaMemcpy(outbuf, inbuf, count * sizeof(%s), cudaMemcpyDeviceToDevice);\n" % b)
+                        display("cerr = cudaMemcpyAsync(outbuf, inbuf, count * sizeof(%s), cudaMemcpyDeviceToDevice, yaksuri_cudai_global.stream);\n" % b)
                         display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
                     else:
                         display("rc = yaksuri_cudai_md_alloc(type);\n")
@@ -266,9 +267,12 @@ for b in builtin_types:
                         display("cerr = cudaLaunchKernel((const void *) yaksuri_cudai_kernel_%s,\n" % funcprefix)
                         display("                        n_blocks, n_threads, args, 0, yaksuri_cudai_global.stream);\n")
                         display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
-                        OUTFILE.write("\n");
-                        display("cerr = cudaStreamSynchronize(yaksuri_cudai_global.stream);\n")
-                        display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
+
+                    OUTFILE.write("\n");
+                    display("cerr = cudaEventRecord(cuda_request->event, yaksuri_cudai_global.stream);\n")
+                    display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
+                    OUTFILE.write("\n");
+                    display("yaksu_atomic_incr(&request->cc);\n")
 
                     OUTFILE.write("\n");
                     indentation -= 1
