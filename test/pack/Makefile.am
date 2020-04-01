@@ -13,7 +13,7 @@ noinst_PROGRAMS = \
 
 pack_DEPENDENCIES = $(top_builddir)/dtpools/libdtpools.la $(top_builddir)/../libyaksa.la
 
-testlists = $(top_srcdir)/pack/testlist
+testlists = $(top_srcdir)/pack/testlist.gen
 
 if BUILD_CUDA_TESTS
 include $(top_srcdir)/pack/Makefile.cuda.mk

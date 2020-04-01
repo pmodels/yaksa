@@ -72,4 +72,9 @@ missing
 /test/m4
 /test/yaksa_test_config.h.in
 /test/yaksa_test_config.h
+/test/flatten/testlist.gen
+/test/iov/testlist.gen
+/test/pack/testlist.cuda.gen
+/test/pack/testlist.gen
+/test/simple/testlist.gen
 /README

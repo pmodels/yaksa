@@ -114,12 +114,12 @@ def gen_flatten_tests(testlist):
 
 ##### main function
 if __name__ == '__main__':
-    gen_simple_tests("test/simple/testlist")
+    gen_simple_tests("test/simple/testlist.gen")
 
-    gen_pack_iov_tests("pack", "test/pack/testlist", "create")
-    gen_pack_iov_tests("pack_cuda_sbuf_tbuf", "test/pack/testlist.cuda", "create")
-    gen_pack_iov_tests("pack_cuda_dbuf_tbuf", "test/pack/testlist.cuda", "append")
-    gen_pack_iov_tests("pack_cuda_sbuf_dbuf_tbuf", "test/pack/testlist.cuda", "append")
-    gen_pack_iov_tests("iov", "test/iov/testlist", "create")
+    gen_pack_iov_tests("pack", "test/pack/testlist.gen", "create")
+    # gen_pack_iov_tests("pack_cuda_sbuf_tbuf", "test/pack/testlist.cuda.gen", "create")
+    # gen_pack_iov_tests("pack_cuda_dbuf_tbuf", "test/pack/testlist.cuda.gen", "append")
+    gen_pack_iov_tests("pack_cuda_sbuf_dbuf_tbuf", "test/pack/testlist.cuda.gen", "append")
+    gen_pack_iov_tests("iov", "test/iov/testlist.gen", "create")
 
-    gen_flatten_tests("test/flatten/testlist")
+    gen_flatten_tests("test/flatten/testlist.gen")
