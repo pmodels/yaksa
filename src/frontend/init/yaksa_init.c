@@ -81,7 +81,7 @@ int yaksa_init(void)
     int rc = YAKSA_SUCCESS;
 
     /* initialize the type pool */
-    rc = yaksu_pool_alloc(sizeof(yaksi_type_s), CHUNK_SIZE, SIZE_MAX, malloc, free,
+    rc = yaksu_pool_alloc(sizeof(yaksi_type_s), CHUNK_SIZE, UINTPTR_MAX, malloc, free,
                           &yaksi_global.type_pool);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
@@ -99,7 +99,7 @@ int yaksa_init(void)
 
 
     /* initialize the request pool */
-    rc = yaksu_pool_alloc(sizeof(yaksi_request_s), CHUNK_SIZE, SIZE_MAX, malloc, free,
+    rc = yaksu_pool_alloc(sizeof(yaksi_request_s), CHUNK_SIZE, UINTPTR_MAX, malloc, free,
                           &yaksi_global.request_pool);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
