@@ -167,83 +167,87 @@ def wait_with_signal(p, testlist, summary_file):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--testlist', help='testlist file to execute', required=True)
+    parser.add_argument('--testlists', help='testlist files to execute', required=True)
     parser.add_argument('--summary', help='file to write the summary to', required=True)
     args = parser.parse_args()
 
-    args.testlist = os.path.abspath(args.testlist)
+    testlist_paths = [os.path.abspath(tlist.strip()) for tlist in args.testlists.split(",") if len(tlist) > 0]
+
+    args.testlist = os.path.abspath(args.testlists)
     args.summary = os.path.abspath(args.summary)
     origdir = os.getcwd()
 
-    try:
-        fh = open(args.testlist, "r")
-    except:
-        sys.stderr.write(colors.FAILURE + ">>>> ERROR: " + colors.END)
-        sys.stderr.write("could not open testlist %s\n" % args.testlist)
-        sys.exit()
+    for testlist in testlist_paths:
 
-    print(colors.INFO + "\n==== executing testlist %s ====" % args.testlist + colors.END)
+        try:
+            fh = open(testlist, "r")
+        except:
+            sys.stderr.write(colors.FAILURE + ">>>> ERROR: " + colors.END)
+            sys.stderr.write("could not open testlist %s\n" % testlist)
+            sys.exit()
 
-    lines = getlines(fh)
+        print(colors.INFO + "\n==== executing testlist %s ====" % testlist + colors.END)
 
-    firstline = 1
-    for line in lines:
-        if (firstline):
-            firstline = 0
-        else:
-            print("")
+        lines = getlines(fh)
 
-
-        ############################################################################
-        # if the first argument is a directory, step into the
-        # directory and reexecute make
-        ############################################################################
-        dirname = line.split(' ', 1)[0].rstrip()
-        if (os.path.isdir(dirname)):
-            sys.stdout.write(colors.PREFIX + ">>>> " + colors.END)
-            sys.stdout.write(colors.OTHER + "stepping into directory %s\n" % dirname + colors.END)
-            olddir = os.getcwd()
-            os.chdir(dirname)
-            chdirargs = "make -s testing".split(' ')
-            chdirargs = map(lambda s: s.strip(), chdirargs)
-            p = subprocess.Popen(chdirargs)
-            wait_with_signal(p, args.testlist, args.summary)
-            os.chdir(olddir)
-            continue
+        firstline = 1
+        for line in lines:
+            if (firstline):
+                firstline = 0
+            else:
+                print("")
 
 
-        # command line to process
-        sys.stdout.write(line)
+            ############################################################################
+            # if the first argument is a directory, step into the
+            # directory and reexecute make
+            ############################################################################
+            dirname = line.split(' ', 1)[0].rstrip()
+            if (os.path.isdir(dirname)):
+                sys.stdout.write(colors.PREFIX + ">>>> " + colors.END)
+                sys.stdout.write(colors.OTHER + "stepping into directory %s\n" % dirname + colors.END)
+                olddir = os.getcwd()
+                os.chdir(dirname)
+                chdirargs = "make -s testing".split(' ')
+                chdirargs = map(lambda s: s.strip(), chdirargs)
+                p = subprocess.Popen(chdirargs)
+                wait_with_signal(p, testlist, args.summary)
+                os.chdir(olddir)
+                continue
 
 
-        ############################################################################
-        # make executable
-        ############################################################################
-        execname = line.split(' ', 1)[0].rstrip()
-        p = subprocess.Popen(['make', execname], stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
-        ret = wait_with_signal(p, args.testlist, args.summary)
-        out = p.communicate()
-        if (ret != 0):
-            print(colors.FAILURE + "\n==== \"make %s\" output ====" % execname + colors.END)
-            print(out[0].decode().strip())
-            print(colors.FAILURE + "==== make output complete ====\n" + colors.END)
-            continue  # skip over to the next line
+            # command line to process
+            sys.stdout.write(line)
 
 
-        ############################################################################
-        # run the executable
-        ############################################################################
-        fullcmd = "./" + line
-        cmdargs = fullcmd.split(' ')
-        cmdargs = map(lambda s: s.strip(), cmdargs)
-        start = time.time()
-        p = subprocess.Popen(cmdargs, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
-        ret = wait_with_signal(p, args.testlist, args.summary)
-        out = p.communicate()
-        end = time.time()
-        printout(line, ret, end - start, out[0].decode().strip())
+            ############################################################################
+            # make executable
+            ############################################################################
+            execname = line.split(' ', 1)[0].rstrip()
+            p = subprocess.Popen(['make', execname], stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
+            ret = wait_with_signal(p, testlist, args.summary)
+            out = p.communicate()
+            if (ret != 0):
+                print(colors.FAILURE + "\n==== \"make %s\" output ====" % execname + colors.END)
+                print(out[0].decode().strip())
+                print(colors.FAILURE + "==== make output complete ====\n" + colors.END)
+                continue  # skip over to the next line
 
-    print(colors.INFO + "==== done executing testlist %s ====" % args.testlist + colors.END)
-    create_summary(args.testlist, args.summary)
 
-    fh.close()
+            ############################################################################
+            # run the executable
+            ############################################################################
+            fullcmd = "./" + line
+            cmdargs = fullcmd.split(' ')
+            cmdargs = map(lambda s: s.strip(), cmdargs)
+            start = time.time()
+            p = subprocess.Popen(cmdargs, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
+            ret = wait_with_signal(p, testlist, args.summary)
+            out = p.communicate()
+            end = time.time()
+            printout(line, ret, end - start, out[0].decode().strip())
+
+        print(colors.INFO + "==== done executing testlist %s ====" % testlist + colors.END)
+        create_summary(testlist, args.summary)
+
+        fh.close()

@@ -23,7 +23,7 @@ $(top_builddir)/dtpools/libdtpools.la:
 	(cd $(top_builddir)/dtpools && $(MAKE))
 
 testing:
-	for tlist in ${testlists} ; do \
-		$(top_srcdir)/runtests.py --testlist=$${tlist} \
-			--summary=$(top_builddir)/pack/summary.junit.xml ; \
-	done
+	TLIST_COMMA="" ; \
+	for tlist in ${testlists}; do TLIST_COMMA="$${TLIST_COMMA},$${tlist}"; done ; \
+	$(top_srcdir)/runtests.py --testlists=$${TLIST_COMMA} \
+		--summary=$(top_builddir)/pack/summary.junit.xml
