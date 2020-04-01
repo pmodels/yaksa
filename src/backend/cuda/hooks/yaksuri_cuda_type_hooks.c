@@ -7,8 +7,6 @@
 #include <assert.h>
 #include "yaksi.h"
 #include "yaksu.h"
-#include "yaksuri.h"
-#include "yaksuri_cuda.h"
 #include "yaksuri_cudai.h"
 
 static uintptr_t get_num_elements(yaksi_type_s * type)
@@ -51,12 +49,8 @@ static uintptr_t get_num_elements(yaksi_type_s * type)
 int yaksuri_cuda_type_create_hook(yaksi_type_s * type)
 {
     int rc = YAKSA_SUCCESS;
-    yaksuri_type_s *backend = type->backend;
+    yaksuri_cuda_type_s *cuda = (yaksuri_cuda_type_s *) & type->backend_priv.cuda_priv;
 
-    backend->cuda_priv = malloc(sizeof(yaksuri_cudai_type_s));
-    YAKSU_ERR_CHKANDJUMP(!backend->cuda_priv, rc, YAKSA_ERR__OUT_OF_MEM, fn_fail);
-
-    yaksuri_cudai_type_s *cuda = (yaksuri_cudai_type_s *) backend->cuda_priv;
     cuda->num_elements = get_num_elements(type);
     cuda->md = NULL;
     pthread_mutex_init(&cuda->mdmutex, NULL);
@@ -73,8 +67,7 @@ int yaksuri_cuda_type_create_hook(yaksi_type_s * type)
 int yaksuri_cuda_type_free_hook(yaksi_type_s * type)
 {
     int rc = YAKSA_SUCCESS;
-    yaksuri_type_s *backend = (yaksuri_type_s *) type->backend;
-    yaksuri_cudai_type_s *cuda = (yaksuri_cudai_type_s *) backend->cuda_priv;
+    yaksuri_cuda_type_s *cuda = (yaksuri_cuda_type_s *) & type->backend_priv.cuda_priv;
     cudaError_t cerr;
 
     pthread_mutex_destroy(&cuda->mdmutex);
@@ -96,8 +89,6 @@ int yaksuri_cuda_type_free_hook(yaksi_type_s * type)
         cerr = cudaFree(cuda->md);
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
     }
-
-    free(backend->cuda_priv);
 
   fn_exit:
     return rc;

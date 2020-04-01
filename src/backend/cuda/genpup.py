@@ -127,7 +127,6 @@ for b in builtin_types:
     OUTFILE.write("#include <string.h>\n")
     OUTFILE.write("#include <stdint.h>\n")
     OUTFILE.write("#include <wchar.h>\n")
-    OUTFILE.write("#include \"yaksuri.h\"\n")
     OUTFILE.write("#include \"yaksuri_cudai.h\"\n")
     OUTFILE.write("#include \"yaksuri_cudai_pup.h\"\n")
     OUTFILE.write("\n")
@@ -256,15 +255,13 @@ for b in builtin_types:
                         display("/* nvcc does not seem to like gotos */\n")
                         display("/* YAKSU_ERR_CHECK(rc, fn_fail); */\n")
                         OUTFILE.write("\n");
-                        display("yaksuri_type_s *backend = (yaksuri_type_s *) type->backend;\n")
-                        display("yaksuri_cudai_type_s *cuda = (yaksuri_cudai_type_s *) backend->cuda_priv;\n")
-                        display("yaksuri_cudai_md_s *md = cuda->md;\n")
+                        display("yaksuri_cuda_type_s *cuda = (yaksuri_cuda_type_s *) &type->backend_priv.cuda_priv;\n")
                         OUTFILE.write("\n");
 
                         display("int n_threads = YAKSURI_CUDAI_THREAD_BLOCK_SIZE;\n")
                         display("int n_blocks = count * cuda->num_elements / YAKSURI_CUDAI_THREAD_BLOCK_SIZE;\n")
                         display("n_blocks += !!(count * cuda->num_elements % YAKSURI_CUDAI_THREAD_BLOCK_SIZE);\n")
-                        display("void *args[4] = { &inbuf, &outbuf, &count, &md };\n")
+                        display("void *args[4] = { &inbuf, &outbuf, &count, &cuda->md };\n")
                         display("cerr = cudaLaunchKernel((const void *) yaksuri_cudai_kernel_%s, n_blocks, n_threads, args, 0, yaksuri_cudai_global.stream);\n" % funcprefix)
                         display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
                         display("cerr = cudaStreamSynchronize(yaksuri_cudai_global.stream);\n")
@@ -322,8 +319,8 @@ def switcher_builtin_element(typelist, pupstr, key, val):
         nesting_level = len(typelist) + 1
 
     display("if (max_nesting_level >= %d) {\n" % nesting_level)
-    display("    backend->cuda.pack = yaksuri_cudai_%s_%s;\n" % (pupstr, val))
-    display("    backend->cuda.unpack = yaksuri_cudai_un%s_%s;\n" % (pupstr, val))
+    display("    type->backend_priv.cuda.pack = yaksuri_cudai_%s_%s;\n" % (pupstr, val))
+    display("    type->backend_priv.cuda.unpack = yaksuri_cudai_un%s_%s;\n" % (pupstr, val))
     display("}\n")
 
     if (t != ""):
@@ -390,18 +387,15 @@ OUTFILE.write("\
 #include <wchar.h>\n\
 #include \"yaksi.h\"\n\
 #include \"yaksu.h\"\n\
-#include \"yaksur.h\"\n\
-#include \"yaksuri.h\"\n\
 #include \"yaksuri_cudai.h\"\n\
 #include \"yaksuri_cudai_pup.h\"\n\
 \n\
 int yaksuri_cudai_populate_pupfns(yaksi_type_s * type)\n\
 {\n\
     int rc = YAKSA_SUCCESS;\n\
-    yaksuri_type_s *backend = (yaksuri_type_s *) type->backend;\n\
 \n\
-    backend->cuda.pack = NULL;\n\
-    backend->cuda.unpack = NULL;\n\
+    type->backend_priv.cuda.pack = NULL;\n\
+    type->backend_priv.cuda.unpack = NULL;\n\
 \n\
     char *str = getenv(\"YAKSA_ENV_MAX_NESTING_LEVEL\");\n\
     int max_nesting_level;\n\

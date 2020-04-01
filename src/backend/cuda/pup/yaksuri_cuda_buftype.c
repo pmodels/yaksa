@@ -5,7 +5,6 @@
 
 #include "yaksi.h"
 #include "yaksu.h"
-#include "yaksur.h"
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 

@@ -11,6 +11,8 @@
 /* extern "C" { */
 #endif
 
+/* This is a public API header and should not include any internal
+ * headers */
 #include <stdio.h>
 #include <stdint.h>
 #include <sys/types.h>
