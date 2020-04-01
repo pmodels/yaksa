@@ -25,7 +25,7 @@ int yaksa_ipack(const void *inbuf, uintptr_t incount, yaksa_type_t type, uintptr
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     if (yaksi_request)
-        *request = yaksi_request->request;
+        *request = yaksi_request->id;
     else
         *request = YAKSA_REQUEST__NULL;
 

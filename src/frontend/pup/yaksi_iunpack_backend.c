@@ -5,7 +5,6 @@
 
 #include "yaksi.h"
 #include "yaksu.h"
-#include "yaksur.h"
 #include <assert.h>
 
 #define BUILTIN_PAIRTYPE_UNPACK(type, TYPE1, TYPE2, inbuf, outbuf, count, request) \

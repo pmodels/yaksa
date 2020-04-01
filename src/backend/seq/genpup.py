@@ -312,8 +312,8 @@ def switcher_builtin_element(typelist, pupstr, key, val):
                 display("default:\n")
             indentation += 1
             display("if (max_nesting_level >= %d) {\n" % nesting_level)
-            display("    backend->seq.pack = yaksuri_seqi_%s_blklen_%s_%s;\n" % (pupstr, blklen, val))
-            display("    backend->seq.unpack = yaksuri_seqi_un%s_blklen_%s_%s;\n" % (pupstr, blklen, val))
+            display("    type->backend_priv.seq.pack = yaksuri_seqi_%s_blklen_%s_%s;\n" % (pupstr, blklen, val))
+            display("    type->backend_priv.seq.unpack = yaksuri_seqi_un%s_blklen_%s_%s;\n" % (pupstr, blklen, val))
             display("}\n")
             display("break;\n")
             indentation -= 1
@@ -321,8 +321,8 @@ def switcher_builtin_element(typelist, pupstr, key, val):
         display("}\n")
     else:
         display("if (max_nesting_level >= %d) {\n" % nesting_level)
-        display("    backend->seq.pack = yaksuri_seqi_%s_%s;\n" % (pupstr, val))
-        display("    backend->seq.unpack = yaksuri_seqi_un%s_%s;\n" % (pupstr, val))
+        display("    type->backend_priv.seq.pack = yaksuri_seqi_%s_%s;\n" % (pupstr, val))
+        display("    type->backend_priv.seq.unpack = yaksuri_seqi_un%s_%s;\n" % (pupstr, val))
         display("}\n")
 
     if (t != ""):
@@ -389,18 +389,15 @@ OUTFILE.write("\
 #include <wchar.h>\n\
 #include \"yaksi.h\"\n\
 #include \"yaksu.h\"\n\
-#include \"yaksur.h\"\n\
-#include \"yaksuri.h\"\n\
 #include \"yaksuri_seqi.h\"\n\
 #include \"yaksuri_seqi_pup.h\"\n\
 \n\
 int yaksuri_seqi_populate_pupfns(yaksi_type_s * type)\n\
 {\n\
     int rc = YAKSA_SUCCESS;\n\
-    yaksuri_type_s *backend = (yaksuri_type_s *) type->backend;\n\
 \n\
-    backend->seq.pack = NULL;\n\
-    backend->seq.unpack = NULL;\n\
+    type->backend_priv.seq.pack = NULL;\n\
+    type->backend_priv.seq.unpack = NULL;\n\
 \n\
     char *str = getenv(\"YAKSA_ENV_MAX_NESTING_LEVEL\");\n\
     int max_nesting_level;\n\

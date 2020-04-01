@@ -6,7 +6,6 @@
 #include "yaksa.h"
 #include "yaksu.h"
 #include "yaksi.h"
-#include "yaksur.h"
 #include <stdlib.h>
 #include <assert.h>
 

@@ -6,14 +6,11 @@
 #include "yaksa.h"
 #include "yaksi.h"
 #include "yaksu.h"
-#include "yaksur.h"
-#include "yaksuri.h"
 
 int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
                  yaksi_request_s ** request)
 {
     int rc = YAKSA_SUCCESS;
-    yaksuri_type_s *backend = (yaksuri_type_s *) type->backend;
 
 #ifdef HAVE_CUDA
     int inbuf_is_on_gpu, outbuf_is_on_gpu;
@@ -25,8 +22,8 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     if (inbuf_is_on_gpu && outbuf_is_on_gpu) {
-        if (backend->cuda.pack) {
-            rc = backend->cuda.pack(inbuf, outbuf, count, type, request);
+        if (type->backend_priv.cuda.pack) {
+            rc = type->backend_priv.cuda.pack(inbuf, outbuf, count, type, request);
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else {
             rc = YAKSA_ERR__NOT_SUPPORTED;
@@ -39,8 +36,8 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
     }
 #endif
 
-    if (backend->seq.pack) {
-        rc = backend->seq.pack(inbuf, outbuf, count, type, request);
+    if (type->backend_priv.seq.pack) {
+        rc = type->backend_priv.seq.pack(inbuf, outbuf, count, type, request);
         YAKSU_ERR_CHECK(rc, fn_fail);
     } else {
         rc = YAKSA_ERR__NOT_SUPPORTED;
@@ -56,7 +53,6 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
                    yaksi_request_s ** request)
 {
     int rc = YAKSA_SUCCESS;
-    yaksuri_type_s *backend = (yaksuri_type_s *) type->backend;
 
 #ifdef HAVE_CUDA
     int inbuf_is_on_gpu, outbuf_is_on_gpu;
@@ -68,8 +64,8 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     if (inbuf_is_on_gpu && outbuf_is_on_gpu) {
-        if (backend->cuda.unpack) {
-            rc = backend->cuda.unpack(inbuf, outbuf, count, type, request);
+        if (type->backend_priv.cuda.unpack) {
+            rc = type->backend_priv.cuda.unpack(inbuf, outbuf, count, type, request);
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else {
             rc = YAKSA_ERR__NOT_SUPPORTED;
@@ -82,8 +78,8 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
     }
 #endif
 
-    if (backend->seq.unpack) {
-        rc = backend->seq.unpack(inbuf, outbuf, count, type, request);
+    if (type->backend_priv.seq.unpack) {
+        rc = type->backend_priv.seq.unpack(inbuf, outbuf, count, type, request);
         YAKSU_ERR_CHECK(rc, fn_fail);
     } else {
         rc = YAKSA_ERR__NOT_SUPPORTED;

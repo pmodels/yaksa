@@ -5,7 +5,6 @@
 
 #include "yaksi.h"
 #include "yaksu.h"
-#include "yaksur.h"
 #include <stdlib.h>
 #include <assert.h>
 #include <stdint.h>
@@ -18,7 +17,6 @@
         rc = yaksi_type_get(YAKSA_TYPE__##TYPE, &tmp_type_);            \
         YAKSU_ERR_CHECK(rc, fn_fail);                                   \
                                                                         \
-        tmp_type_->refcount = 1;                                        \
         tmp_type_->kind = YAKSI_TYPE_KIND__BUILTIN;                     \
         tmp_type_->tree_depth = 0;                                      \
         tmp_type_->size = sizeof(c_type);                               \
@@ -48,7 +46,6 @@
         else                                                            \
             element_is_contig = false;                                  \
                                                                         \
-        tmp_type_->refcount = 1;                                        \
         tmp_type_->kind = YAKSI_TYPE_KIND__BUILTIN;                     \
         tmp_type_->tree_depth = 0;                                      \
         tmp_type_->size = sizeof(c_type1) + sizeof(c_type2);            \
@@ -81,7 +78,7 @@ int yaksa_init(void)
     int rc = YAKSA_SUCCESS;
 
     /* initialize the type pool */
-    rc = yaksu_pool_alloc(sizeof(yaksi_type_s), CHUNK_SIZE, SIZE_MAX, malloc, free,
+    rc = yaksu_pool_alloc(sizeof(yaksi_type_s), CHUNK_SIZE, UINTPTR_MAX, malloc, free,
                           &yaksi_global.type_pool);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
@@ -99,7 +96,7 @@ int yaksa_init(void)
 
 
     /* initialize the request pool */
-    rc = yaksu_pool_alloc(sizeof(yaksi_request_s), CHUNK_SIZE, SIZE_MAX, malloc, free,
+    rc = yaksu_pool_alloc(sizeof(yaksi_request_s), CHUNK_SIZE, UINTPTR_MAX, malloc, free,
                           &yaksi_global.request_pool);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
@@ -112,7 +109,7 @@ int yaksa_init(void)
         rc = yaksi_request_alloc(&request);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
-        assert(request->request == i);
+        assert(request->id == i);
     }
 
 

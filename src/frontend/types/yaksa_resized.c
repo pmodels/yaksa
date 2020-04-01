@@ -5,7 +5,6 @@
 
 #include "yaksi.h"
 #include "yaksu.h"
-#include "yaksur.h"
 #include <stdlib.h>
 #include <assert.h>
 
@@ -18,7 +17,6 @@ int yaksi_create_resized(yaksi_type_s * intype, intptr_t lb, uintptr_t extent,
     rc = yaksi_type_alloc(&outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    outtype->refcount = 1;
     yaksu_atomic_incr(&intype->refcount);
 
     outtype->kind = YAKSI_TYPE_KIND__RESIZED;

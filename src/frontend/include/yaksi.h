@@ -12,6 +12,7 @@
 #include "yaksa_config.h"
 #include "yaksa.h"
 #include "yaksu.h"
+#include "yaksur.h"
 
 #if !defined ATTRIBUTE
 #if defined HAVE_GCC_ATTRIBUTE
@@ -47,8 +48,7 @@ typedef struct {
 extern yaksi_global_s yaksi_global;
 
 typedef struct yaksi_type_s {
-    /* yaksa type associated with this structure; YAKSA_TYPE__NULL if
-     * none */
+    /* yaksa type associated with this structure */
     yaksa_type_t id;
     yaksu_atomic_int refcount;
 
@@ -108,13 +108,13 @@ typedef struct yaksi_type_s {
         } dup;
     } u;
 
-    /* give some space for the backend to store content */
-    void *backend;
+    /* give some private space for the backend to store content */
+    yaksur_type_s backend_priv;
 } yaksi_type_s;
 
 typedef struct yaksi_request_s {
     /* yaksa request associated with this structure */
-    yaksa_request_t request;
+    yaksa_request_t id;
 } yaksi_request_s;
 
 

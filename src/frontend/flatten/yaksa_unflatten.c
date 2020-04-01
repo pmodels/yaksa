@@ -5,7 +5,6 @@
 
 #include "yaksi.h"
 #include "yaksu.h"
-#include "yaksur.h"
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
@@ -27,7 +26,6 @@ static int unflatten(yaksi_type_s ** type, const void *flattened_type)
     flatbuf += sizeof(yaksi_type_s);
     orig_id = newtype->id;
     newtype->id = local_id;
-    newtype->refcount = 1;
 
     switch (newtype->kind) {
         case YAKSI_TYPE_KIND__BUILTIN:

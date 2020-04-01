@@ -40,48 +40,42 @@ typedef struct {
 } yaksuri_cudai_global_s;
 extern yaksuri_cudai_global_s yaksuri_cudai_global;
 
-typedef struct yaksuri_cudai_md {
+typedef struct yaksuri_cudai_md_s {
     union {
         struct {
             int count;
             intptr_t stride;
-            struct yaksuri_cudai_md *child;
+            struct yaksuri_cudai_md_s *child;
         } contig;
         struct {
-            struct yaksuri_cudai_md *child;
+            struct yaksuri_cudai_md_s *child;
         } dup;
         struct {
-            struct yaksuri_cudai_md *child;
+            struct yaksuri_cudai_md_s *child;
         } resized;
         struct {
             int count;
             int blocklength;
             intptr_t stride;
-            struct yaksuri_cudai_md *child;
+            struct yaksuri_cudai_md_s *child;
         } hvector;
         struct {
             int count;
             int blocklength;
             intptr_t *array_of_displs;
-            struct yaksuri_cudai_md *child;
+            struct yaksuri_cudai_md_s *child;
         } blkhindx;
         struct {
             int count;
             int *array_of_blocklengths;
             intptr_t *array_of_displs;
-            struct yaksuri_cudai_md *child;
+            struct yaksuri_cudai_md_s *child;
         } hindexed;
     } u;
 
     uintptr_t extent;
     uintptr_t num_elements;
 } yaksuri_cudai_md_s;
-
-typedef struct {
-    yaksuri_cudai_md_s *md;
-    pthread_mutex_t mdmutex;
-    uintptr_t num_elements;
-} yaksuri_cudai_type_s;
 
 
 int yaksuri_cudai_md_alloc(yaksi_type_s * type);

@@ -5,7 +5,6 @@
 
 #include "yaksi.h"
 #include "yaksu.h"
-#include "yaksuri.h"
 #include "yaksuri_cudai.h"
 #include <assert.h>
 #include <cuda_runtime_api.h>
@@ -14,18 +13,13 @@
 
 static yaksuri_cudai_md_s *type_to_md(yaksi_type_s * type)
 {
-    yaksuri_type_s *backend = (yaksuri_type_s *) type->backend;
-    yaksuri_cudai_type_s *cuda = (yaksuri_cudai_type_s *) backend->cuda_priv;
-    yaksuri_cudai_md_s *md = (yaksuri_cudai_md_s *) cuda->md;
-
-    return md;
+    return type->backend_priv.cuda_priv.md;
 }
 
 int yaksuri_cudai_md_alloc(yaksi_type_s * type)
 {
     int rc = YAKSA_SUCCESS;
-    yaksuri_type_s *backend = (yaksuri_type_s *) type->backend;
-    yaksuri_cudai_type_s *cuda = (yaksuri_cudai_type_s *) backend->cuda_priv;
+    yaksuri_cuda_type_s *cuda = (yaksuri_cuda_type_s *) & type->backend_priv.cuda_priv;
     cudaError_t cerr;
 
     pthread_mutex_lock(&cuda->mdmutex);

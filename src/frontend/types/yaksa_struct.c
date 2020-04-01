@@ -5,7 +5,6 @@
 
 #include "yaksi.h"
 #include "yaksu.h"
-#include "yaksur.h"
 #include <stdlib.h>
 #include <assert.h>
 
@@ -18,8 +17,6 @@ int yaksi_create_struct(int count, const int *array_of_blocklengths,
     yaksi_type_s *outtype;
     rc = yaksi_type_alloc(&outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
-
-    outtype->refcount = 1;
 
     outtype->kind = YAKSI_TYPE_KIND__STRUCT;
 
