@@ -16,5 +16,5 @@ $(top_builddir)/dtpools/libdtpools.la:
 	(cd $(top_builddir)/dtpools && $(MAKE))
 
 testing:
-	@$(top_srcdir)/runtests.py --testlist=$(top_srcdir)/simple/testlist \
+	@$(top_srcdir)/runtests.py --testlist=$(top_srcdir)/simple/testlist.gen \
 		--summary=$(top_builddir)/simple/summary.junit.xml

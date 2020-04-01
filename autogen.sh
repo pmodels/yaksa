@@ -41,6 +41,9 @@ for x in seq cuda ; do
     echo "done"
 done
 
+# tests
+./maint/gentests.py
+
 
 ########################################################################
 ## Building maint/Version

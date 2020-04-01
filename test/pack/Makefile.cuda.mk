@@ -33,4 +33,4 @@ pack_cuda_dbuf_tbuf_CPPFLAGS = -DCUDA_DBUF -DCUDA_TBUF $(AM_CPPFLAGS)
 pack_cuda_sbuf_dbuf_tbuf_SOURCES = pack.c
 pack_cuda_sbuf_dbuf_tbuf_CPPFLAGS = -DCUDA_SBUF -DCUDA_DBUF -DCUDA_TBUF $(AM_CPPFLAGS)
 
-testlists += $(top_srcdir)/pack/testlist.cuda
+testlists += $(top_srcdir)/pack/testlist.cuda.gen
