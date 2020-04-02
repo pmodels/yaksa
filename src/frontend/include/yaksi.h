@@ -12,7 +12,7 @@
 #include "yaksa_config.h"
 #include "yaksa.h"
 #include "yaksu.h"
-#include "yaksur.h"
+#include "yaksur_pre.h"
 
 #if !defined ATTRIBUTE
 #if defined HAVE_GCC_ATTRIBUTE
@@ -153,6 +153,12 @@ typedef struct {
     int y;
 } yaksi_long_double_int_s;
 
+
+/* post headers come after the type declarations */
+#include "yaksur_post.h"
+
+
+/* function declarations come at the very end */
 int yaksi_create_hvector(int count, int blocklength, intptr_t stride, yaksi_type_s * intype,
                          yaksi_type_s ** outtype);
 int yaksi_create_contig(int count, yaksi_type_s * intype, yaksi_type_s ** outtype);

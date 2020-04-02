@@ -3,7 +3,7 @@
  *     See COPYRIGHT in top-level directory
  */
 
-#include "yaksuri_cuda.h"
+#include "yaksi.h"
 #include "yaksuri_cudai.h"
 #include <assert.h>
 #include <string.h>

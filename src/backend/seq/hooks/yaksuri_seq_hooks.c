@@ -5,7 +5,6 @@
 
 #include "yaksi.h"
 #include "yaksu.h"
-#include "yaksuri_seq.h"
 #include "yaksuri_seqi.h"
 
 int yaksuri_seq_init_hook(void)

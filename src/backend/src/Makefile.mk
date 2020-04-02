@@ -10,4 +10,5 @@ libyaksa_la_SOURCES += \
 	src/backend/src/yaksur_pup.c
 
 noinst_HEADERS += \
-	src/backend/src/yaksur.h
+	src/backend/src/yaksur_pre.h \
+	src/backend/src/yaksur_post.h
