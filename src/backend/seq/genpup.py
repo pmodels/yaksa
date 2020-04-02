@@ -194,7 +194,7 @@ for b in builtin_types:
                         else:
                             s = s + "blklen_%s_" % blklen + b.replace(" ", "_")
                         OUTFILE.write("%s" % s),
-                        OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, yaksi_request_s **request)\n")
+                        OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, yaksi_request_s *request)\n")
                         OUTFILE.write("{\n")
 
 
@@ -470,7 +470,7 @@ for b in builtin_types:
                         else:
                             s = s + "blklen_%s_" % blklen + b.replace(" ", "_")
                         OUTFILE.write("%s" % s),
-                        OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, yaksi_request_s **request);\n")
+                        OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, yaksi_request_s *request);\n")
 
 ## end of basic-type specific file
 OUTFILE.write("#endif  /* YAKSURI_SEQI_PUP_H_INCLUDED */\n")

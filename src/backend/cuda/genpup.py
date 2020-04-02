@@ -234,7 +234,7 @@ for b in builtin_types:
 
                     ##### generate the host function
                     OUTFILE.write("int yaksuri_cudai_%s" % funcprefix),
-                    OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, yaksi_request_s **request)\n")
+                    OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, yaksi_request_s *request)\n")
                     OUTFILE.write("{\n")
 
 
@@ -244,31 +244,35 @@ for b in builtin_types:
                     # generic variables
                     display("int rc = YAKSA_SUCCESS;\n");
                     display("cudaError_t cerr;\n");
+                    display("yaksuri_cuda_request_s *cuda_request = (yaksuri_cuda_request_s *) &request->backend_priv.cuda_priv;\n")
                     OUTFILE.write("\n");
 
                     # shortcut for builtin datatypes
                     if (len(darray) == 0):
-                        display("cerr = cudaMemcpy(outbuf, inbuf, count * sizeof(%s), cudaMemcpyDeviceToDevice);\n" % b)
+                        display("cerr = cudaMemcpyAsync(outbuf, inbuf, count * sizeof(%s), cudaMemcpyDeviceToDevice, yaksuri_cudai_global.stream);\n" % b)
                         display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
                     else:
                         display("rc = yaksuri_cudai_md_alloc(type);\n")
                         display("/* nvcc does not seem to like gotos */\n")
                         display("/* YAKSU_ERR_CHECK(rc, fn_fail); */\n")
                         OUTFILE.write("\n");
-                        display("yaksuri_cuda_type_s *cuda = (yaksuri_cuda_type_s *) &type->backend_priv.cuda_priv;\n")
+                        display("yaksuri_cuda_type_s *cuda_type = (yaksuri_cuda_type_s *) &type->backend_priv.cuda_priv;\n")
                         OUTFILE.write("\n");
 
                         display("int n_threads = YAKSURI_CUDAI_THREAD_BLOCK_SIZE;\n")
-                        display("int n_blocks = count * cuda->num_elements / YAKSURI_CUDAI_THREAD_BLOCK_SIZE;\n")
-                        display("n_blocks += !!(count * cuda->num_elements % YAKSURI_CUDAI_THREAD_BLOCK_SIZE);\n")
+                        display("int n_blocks = count * cuda_type->num_elements / YAKSURI_CUDAI_THREAD_BLOCK_SIZE;\n")
+                        display("n_blocks += !!(count * cuda_type->num_elements % YAKSURI_CUDAI_THREAD_BLOCK_SIZE);\n")
                         OUTFILE.write("\n");
-                        display("void *args[4] = { &inbuf, &outbuf, &count, &cuda->md };\n")
+                        display("void *args[4] = { &inbuf, &outbuf, &count, &cuda_type->md };\n")
                         display("cerr = cudaLaunchKernel((const void *) yaksuri_cudai_kernel_%s,\n" % funcprefix)
                         display("                        n_blocks, n_threads, args, 0, yaksuri_cudai_global.stream);\n")
                         display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
-                        OUTFILE.write("\n");
-                        display("cerr = cudaStreamSynchronize(yaksuri_cudai_global.stream);\n")
-                        display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
+
+                    OUTFILE.write("\n");
+                    display("cerr = cudaEventRecord(cuda_request->event, yaksuri_cudai_global.stream);\n")
+                    display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
+                    OUTFILE.write("\n");
+                    display("yaksu_atomic_incr(&request->cc);\n")
 
                     OUTFILE.write("\n");
                     indentation -= 1
@@ -466,7 +470,7 @@ for b in builtin_types:
                         s = s + "%s_" % d3
                     s = s + b.replace(" ", "_")
                     OUTFILE.write("%s" % s),
-                    OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, yaksi_request_s **request);\n")
+                    OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, yaksi_request_s *request);\n")
 
 ## end of basic-type specific file
 OUTFILE.write("\n")

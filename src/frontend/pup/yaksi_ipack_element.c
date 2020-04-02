@@ -25,7 +25,7 @@
 
 static int pack_sub_hvector(const void *inbuf, yaksi_type_s * type, uintptr_t inoffset,
                             void *outbuf, uintptr_t max_pack_bytes, uintptr_t * actual_pack_bytes,
-                            yaksi_request_s ** request)
+                            yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -108,7 +108,7 @@ static int pack_sub_hvector(const void *inbuf, yaksi_type_s * type, uintptr_t in
 
 static int pack_sub_blkhindx(const void *inbuf, yaksi_type_s * type, uintptr_t inoffset,
                              void *outbuf, uintptr_t max_pack_bytes, uintptr_t * actual_pack_bytes,
-                             yaksi_request_s ** request)
+                             yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -193,7 +193,7 @@ static int pack_sub_blkhindx(const void *inbuf, yaksi_type_s * type, uintptr_t i
 
 static int pack_sub_hindexed(const void *inbuf, yaksi_type_s * type, uintptr_t inoffset,
                              void *outbuf, uintptr_t max_pack_bytes, uintptr_t * actual_pack_bytes,
-                             yaksi_request_s ** request)
+                             yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -313,7 +313,7 @@ static int pack_sub_hindexed(const void *inbuf, yaksi_type_s * type, uintptr_t i
 
 static int pack_sub_struct(const void *inbuf, yaksi_type_s * type, uintptr_t inoffset,
                            void *outbuf, uintptr_t max_pack_bytes, uintptr_t * actual_pack_bytes,
-                           yaksi_request_s ** request)
+                           yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -433,7 +433,7 @@ static int pack_sub_struct(const void *inbuf, yaksi_type_s * type, uintptr_t ino
 
 int yaksi_ipack_element(const void *inbuf, yaksi_type_s * type, uintptr_t inoffset,
                         void *outbuf, uintptr_t max_pack_bytes, uintptr_t * actual_pack_bytes,
-                        yaksi_request_s ** request)
+                        yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
 

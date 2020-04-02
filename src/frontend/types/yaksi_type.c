@@ -6,15 +6,16 @@
 #include "yaksi.h"
 #include "yaksu.h"
 
-int yaksi_request_alloc(struct yaksi_request_s **request)
+int yaksi_type_alloc(struct yaksi_type_s **type)
 {
     int rc = YAKSA_SUCCESS;
     int idx;
 
-    rc = yaksu_pool_elem_alloc(yaksi_global.request_pool, (void **) request, &idx);
+    rc = yaksu_pool_elem_alloc(yaksi_global.type_pool, (void **) type, &idx);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    (*request)->id = idx;
+    (*type)->id = idx;
+    yaksu_atomic_store(&(*type)->refcount, 1);
 
   fn_exit:
     return rc;
@@ -22,11 +23,11 @@ int yaksi_request_alloc(struct yaksi_request_s **request)
     goto fn_exit;
 }
 
-int yaksi_request_free(struct yaksi_request_s *request)
+int yaksi_type_free(struct yaksi_type_s *type)
 {
     int rc = YAKSA_SUCCESS;
 
-    rc = yaksu_pool_elem_free(yaksi_global.request_pool, request->id);
+    rc = yaksu_pool_elem_free(yaksi_global.type_pool, type->id);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
@@ -35,11 +36,11 @@ int yaksi_request_free(struct yaksi_request_s *request)
     goto fn_exit;
 }
 
-int yaksi_request_get(yaksa_request_t request, struct yaksi_request_s **yaksi_request)
+int yaksi_type_get(yaksa_type_t type, struct yaksi_type_s **yaksi_type)
 {
     int rc = YAKSA_SUCCESS;
 
-    rc = yaksu_pool_elem_get(yaksi_global.request_pool, (int) request, (void **) yaksi_request);
+    rc = yaksu_pool_elem_get(yaksi_global.type_pool, (int) type, (void **) yaksi_type);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:

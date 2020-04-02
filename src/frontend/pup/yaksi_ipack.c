@@ -11,7 +11,7 @@
 
 int yaksi_ipack(const void *inbuf, uintptr_t incount, yaksi_type_s * type, uintptr_t inoffset,
                 void *outbuf, uintptr_t max_pack_bytes, uintptr_t * actual_pack_bytes,
-                yaksi_request_s ** request)
+                yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
 

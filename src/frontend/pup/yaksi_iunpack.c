@@ -9,7 +9,7 @@
 #include <assert.h>
 
 int yaksi_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t outcount,
-                  yaksi_type_s * type, uintptr_t outoffset, yaksi_request_s ** request)
+                  yaksi_type_s * type, uintptr_t outoffset, yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
     uintptr_t total_bytes = outcount * type->size - outoffset;

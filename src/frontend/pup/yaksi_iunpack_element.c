@@ -26,7 +26,7 @@
  */
 
 static int unpack_sub_hvector(const void *inbuf, uintptr_t insize, void *outbuf,
-                              yaksi_type_s * type, uintptr_t outoffset, yaksi_request_s ** request)
+                              yaksi_type_s * type, uintptr_t outoffset, yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -100,7 +100,7 @@ static int unpack_sub_hvector(const void *inbuf, uintptr_t insize, void *outbuf,
 }
 
 static int unpack_sub_blkhindx(const void *inbuf, uintptr_t insize, void *outbuf,
-                               yaksi_type_s * type, uintptr_t outoffset, yaksi_request_s ** request)
+                               yaksi_type_s * type, uintptr_t outoffset, yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -176,7 +176,7 @@ static int unpack_sub_blkhindx(const void *inbuf, uintptr_t insize, void *outbuf
 }
 
 static int unpack_sub_hindexed(const void *inbuf, uintptr_t insize, void *outbuf,
-                               yaksi_type_s * type, uintptr_t outoffset, yaksi_request_s ** request)
+                               yaksi_type_s * type, uintptr_t outoffset, yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -286,7 +286,7 @@ static int unpack_sub_hindexed(const void *inbuf, uintptr_t insize, void *outbuf
 }
 
 static int unpack_sub_struct(const void *inbuf, uintptr_t insize, void *outbuf, yaksi_type_s * type,
-                             uintptr_t outoffset, yaksi_request_s ** request)
+                             uintptr_t outoffset, yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -396,7 +396,7 @@ static int unpack_sub_struct(const void *inbuf, uintptr_t insize, void *outbuf, 
 }
 
 int yaksi_iunpack_element(const void *inbuf, uintptr_t insize, void *outbuf, yaksi_type_s * type,
-                          uintptr_t outoffset, yaksi_request_s ** request)
+                          uintptr_t outoffset, yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
 
