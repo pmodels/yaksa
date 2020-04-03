@@ -589,7 +589,6 @@ if test "$enable_strict_done" != "yes" ; then
                 pac_common_strict_flags="$pac_common_strict_flags
                     -Wredundant-decls
                     -Waggregate-return
-                    -Wfloat-equal
                     -Werror-implicit-function-declaration
                     -Wcast-align
                     -Wshorten-64-to-32"
