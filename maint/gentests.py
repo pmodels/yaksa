@@ -1,10 +1,11 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 ##
 ## Copyright (C) by Argonne National Laboratory
 ##     See COPYRIGHT in top-level directory
 ##
 
 import sys
+import re
 
 
 ##### global settings
@@ -26,10 +27,24 @@ def gen_simple_tests(testlist):
     sys.stdout.write("generating simple tests ... ")
     outfile.write("simple_test\n")
     outfile.write("threaded_test\n")
+    outfile.close()
     sys.stdout.write("done\n")
 
 
 ##### pack/iov tests generator
+def create_testlist(testlist):
+    try:
+        outfile = open(testlist, "w")
+    except:
+        sys.stderr.write("error creating testlist %s\n" % testlist)
+        sys.exit()
+
+    m = re.match(r'(test/\w+)', testlist)
+
+    if re.match(r'.*cuda.gen', testlist):
+        outfile.write("condition: HAS_CUDA" + "\n\n")
+    outfile.close()
+
 def gen_pack_iov_tests(fn, testlist, create):
     global seed
 
@@ -117,6 +132,7 @@ if __name__ == '__main__':
     gen_simple_tests("test/simple/testlist.gen")
 
     gen_pack_iov_tests("pack", "test/pack/testlist.gen", "create")
+    create_testlist("test/pack/testlist.cuda.gen")
     # gen_pack_iov_tests("pack_cuda_sbuf_tbuf", "test/pack/testlist.cuda.gen", "create")
     # gen_pack_iov_tests("pack_cuda_dbuf_tbuf", "test/pack/testlist.cuda.gen", "append")
     gen_pack_iov_tests("pack_cuda_sbuf_dbuf_tbuf", "test/pack/testlist.cuda.gen", "append")
