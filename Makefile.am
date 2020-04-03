@@ -24,10 +24,8 @@ AM_CPPFLAGS =
 libyaksa_la_LDFLAGS = -version-info @libyaksa_so_version@
 
 include $(top_srcdir)/src/Makefile.mk
+include $(srcdir)/test/Makefile.mk
 
 doxygen:
 	mkdir -p doc
 	doxygen Doxyfile
-
-testing:
-	@(cd test && ${MAKE} -s $@)

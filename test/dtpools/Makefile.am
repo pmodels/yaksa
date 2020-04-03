@@ -3,9 +3,9 @@
 ##     See COPYRIGHT in top-level directory
 ##
 
-AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/../src/frontend/include
+AM_CPPFLAGS = -I$(srcdir)/src -I$(top_builddir)/src/frontend/include
 
-LDADD = $(top_builddir)/../../libyaksa.la
+LDADD = $(top_builddir)/libyaksa.la
 
 noinst_LTLIBRARIES = libdtpools.la
 libdtpools_la_SOURCES = \

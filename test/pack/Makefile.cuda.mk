@@ -3,34 +3,41 @@
 ##     See COPYRIGHT in top-level directory
 ##
 
-noinst_PROGRAMS += \
-	pack_cuda_sbuf \
-	pack_cuda_dbuf \
-	pack_cuda_tbuf \
-	pack_cuda_sbuf_dbuf \
-	pack_cuda_sbuf_tbuf \
-	pack_cuda_dbuf_tbuf \
-	pack_cuda_sbuf_dbuf_tbuf
+EXTRA_PROGRAMS += \
+	test/pack/pack_cuda_sbuf \
+	test/pack/pack_cuda_dbuf \
+	test/pack/pack_cuda_tbuf \
+	test/pack/pack_cuda_sbuf_dbuf \
+	test/pack/pack_cuda_sbuf_tbuf \
+	test/pack/pack_cuda_dbuf_tbuf \
+	test/pack/pack_cuda_sbuf_dbuf_tbuf
 
-pack_cuda_sbuf_SOURCES = pack.c
-pack_cuda_sbuf_CPPFLAGS = -DCUDA_SBUF $(AM_CPPFLAGS)
+test_pack_pack_cuda_sbuf_SOURCES = test/pack/pack.c
+test_pack_pack_cuda_sbuf_CPPFLAGS = -DCUDA_SBUF $(test_cppflags)
+test_pack_pack_cuda_sbuf_LDADD = $(test_ldadd)
 
-pack_cuda_dbuf_SOURCES = pack.c
-pack_cuda_dbuf_CPPFLAGS = -DCUDA_DBUF $(AM_CPPFLAGS)
+test_pack_pack_cuda_dbuf_SOURCES = test/pack/pack.c
+test_pack_pack_cuda_dbuf_CPPFLAGS = -DCUDA_DBUF $(test_cppflags)
+test_pack_pack_cuda_dbuf_LDADD = $(test_ldadd)
 
-pack_cuda_tbuf_SOURCES = pack.c
-pack_cuda_tbuf_CPPFLAGS = -DCUDA_TBUF $(AM_CPPFLAGS)
+test_pack_pack_cuda_tbuf_SOURCES = test/pack/pack.c
+test_pack_pack_cuda_tbuf_CPPFLAGS = -DCUDA_TBUF $(test_cppflags)
+test_pack_pack_cuda_tbuf_LDADD = $(test_ldadd)
 
-pack_cuda_sbuf_dbuf_SOURCES = pack.c
-pack_cuda_sbuf_dbuf_CPPFLAGS = -DCUDA_SBUF -DCUDA_DBUF $(AM_CPPFLAGS)
+test_pack_pack_cuda_sbuf_dbuf_SOURCES = test/pack/pack.c
+test_pack_pack_cuda_sbuf_dbuf_CPPFLAGS = -DCUDA_SBUF -DCUDA_DBUF $(test_cppflags)
+test_pack_pack_cuda_sbuf_dbuf_LDADD = $(test_ldadd)
 
-pack_cuda_sbuf_tbuf_SOURCES = pack.c
-pack_cuda_sbuf_tbuf_CPPFLAGS = -DCUDA_SBUF -DCUDA_TBUF $(AM_CPPFLAGS)
+test_pack_pack_cuda_sbuf_tbuf_SOURCES = test/pack/pack.c
+test_pack_pack_cuda_sbuf_tbuf_CPPFLAGS = -DCUDA_SBUF -DCUDA_TBUF $(test_cppflags)
+test_pack_pack_cuda_sbuf_tbuf_LDADD = $(test_ldadd)
 
-pack_cuda_dbuf_tbuf_SOURCES = pack.c
-pack_cuda_dbuf_tbuf_CPPFLAGS = -DCUDA_DBUF -DCUDA_TBUF $(AM_CPPFLAGS)
+test_pack_pack_cuda_dbuf_tbuf_SOURCES = test/pack/pack.c
+test_pack_pack_cuda_dbuf_tbuf_CPPFLAGS = -DCUDA_DBUF -DCUDA_TBUF $(test_cppflags)
+test_pack_pack_cuda_dbuf_tbuf_LDADD = $(test_ldadd)
 
-pack_cuda_sbuf_dbuf_tbuf_SOURCES = pack.c
-pack_cuda_sbuf_dbuf_tbuf_CPPFLAGS = -DCUDA_SBUF -DCUDA_DBUF -DCUDA_TBUF $(AM_CPPFLAGS)
+test_pack_pack_cuda_sbuf_dbuf_tbuf_SOURCES = test/pack/pack.c
+test_pack_pack_cuda_sbuf_dbuf_tbuf_CPPFLAGS = -DCUDA_SBUF -DCUDA_DBUF -DCUDA_TBUF $(test_cppflags)
+test_pack_pack_cuda_sbuf_dbuf_tbuf_LDADD = $(test_ldadd)
 
-testlists += $(top_srcdir)/pack/testlist.cuda.gen
+pack_testlists += $(top_srcdir)/pack/testlist.cuda.gen

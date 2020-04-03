@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-#include "../yaksa_test_config.h"
+#include "yaksa_config.h"
 #include "yaksa.h"
 #include "dtpools.h"
 
