@@ -13,7 +13,7 @@ import subprocess
 import signal
 import datetime
 
-opts = {'verbose': 1}
+opts = {'verbose': 0}
 
 class colors:
     FAILURE = '\033[1;31m' # red
