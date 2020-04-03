@@ -96,6 +96,8 @@ AC_PROG_CC_C99
 PAC_POP_FLAG([CFLAGS])
 AC_HEADER_STDC
 
+# required pre-Automake-1.14
+AM_PROG_CC_C_O
 
 dnl ----------------------------------------------------------------------------
 dnl configure options
