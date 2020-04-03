@@ -5,4 +5,4 @@
 
 #include <pthread.h>
 
-pthread_mutex_t yaksui_global_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t yaksui_atomic_mutex = PTHREAD_MUTEX_INITIALIZER;
