@@ -13,19 +13,6 @@ error() {
     echo "===> ERROR:   $@"
 }
 
-# Copy m4 directory autoreconf creates libtool.m4 and friends in the
-# m4 directory for each configure.  If multiple subdir configures all
-# point to the same m4 directory, the file will get overwritten
-# multiple times, thus updating its timestamp.  This causes subdir
-# configures to be rerun during make.  The simplest hack to workaround
-# this is to give each subdir that has its own configure its own m4
-# directory.
-echo_n "copying m4 macros to individual subdirs... "
-for dir in test ; do
-    cp -a m4 ${dir}/
-done
-echo "done"
-
 # generate configure files
 echo
 echo "=== generating configure files in main directory ==="
