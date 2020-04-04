@@ -5,10 +5,10 @@
 
 EXTRA_DIST += runtests.py
 
-SUBDIRS = test/dtpools
-
 LDADD = libyaksa.la test/dtpools/libdtpools.la
 test_cppflags = -I$(build_dir)/src/frontend/include -I$(srcdir)/test/dtpools/src
+
+include $(top_srcdir)/test/dtpools/Makefile.mk
 
 EXTRA_PROGRAMS =
 include $(top_srcdir)/test/simple/Makefile.mk
