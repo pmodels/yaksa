@@ -159,23 +159,15 @@ def wait_with_signal(p):
     return ret
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--testlist', help='testlist file to execute', required=True)
-    parser.add_argument('--summary', help='file to write the summary to', required=True)
-    args = parser.parse_args()
-
-    args.testlist = os.path.abspath(args.testlist)
-    args.summary = os.path.abspath(args.summary)
-
+def run_testlist(testlist):
     try:
-        fh = open(args.testlist, "r")
+        fh = open(testlist, "r")
     except:
         sys.stderr.write(colors.FAILURE + ">>>> ERROR: " + colors.END)
-        sys.stderr.write("could not open testlist %s\n" % args.testlist)
+        sys.stderr.write("could not open testlist %s\n" % testlist)
         sys.exit()
 
-    print(colors.INFO + "\n==== executing testlist %s ====" % args.testlist + colors.END)
+    print(colors.INFO + "\n==== executing testlist %s ====" % testlist + colors.END)
 
     lines = getlines(fh)
 
@@ -236,7 +228,19 @@ if __name__ == '__main__':
         end = time.time()
         printout(line, ret, end - start, out[0].decode().strip())
 
-    print(colors.INFO + "==== done executing testlist %s ====" % args.testlist + colors.END)
+    fh.close()
+    print(colors.INFO + "==== done executing testlist %s ====" % testlist + colors.END)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--testlist', help='testlist file to execute', required=True)
+    parser.add_argument('--summary', help='file to write the summary to', required=True)
+    args = parser.parse_args()
+
+    args.testlist = os.path.abspath(args.testlist)
+    args.summary = os.path.abspath(args.summary)
+
+    run_testlist(args.testlist)
     create_summary(args.testlist, args.summary)
 
-    fh.close()
