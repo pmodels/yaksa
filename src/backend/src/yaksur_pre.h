@@ -23,9 +23,10 @@ typedef enum {
 
 struct yaksi_type_s;
 struct yaksi_request_s;
-typedef int (*yaksur_seq_pup_fn) (const void *, void *, uintptr_t, struct yaksi_type_s *);
-typedef int (*yaksur_cuda_pup_fn) (const void *, void *, uintptr_t, struct yaksi_type_s *,
-                                   struct yaksi_request_s *);
+typedef int (*yaksur_seq_pup_fn) (const void *inbuf, void *outbuf, uintptr_t count,
+                                  struct yaksi_type_s * type);
+typedef int (*yaksur_cuda_pup_fn) (const void *inbuf, void *outbuf, uintptr_t count,
+                                   struct yaksi_type_s * type, struct yaksi_request_s * request);
 
 typedef struct yaksur_type_s {
     struct {
