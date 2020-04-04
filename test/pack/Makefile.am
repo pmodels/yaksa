@@ -23,7 +23,5 @@ $(top_builddir)/dtpools/libdtpools.la:
 	(cd $(top_builddir)/dtpools && $(MAKE))
 
 testing:
-	for tlist in ${testlists} ; do \
-		$(top_srcdir)/runtests.py --testlist=$${tlist} \
-			--summary=$(top_builddir)/pack/summary.junit.xml ; \
-	done
+	@$(top_srcdir)/runtests.py --summary=$(top_builddir)/pack/summary.junit.xml \
+               $(testlists)

@@ -16,5 +16,5 @@ dist_noinst_SCRIPTS =
 LDADD = $(top_builddir)/../libyaksa.la dtpools/libdtpools.la
 
 testing:
-	@$(top_srcdir)/runtests.py --testlist=$(top_srcdir)/testlist \
-		--summary=$(top_builddir)/summary.junit.xml
+	@$(top_srcdir)/runtests.py --summary=$(top_builddir)/summary.junit.xml \
+                $(top_srcdir)/testlist

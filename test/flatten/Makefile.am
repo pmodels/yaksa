@@ -15,5 +15,5 @@ $(top_builddir)/dtpools/libdtpools.la:
 	(cd $(top_builddir)/dtpools && $(MAKE))
 
 testing:
-	@$(top_srcdir)/runtests.py --testlist=$(top_srcdir)/flatten/testlist.gen \
-		--summary=$(top_builddir)/flatten/summary.junit.xml
+	@$(top_srcdir)/runtests.py --summary=$(top_builddir)/flatten/summary.junit.xml \
+                $(top_srcdir)/flatten/testlist.gen
