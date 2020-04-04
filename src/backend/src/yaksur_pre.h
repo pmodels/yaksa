@@ -23,18 +23,19 @@ typedef enum {
 
 struct yaksi_type_s;
 struct yaksi_request_s;
-typedef int (*yaksur_pup_fn) (const void *, void *, uintptr_t, struct yaksi_type_s *,
-                              struct yaksi_request_s *);
+typedef int (*yaksur_seq_pup_fn) (const void *, void *, uintptr_t, struct yaksi_type_s *);
+typedef int (*yaksur_cuda_pup_fn) (const void *, void *, uintptr_t, struct yaksi_type_s *,
+                                   struct yaksi_request_s *);
 
 typedef struct yaksur_type_s {
     struct {
-        yaksur_pup_fn pack;
-        yaksur_pup_fn unpack;
+        yaksur_seq_pup_fn pack;
+        yaksur_seq_pup_fn unpack;
     } seq;
 
     struct {
-        yaksur_pup_fn pack;
-        yaksur_pup_fn unpack;
+        yaksur_cuda_pup_fn pack;
+        yaksur_cuda_pup_fn unpack;
     } cuda;
 
     /* give some private space to each backend to store content */
@@ -44,7 +45,6 @@ typedef struct yaksur_type_s {
 
 typedef struct {
     /* give some private space to each backend to store content */
-    yaksuri_seq_request_s seq_priv;
     yaksuri_cuda_request_s cuda_priv;
 } yaksur_request_s;
 

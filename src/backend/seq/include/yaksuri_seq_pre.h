@@ -12,6 +12,5 @@
 
 /* dummy typedefs, as we do not have anything to store */
 typedef int yaksuri_seq_type_s;
-typedef int yaksuri_seq_request_s;
 
 #endif /* YAKSURI_SEQ_PRE_H_INCLUDED */

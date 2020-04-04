@@ -49,23 +49,3 @@ int yaksuri_seq_type_free_hook(yaksi_type_s * type)
   fn_fail:
     goto fn_exit;
 }
-
-int yaksuri_seq_request_create_hook(yaksi_request_s * request)
-{
-    int rc = YAKSA_SUCCESS;
-
-  fn_exit:
-    return rc;
-  fn_fail:
-    goto fn_exit;
-}
-
-int yaksuri_seq_request_free_hook(yaksi_request_s * request)
-{
-    int rc = YAKSA_SUCCESS;
-
-  fn_exit:
-    return rc;
-  fn_fail:
-    goto fn_exit;
-}
