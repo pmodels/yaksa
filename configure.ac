@@ -154,6 +154,7 @@ if test "${have_cuda}" = "yes" ; then
     fi
 fi
 AM_CONDITIONAL([BUILD_CUDA_BACKEND], [test x${have_cuda} = xyes])
+AM_CONDITIONAL([BUILD_CUDA_TESTS], [test x${have_cuda} = xyes])
 
 
 dnl ----------------------------------------------------------------------------
@@ -178,8 +179,8 @@ AH_BOTTOM([
 #endif /* YAKSA_CONFIG_H_INCLUDED */
 ])
 
-AC_CONFIG_SUBDIRS(test)
 AC_CONFIG_FILES([Makefile
+                 test/dtpools/Makefile
                  Doxyfile
                  maint/yaksa.pc
 		 src/frontend/include/yaksa.h
