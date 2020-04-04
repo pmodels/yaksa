@@ -187,11 +187,11 @@ def run_testlist(testlist):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--testlist', help='testlist file to execute', required=True)
+    parser.add_argument('testlists', help='testlist files to execute', nargs='+')
     parser.add_argument('--summary', help='file to write the summary to', required=True)
     args = parser.parse_args()
 
-    for testlist in args.testlist.split(','):
+    for testlist in args.testlists:
         run_testlist(os.path.abspath(testlist))
     create_summary(os.path.abspath(args.summary))
 
