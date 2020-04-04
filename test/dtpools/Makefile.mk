@@ -17,5 +17,3 @@ test_dtpools_libdtpools_la_SOURCES = \
 noinst_HEADERS += \
 	test/dtpools/src/dtpools.h \
 	test/dtpools/src/dtpools_internal.h
-
-test_deps += test/dtpools/libdtpools.la
