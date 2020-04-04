@@ -12,6 +12,14 @@ counts = [ 17, 1075, 65536 ]
 types = [ "int", "short_int", "int:3,double:2" ]
 seed = 1
 
+##### create empty testlist to facilitate optional appending
+def create_testlist(testlist):
+    try:
+        outfile = open(testlist, "w")
+    except:
+        sys.stderr.write("error creating testlist %s\n" % testlist)
+        sys.exit()
+    outfile.close()
 
 ##### simple tests generator
 def gen_simple_tests(testlist):
@@ -26,8 +34,8 @@ def gen_simple_tests(testlist):
     sys.stdout.write("generating simple tests ... ")
     outfile.write("simple_test\n")
     outfile.write("threaded_test\n")
+    outfile.close()
     sys.stdout.write("done\n")
-
 
 ##### pack/iov tests generator
 def gen_pack_iov_tests(fn, testlist, create):
@@ -117,7 +125,8 @@ if __name__ == '__main__':
     gen_simple_tests("test/simple/testlist.gen")
 
     gen_pack_iov_tests("pack", "test/pack/testlist.gen", "create")
-    # gen_pack_iov_tests("pack_cuda_sbuf_tbuf", "test/pack/testlist.cuda.gen", "create")
+    create_testlist("test/pack/testlist.cuda.gen")
+    # gen_pack_iov_tests("pack_cuda_sbuf_tbuf", "test/pack/testlist.cuda.gen", "append")
     # gen_pack_iov_tests("pack_cuda_dbuf_tbuf", "test/pack/testlist.cuda.gen", "append")
     gen_pack_iov_tests("pack_cuda_sbuf_dbuf_tbuf", "test/pack/testlist.cuda.gen", "append")
     gen_pack_iov_tests("iov", "test/iov/testlist.gen", "create")
