@@ -191,9 +191,8 @@ if __name__ == '__main__':
     parser.add_argument('--summary', help='file to write the summary to', required=True)
     args = parser.parse_args()
 
-    args.testlist = os.path.abspath(args.testlist)
-    args.summary = os.path.abspath(args.summary)
+    for testlist in args.testlist.split(','):
+        run_testlist(os.path.abspath(testlist))
+    create_summary(os.path.abspath(args.summary))
 
-    run_testlist(args.testlist)
-    create_summary(args.summary)
 
