@@ -21,9 +21,6 @@ class colors:
     OTHER   = '\033[1;35m' # purple
     END     = '\033[0m'    # reset
 
-# start dir
-origdir = ""
-
 # junit variables
 num_tests = 0
 num_failures = 0
@@ -152,15 +149,12 @@ def create_summary(testlist, summary_file):
     fh.close()
 
 
-def wait_with_signal(p, testlist, summary_file):
+def wait_with_signal(p):
     try:
         ret = p.wait()
     except:
         p.kill()
         p.wait()
-        # about to die, create partial summary
-        os.chdir(origdir)
-        create_summary(testlist, summary_file)
         sys.exit()
     return ret
 
@@ -173,7 +167,6 @@ if __name__ == '__main__':
 
     args.testlist = os.path.abspath(args.testlist)
     args.summary = os.path.abspath(args.summary)
-    origdir = os.getcwd()
 
     try:
         fh = open(args.testlist, "r")
@@ -207,7 +200,7 @@ if __name__ == '__main__':
             chdirargs = "make -s testing".split(' ')
             chdirargs = map(lambda s: s.strip(), chdirargs)
             p = subprocess.Popen(chdirargs)
-            wait_with_signal(p, args.testlist, args.summary)
+            wait_with_signal(p)
             os.chdir(olddir)
             continue
 
@@ -221,7 +214,7 @@ if __name__ == '__main__':
         ############################################################################
         execname = line.split(' ', 1)[0].rstrip()
         p = subprocess.Popen(['make', execname], stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
-        ret = wait_with_signal(p, args.testlist, args.summary)
+        ret = wait_with_signal(p)
         out = p.communicate()
         if (ret != 0):
             print(colors.FAILURE + "\n==== \"make %s\" output ====" % execname + colors.END)
@@ -238,7 +231,7 @@ if __name__ == '__main__':
         cmdargs = map(lambda s: s.strip(), cmdargs)
         start = time.time()
         p = subprocess.Popen(cmdargs, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
-        ret = wait_with_signal(p, args.testlist, args.summary)
+        ret = wait_with_signal(p)
         out = p.communicate()
         end = time.time()
         printout(line, ret, end - start, out[0].decode().strip())
