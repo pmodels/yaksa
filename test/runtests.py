@@ -32,6 +32,16 @@ testretvals = []
 testoutputs = []
 
 
+def init_colors():
+    if not sys.stdout.isatty():
+        colors.FAILURE = ''
+        colors.SUCCESS = ''
+        colors.INFO = ''
+        colors.PREFIX = ''
+        colors.OTHER = ''
+        colors.END = ''
+
+
 def printout(line, ret, elapsed_time, output):
     global num_tests
     global num_failures
@@ -192,6 +202,8 @@ def run_testlist(testlist):
 
 
 if __name__ == '__main__':
+    init_colors()
+
     parser = argparse.ArgumentParser()
     parser.add_argument('testlists', help='testlist files to execute', nargs='+')
     parser.add_argument('--summary', help='file to write the summary to', required=True)
