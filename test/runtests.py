@@ -21,9 +21,6 @@ class colors:
     OTHER   = '\033[1;35m' # purple
     END     = '\033[0m'    # reset
 
-# start dir
-origdir = ""
-
 # junit variables
 num_tests = 0
 num_failures = 0
@@ -73,31 +70,9 @@ def getlines(fh):
     return reallines
 
 
-def create_summary(testlist, summary_file):
+def create_summary(summary_file):
     global num_tests
     global num_failures
-
-    tlist = open(testlist, "r")
-    lines = getlines(tlist)
-    tlist.close()
-
-    # we need to make two passes on the list, one to find the number
-    # of failures, and another to create the actual summary file
-    for line in lines:
-        # if it's a directory, absorb any summary files that might
-        # exist.  otherwise, create our part of the summary
-        dirname = line.split(' ', 1)[0].rstrip()
-        if (os.path.isdir(dirname) and os.path.isfile(dirname + "/summary.junit.xml")):
-            try:
-                tree = ET.parse(dirname + "/summary.junit.xml")
-            except:
-                print("error parsing %s/summary.junit.xml" % dirname)
-                sys.exit()
-            testsuites = tree.getroot()
-            testsuite = testsuites[0]
-            num_failures = num_failures + int(testsuite.get('failures'))
-            num_tests = num_tests + int(testsuite.get('tests'))
-
 
     # open the summary file and write to it
     try:
@@ -114,75 +89,38 @@ def create_summary(testlist, summary_file):
     fh.write("             date=\"%s\"\n" % datetime.datetime.now())
     fh.write("             name=\"summary_junit_xml\">\n")
 
-
-    # second pass on the child summary files to extract their actual content
-    x = 0
-    for line in lines:
-        # if it's a directory, absorb any summary files that might
-        # exist.  otherwise, create our part of the summary
-        dirname = line.split(' ', 1)[0].rstrip()
-        if (os.path.isdir(dirname) and os.path.isfile(dirname + "/summary.junit.xml")):
-            try:
-                tree = ET.parse(dirname + "/summary.junit.xml")
-            except:
-                print("error parsing %s/summary.junit.xml" % dirname)
-                sys.exit()
-            testsuites = tree.getroot()
-            testsuite = testsuites[0]
-            for testcase in testsuite:
-                fh.write("    <testcase name=\"%s/%s\" time=\"%s\">\n" % \
-                         (dirname, testcase.get('name'), testcase.get('time')))
-                for log in testcase.iter('failure'):
-                    fh.write("      <failure><![CDATA[\n")
-                    fh.write(log.text.strip() + "\n")
-                    fh.write("      ]]></failure>\n")
-                fh.write("    </testcase>\n")
-        else:
-            if (x < len(testnames)):
-                fh.write("    <testcase name=\"%s\" time=\"%f\">\n" % (testnames[x].strip(), testtimes[x]))
-                if (testretvals[x] != 0 and testoutputs[x]):
-                    fh.write("      <failure><![CDATA[\n")
-                    fh.write(testoutputs[x] + "\n")
-                    fh.write("      ]]></failure>\n")
-                fh.write("    </testcase>\n")
-                x = x + 1
+    for x in range(len(testnames)):
+        fh.write("    <testcase name=\"%s\" time=\"%f\">\n" % (testnames[x].strip(), testtimes[x]))
+        if (testretvals[x] != 0 and testoutputs[x]):
+            fh.write("      <failure><![CDATA[\n")
+            fh.write(testoutputs[x] + "\n")
+            fh.write("      ]]></failure>\n")
+        fh.write("    </testcase>\n")
 
     fh.write("  </testsuite>\n")
     fh.write("</testsuites>\n")
     fh.close()
 
 
-def wait_with_signal(p, testlist, summary_file):
+def wait_with_signal(p):
     try:
         ret = p.wait()
     except:
         p.kill()
         p.wait()
-        # about to die, create partial summary
-        os.chdir(origdir)
-        create_summary(testlist, summary_file)
         sys.exit()
     return ret
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--testlist', help='testlist file to execute', required=True)
-    parser.add_argument('--summary', help='file to write the summary to', required=True)
-    args = parser.parse_args()
-
-    args.testlist = os.path.abspath(args.testlist)
-    args.summary = os.path.abspath(args.summary)
-    origdir = os.getcwd()
-
+def run_testlist(testlist):
     try:
-        fh = open(args.testlist, "r")
+        fh = open(testlist, "r")
     except:
         sys.stderr.write(colors.FAILURE + ">>>> ERROR: " + colors.END)
-        sys.stderr.write("could not open testlist %s\n" % args.testlist)
+        sys.stderr.write("could not open testlist %s\n" % testlist)
         sys.exit()
 
-    print(colors.INFO + "\n==== executing testlist %s ====" % args.testlist + colors.END)
+    print(colors.INFO + "\n==== executing testlist %s ====" % testlist + colors.END)
 
     lines = getlines(fh)
 
@@ -207,7 +145,7 @@ if __name__ == '__main__':
             chdirargs = "make -s testing".split(' ')
             chdirargs = map(lambda s: s.strip(), chdirargs)
             p = subprocess.Popen(chdirargs)
-            wait_with_signal(p, args.testlist, args.summary)
+            wait_with_signal(p)
             os.chdir(olddir)
             continue
 
@@ -221,7 +159,7 @@ if __name__ == '__main__':
         ############################################################################
         execname = line.split(' ', 1)[0].rstrip()
         p = subprocess.Popen(['make', execname], stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
-        ret = wait_with_signal(p, args.testlist, args.summary)
+        ret = wait_with_signal(p)
         out = p.communicate()
         if (ret != 0):
             print(colors.FAILURE + "\n==== \"make %s\" output ====" % execname + colors.END)
@@ -238,12 +176,23 @@ if __name__ == '__main__':
         cmdargs = map(lambda s: s.strip(), cmdargs)
         start = time.time()
         p = subprocess.Popen(cmdargs, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
-        ret = wait_with_signal(p, args.testlist, args.summary)
+        ret = wait_with_signal(p)
         out = p.communicate()
         end = time.time()
         printout(line, ret, end - start, out[0].decode().strip())
 
-    print(colors.INFO + "==== done executing testlist %s ====" % args.testlist + colors.END)
-    create_summary(args.testlist, args.summary)
-
     fh.close()
+    print(colors.INFO + "==== done executing testlist %s ====" % testlist + colors.END)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('testlists', help='testlist files to execute', nargs='+')
+    parser.add_argument('--summary', help='file to write the summary to', required=True)
+    args = parser.parse_args()
+
+    for testlist in args.testlists:
+        run_testlist(os.path.abspath(testlist))
+    create_summary(os.path.abspath(args.summary))
+
+

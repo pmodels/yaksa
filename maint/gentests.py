@@ -5,6 +5,7 @@
 ##
 
 import sys
+import os
 
 
 ##### global settings
@@ -12,10 +13,20 @@ counts = [ 17, 1075, 65536 ]
 types = [ "int", "short_int", "int:3,double:2" ]
 seed = 1
 
+##### create empty testlist to facilitate optional appending
+def create_testlist(testlist):
+    try:
+        outfile = open(testlist, "w")
+    except:
+        sys.stderr.write("error creating testlist %s\n" % testlist)
+        sys.exit()
+    outfile.close()
 
 ##### simple tests generator
 def gen_simple_tests(testlist):
     global seed
+
+    prefix = os.path.dirname(testlist)
 
     try:
         outfile = open(testlist, "w")
@@ -24,10 +35,10 @@ def gen_simple_tests(testlist):
         sys.exit()
 
     sys.stdout.write("generating simple tests ... ")
-    outfile.write("simple_test\n")
-    outfile.write("threaded_test\n")
+    outfile.write(os.path.join(prefix, "simple_test") + "\n")
+    outfile.write(os.path.join(prefix, "threaded_test") + "\n")
+    outfile.close()
     sys.stdout.write("done\n")
-
 
 ##### pack/iov tests generator
 def gen_pack_iov_tests(fn, testlist, create):
@@ -36,6 +47,8 @@ def gen_pack_iov_tests(fn, testlist, create):
     segments = [ 1, 64 ]
     orderings = [ "normal", "reverse", "random" ]
     overlaps = [ "none", "regular", "irregular" ]
+
+    prefix = os.path.dirname(testlist)
 
     try:
         if (create == "create"):
@@ -66,7 +79,7 @@ def gen_pack_iov_tests(fn, testlist, create):
                         else:
                             iters = 128
 
-                        outstr = fn + " "
+                        outstr = os.path.join(prefix, fn) + " "
                         outstr += "-datatype %s " % t
                         outstr += "-count %d " % count
                         outstr += "-seed %d " % seed
@@ -85,6 +98,8 @@ def gen_pack_iov_tests(fn, testlist, create):
 def gen_flatten_tests(testlist):
     global seed
 
+    prefix = os.path.dirname(testlist)
+
     try:
         outfile = open(testlist, "w")
     except:
@@ -100,7 +115,7 @@ def gen_flatten_tests(testlist):
             else:
                 iters = 128
 
-            outstr = "flatten "
+            outstr = os.path.join(prefix, "flatten") + " "
             outstr += "-datatype %s " % t
             outstr += "-count %d " % count
             outstr += "-seed %d " % seed
@@ -117,7 +132,8 @@ if __name__ == '__main__':
     gen_simple_tests("test/simple/testlist.gen")
 
     gen_pack_iov_tests("pack", "test/pack/testlist.gen", "create")
-    # gen_pack_iov_tests("pack_cuda_sbuf_tbuf", "test/pack/testlist.cuda.gen", "create")
+    create_testlist("test/pack/testlist.cuda.gen")
+    # gen_pack_iov_tests("pack_cuda_sbuf_tbuf", "test/pack/testlist.cuda.gen", "append")
     # gen_pack_iov_tests("pack_cuda_dbuf_tbuf", "test/pack/testlist.cuda.gen", "append")
     gen_pack_iov_tests("pack_cuda_sbuf_dbuf_tbuf", "test/pack/testlist.cuda.gen", "append")
     gen_pack_iov_tests("iov", "test/iov/testlist.gen", "create")
