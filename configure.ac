@@ -182,7 +182,6 @@ AH_BOTTOM([
 ])
 
 AC_CONFIG_FILES([Makefile
-                 test/dtpools/Makefile
                  Doxyfile
                  maint/yaksa.pc
 		 src/frontend/include/yaksa.h
