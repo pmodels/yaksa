@@ -70,31 +70,9 @@ def getlines(fh):
     return reallines
 
 
-def create_summary(testlist, summary_file):
+def create_summary(summary_file):
     global num_tests
     global num_failures
-
-    tlist = open(testlist, "r")
-    lines = getlines(tlist)
-    tlist.close()
-
-    # we need to make two passes on the list, one to find the number
-    # of failures, and another to create the actual summary file
-    for line in lines:
-        # if it's a directory, absorb any summary files that might
-        # exist.  otherwise, create our part of the summary
-        dirname = line.split(' ', 1)[0].rstrip()
-        if (os.path.isdir(dirname) and os.path.isfile(dirname + "/summary.junit.xml")):
-            try:
-                tree = ET.parse(dirname + "/summary.junit.xml")
-            except:
-                print("error parsing %s/summary.junit.xml" % dirname)
-                sys.exit()
-            testsuites = tree.getroot()
-            testsuite = testsuites[0]
-            num_failures = num_failures + int(testsuite.get('failures'))
-            num_tests = num_tests + int(testsuite.get('tests'))
-
 
     # open the summary file and write to it
     try:
@@ -111,38 +89,13 @@ def create_summary(testlist, summary_file):
     fh.write("             date=\"%s\"\n" % datetime.datetime.now())
     fh.write("             name=\"summary_junit_xml\">\n")
 
-
-    # second pass on the child summary files to extract their actual content
-    x = 0
-    for line in lines:
-        # if it's a directory, absorb any summary files that might
-        # exist.  otherwise, create our part of the summary
-        dirname = line.split(' ', 1)[0].rstrip()
-        if (os.path.isdir(dirname) and os.path.isfile(dirname + "/summary.junit.xml")):
-            try:
-                tree = ET.parse(dirname + "/summary.junit.xml")
-            except:
-                print("error parsing %s/summary.junit.xml" % dirname)
-                sys.exit()
-            testsuites = tree.getroot()
-            testsuite = testsuites[0]
-            for testcase in testsuite:
-                fh.write("    <testcase name=\"%s/%s\" time=\"%s\">\n" % \
-                         (dirname, testcase.get('name'), testcase.get('time')))
-                for log in testcase.iter('failure'):
-                    fh.write("      <failure><![CDATA[\n")
-                    fh.write(log.text.strip() + "\n")
-                    fh.write("      ]]></failure>\n")
-                fh.write("    </testcase>\n")
-        else:
-            if (x < len(testnames)):
-                fh.write("    <testcase name=\"%s\" time=\"%f\">\n" % (testnames[x].strip(), testtimes[x]))
-                if (testretvals[x] != 0 and testoutputs[x]):
-                    fh.write("      <failure><![CDATA[\n")
-                    fh.write(testoutputs[x] + "\n")
-                    fh.write("      ]]></failure>\n")
-                fh.write("    </testcase>\n")
-                x = x + 1
+    for x in range(len(testnames)):
+        fh.write("    <testcase name=\"%s\" time=\"%f\">\n" % (testnames[x].strip(), testtimes[x]))
+        if (testretvals[x] != 0 and testoutputs[x]):
+            fh.write("      <failure><![CDATA[\n")
+            fh.write(testoutputs[x] + "\n")
+            fh.write("      ]]></failure>\n")
+        fh.write("    </testcase>\n")
 
     fh.write("  </testsuite>\n")
     fh.write("</testsuites>\n")
@@ -242,5 +195,5 @@ if __name__ == '__main__':
     args.summary = os.path.abspath(args.summary)
 
     run_testlist(args.testlist)
-    create_summary(args.testlist, args.summary)
+    create_summary(args.summary)
 
