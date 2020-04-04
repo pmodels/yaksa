@@ -17,6 +17,7 @@ testlists = $(top_srcdir)/pack/testlist.gen
 
 if BUILD_CUDA_TESTS
 include $(top_srcdir)/pack/Makefile.cuda.mk
+export HAS_CUDA = 1
 endif BUILD_CUDA_TESTS
 
 $(top_builddir)/dtpools/libdtpools.la:
