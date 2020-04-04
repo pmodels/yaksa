@@ -5,6 +5,7 @@
 ##
 
 import sys
+import os
 
 
 ##### global settings
@@ -25,6 +26,8 @@ def create_testlist(testlist):
 def gen_simple_tests(testlist):
     global seed
 
+    prefix = os.path.dirname(testlist)
+
     try:
         outfile = open(testlist, "w")
     except:
@@ -32,8 +35,8 @@ def gen_simple_tests(testlist):
         sys.exit()
 
     sys.stdout.write("generating simple tests ... ")
-    outfile.write("simple_test\n")
-    outfile.write("threaded_test\n")
+    outfile.write(os.path.join(prefix, "simple_test") + "\n")
+    outfile.write(os.path.join(prefix, "threaded_test") + "\n")
     outfile.close()
     sys.stdout.write("done\n")
 
@@ -44,6 +47,8 @@ def gen_pack_iov_tests(fn, testlist, create):
     segments = [ 1, 64 ]
     orderings = [ "normal", "reverse", "random" ]
     overlaps = [ "none", "regular", "irregular" ]
+
+    prefix = os.path.dirname(testlist)
 
     try:
         if (create == "create"):
@@ -74,7 +79,7 @@ def gen_pack_iov_tests(fn, testlist, create):
                         else:
                             iters = 128
 
-                        outstr = fn + " "
+                        outstr = os.path.join(prefix, fn) + " "
                         outstr += "-datatype %s " % t
                         outstr += "-count %d " % count
                         outstr += "-seed %d " % seed
@@ -93,6 +98,8 @@ def gen_pack_iov_tests(fn, testlist, create):
 def gen_flatten_tests(testlist):
     global seed
 
+    prefix = os.path.dirname(testlist)
+
     try:
         outfile = open(testlist, "w")
     except:
@@ -108,7 +115,7 @@ def gen_flatten_tests(testlist):
             else:
                 iters = 128
 
-            outstr = "flatten "
+            outstr = os.path.join(prefix, "flatten") + " "
             outstr += "-datatype %s " % t
             outstr += "-count %d " % count
             outstr += "-seed %d " % seed
