@@ -6,9 +6,18 @@
 #ifndef YAKSURI_CUDA_POST_H_INCLUDED
 #define YAKSURI_CUDA_POST_H_INCLUDED
 
-static int yaksuri_cuda_init_hook(void) ATTRIBUTE((unused));
-static int yaksuri_cuda_init_hook(void)
+static int yaksuri_cuda_init_hook(yaksu_malloc_fn * host_malloc_fn, yaksu_free_fn * host_free_fn,
+                                  yaksu_malloc_fn * device_malloc_fn,
+                                  yaksu_free_fn * device_free_fn);
+static int yaksuri_cuda_init_hook(yaksu_malloc_fn * host_malloc_fn, yaksu_free_fn * host_free_fn,
+                                  yaksu_malloc_fn * device_malloc_fn,
+                                  yaksu_free_fn * device_free_fn)
 {
+    *host_malloc_fn = NULL;
+    *host_free_fn = NULL;
+    *device_malloc_fn = NULL;
+    *device_free_fn = NULL;
+
     return YAKSA_SUCCESS;
 }
 

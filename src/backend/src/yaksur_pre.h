@@ -26,7 +26,8 @@ struct yaksi_request_s;
 typedef int (*yaksur_seq_pup_fn) (const void *inbuf, void *outbuf, uintptr_t count,
                                   struct yaksi_type_s * type);
 typedef int (*yaksur_cuda_pup_fn) (const void *inbuf, void *outbuf, uintptr_t count,
-                                   struct yaksi_type_s * type, yaksuri_cuda_event_t event);
+                                   struct yaksi_type_s * type, void *device_tmpbuf,
+                                   yaksuri_cuda_event_t event);
 
 typedef struct yaksur_type_s {
     struct {
@@ -46,6 +47,11 @@ typedef struct yaksur_type_s {
 
 typedef struct {
     yaksuri_cuda_event_t event;
+
+    enum {
+        YAKSUR_REQUEST_KIND__DEVICE_NATIVE,
+        YAKSUR_REQUEST_KIND__HOST_DEVICE_HYBRID,
+    } kind;
 } yaksur_request_s;
 
 #endif /* YAKSUR_PRE_H_INCLUDED */

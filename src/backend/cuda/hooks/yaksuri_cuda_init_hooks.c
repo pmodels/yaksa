@@ -10,20 +10,33 @@
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 
-#define CHUNK_SIZE    (16)
-#define MAX_PUP_BUFS  (16)
-
-static void *malloc_fn(uintptr_t size)
+static void *cuda_host_malloc(uintptr_t size)
 {
     void *ptr = NULL;
 
-    cudaError_t cerr = cudaMallocManaged(&ptr, size, cudaMemAttachGlobal);
+    cudaError_t cerr = cudaMallocHost(&ptr, size);
     YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
 
     return ptr;
 }
 
-static void free_fn(void *ptr)
+static void *cuda_device_malloc(uintptr_t size)
+{
+    void *ptr = NULL;
+
+    cudaError_t cerr = cudaMalloc(&ptr, size);
+    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
+
+    return ptr;
+}
+
+static void cuda_host_free(void *ptr)
+{
+    cudaError_t cerr = cudaFreeHost(ptr);
+    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
+}
+
+static void cuda_device_free(void *ptr)
 {
     cudaError_t cerr = cudaFree(ptr);
     YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
@@ -31,13 +44,15 @@ static void free_fn(void *ptr)
 
 yaksuri_cudai_global_s yaksuri_cudai_global;
 
-int yaksuri_cuda_init_hook(void)
+int yaksuri_cuda_init_hook(yaksu_malloc_fn * host_malloc_fn, yaksu_free_fn * host_free_fn,
+                           yaksu_malloc_fn * device_malloc_fn, yaksu_free_fn * device_free_fn)
 {
     int rc = YAKSA_SUCCESS;
 
-    rc = yaksu_pool_alloc(YAKSURI_CUDAI_PUP_BUF_SIZE, CHUNK_SIZE, MAX_PUP_BUFS, malloc_fn, free_fn,
-                          &yaksuri_cudai_global.pup_buf_pool);
-    YAKSU_ERR_CHECK(rc, fn_fail);
+    *host_malloc_fn = cuda_host_malloc;
+    *host_free_fn = cuda_host_free;
+    *device_malloc_fn = cuda_device_malloc;
+    *device_free_fn = cuda_device_free;
 
     cudaError_t cerr =
         cudaStreamCreateWithFlags(&yaksuri_cudai_global.stream, cudaStreamNonBlocking);
@@ -55,9 +70,6 @@ int yaksuri_cuda_finalize_hook(void)
 
     cudaError_t cerr = cudaStreamDestroy(yaksuri_cudai_global.stream);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-
-    rc = yaksu_pool_free(yaksuri_cudai_global.pup_buf_pool);
-    YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
     return rc;
