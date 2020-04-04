@@ -21,6 +21,8 @@ class colors:
     OTHER   = '\033[1;35m' # purple
     END     = '\033[0m'    # reset
 
+opts = {"verbose": 0}
+
 # junit variables
 num_tests = 0
 num_failures = 0
@@ -158,9 +160,13 @@ def run_testlist(testlist):
         # make executable
         ############################################################################
         execname = line.split(' ', 1)[0].rstrip()
+        if opts['verbose']:
+            print("make " + execname)
         p = subprocess.Popen(['make', execname], stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
         ret = wait_with_signal(p)
         out = p.communicate()
+        if opts['verbose']:
+            print(out[0].decode().strip())
         if (ret != 0):
             print(colors.FAILURE + "\n==== \"make %s\" output ====" % execname + colors.END)
             print(out[0].decode().strip())
@@ -190,6 +196,9 @@ if __name__ == '__main__':
     parser.add_argument('testlists', help='testlist files to execute', nargs='+')
     parser.add_argument('--summary', help='file to write the summary to', required=True)
     args = parser.parse_args()
+
+    if os.environ.get('V'):
+        opts["verbose"] = 1
 
     for testlist in args.testlists:
         run_testlist(os.path.abspath(testlist))
