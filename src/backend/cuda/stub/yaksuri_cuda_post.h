@@ -30,26 +30,26 @@ static int yaksuri_cuda_type_free_hook(yaksi_type_s * type)
     return YAKSA_SUCCESS;
 }
 
-static int yaksuri_cuda_request_create_hook(yaksi_request_s * request) ATTRIBUTE((unused));
-static int yaksuri_cuda_request_create_hook(yaksi_request_s * request)
+static int yaksuri_cuda_event_create(yaksuri_cuda_event_t * event) ATTRIBUTE((unused));
+static int yaksuri_cuda_event_create(yaksuri_cuda_event_t * event)
 {
     return YAKSA_SUCCESS;
 }
 
-static int yaksuri_cuda_request_free_hook(yaksi_request_s * request) ATTRIBUTE((unused));
-static int yaksuri_cuda_request_free_hook(yaksi_request_s * request)
+static int yaksuri_cuda_event_destroy(yaksuri_cuda_event_t event) ATTRIBUTE((unused));
+static int yaksuri_cuda_event_destroy(yaksuri_cuda_event_t event)
 {
     return YAKSA_SUCCESS;
 }
 
-static int yaksuri_cuda_request_test(yaksi_request_s * request) ATTRIBUTE((unused));
-static int yaksuri_cuda_request_test(yaksi_request_s * request)
+static int yaksuri_cuda_event_query(yaksuri_cuda_event_t event, int *completed) ATTRIBUTE((unused));
+static int yaksuri_cuda_event_query(yaksuri_cuda_event_t event, int *completed)
 {
     return YAKSA_SUCCESS;
 }
 
-static int yaksuri_cuda_request_wait(yaksi_request_s * request) ATTRIBUTE((unused));
-static int yaksuri_cuda_request_wait(yaksi_request_s * request)
+static int yaksuri_cuda_event_synchronize(yaksuri_cuda_event_t event) ATTRIBUTE((unused));
+static int yaksuri_cuda_event_synchronize(yaksuri_cuda_event_t event)
 {
     return YAKSA_SUCCESS;
 }

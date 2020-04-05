@@ -234,7 +234,7 @@ for b in builtin_types:
 
                     ##### generate the host function
                     OUTFILE.write("int yaksuri_cudai_%s" % funcprefix),
-                    OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, yaksi_request_s *request)\n")
+                    OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, yaksuri_cuda_event_t event)\n")
                     OUTFILE.write("{\n")
 
 
@@ -244,7 +244,6 @@ for b in builtin_types:
                     # generic variables
                     display("int rc = YAKSA_SUCCESS;\n");
                     display("cudaError_t cerr;\n");
-                    display("yaksuri_cuda_request_s *cuda_request = (yaksuri_cuda_request_s *) &request->backend_priv.cuda_priv;\n")
                     OUTFILE.write("\n");
 
                     # shortcut for builtin datatypes
@@ -269,10 +268,8 @@ for b in builtin_types:
                         display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
 
                     OUTFILE.write("\n");
-                    display("cerr = cudaEventRecord(cuda_request->event, yaksuri_cudai_global.stream);\n")
+                    display("cerr = cudaEventRecord(event, yaksuri_cudai_global.stream);\n")
                     display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
-                    OUTFILE.write("\n");
-                    display("yaksu_atomic_incr(&request->cc);\n")
 
                     OUTFILE.write("\n");
                     indentation -= 1
@@ -470,7 +467,7 @@ for b in builtin_types:
                         s = s + "%s_" % d3
                     s = s + b.replace(" ", "_")
                     OUTFILE.write("%s" % s),
-                    OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, yaksi_request_s *request);\n")
+                    OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, yaksuri_cuda_event_t event);\n")
 
 ## end of basic-type specific file
 OUTFILE.write("\n")

@@ -26,7 +26,7 @@ struct yaksi_request_s;
 typedef int (*yaksur_seq_pup_fn) (const void *inbuf, void *outbuf, uintptr_t count,
                                   struct yaksi_type_s * type);
 typedef int (*yaksur_cuda_pup_fn) (const void *inbuf, void *outbuf, uintptr_t count,
-                                   struct yaksi_type_s * type, struct yaksi_request_s * request);
+                                   struct yaksi_type_s * type, yaksuri_cuda_event_t event);
 
 typedef struct yaksur_type_s {
     struct {
@@ -45,8 +45,7 @@ typedef struct yaksur_type_s {
 } yaksur_type_s;
 
 typedef struct {
-    /* give some private space to each backend to store content */
-    yaksuri_cuda_request_s cuda_priv;
+    yaksuri_cuda_event_t event;
 } yaksur_request_s;
 
 #endif /* YAKSUR_PRE_H_INCLUDED */

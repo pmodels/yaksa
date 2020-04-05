@@ -11,6 +11,6 @@
  * configure checks. */
 
 typedef int yaksuri_cuda_type_s;
-typedef int yaksuri_cuda_request_s;
+typedef int yaksuri_cuda_event_t;
 
 #endif /* YAKSURI_CUDA_PRE_H_INCLUDED */

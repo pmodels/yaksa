@@ -10,10 +10,12 @@ int yaksuri_cuda_init_hook(void);
 int yaksuri_cuda_finalize_hook(void);
 int yaksuri_cuda_type_create_hook(yaksi_type_s * type);
 int yaksuri_cuda_type_free_hook(yaksi_type_s * type);
-int yaksuri_cuda_request_create_hook(yaksi_request_s * request);
-int yaksuri_cuda_request_free_hook(yaksi_request_s * request);
-int yaksuri_cuda_request_test(yaksi_request_s * request);
-int yaksuri_cuda_request_wait(yaksi_request_s * request);
+
+int yaksuri_cuda_event_create(yaksuri_cuda_event_t * event);
+int yaksuri_cuda_event_destroy(yaksuri_cuda_event_t event);
+int yaksuri_cuda_event_query(yaksuri_cuda_event_t event, int *completed);
+int yaksuri_cuda_event_synchronize(yaksuri_cuda_event_t event);
+
 int yaksuri_cuda_get_memory_type(const void *buf, yaksur_memory_type_e * memtype);
 
 #endif /* YAKSURI_CUDA_H_INCLUDED */

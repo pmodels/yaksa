@@ -22,8 +22,6 @@ typedef struct {
     uintptr_t num_elements;
 } yaksuri_cuda_type_s;
 
-typedef struct {
-    cudaEvent_t event;
-} yaksuri_cuda_request_s;
+typedef cudaEvent_t yaksuri_cuda_event_t;
 
 #endif /* YAKSURI_CUDA_PRE_H_INCLUDED */

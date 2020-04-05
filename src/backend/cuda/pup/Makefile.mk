@@ -6,7 +6,7 @@
 AM_CPPFLAGS += -I$(top_srcdir)/src/backend/cuda/pup
 
 libyaksa_la_SOURCES += \
-	src/backend/cuda/pup/yaksuri_cuda_request.c \
+	src/backend/cuda/pup/yaksuri_cuda_event.c \
 	src/backend/cuda/pup/yaksuri_cuda_get_memory_type.c \
 	src/backend/cuda/pup/yaksuri_cudai_pup_char.cu \
 	src/backend/cuda/pup/yaksuri_cudai_pup_double.cu \

@@ -76,7 +76,7 @@ int yaksur_request_create_hook(yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
 
-    rc = yaksuri_cuda_request_create_hook(request);
+    rc = yaksuri_cuda_event_create(&request->backend_priv.event);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
@@ -89,7 +89,7 @@ int yaksur_request_free_hook(yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
 
-    rc = yaksuri_cuda_request_free_hook(request);
+    rc = yaksuri_cuda_event_destroy(request->backend_priv.event);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
