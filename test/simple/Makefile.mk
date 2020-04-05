@@ -12,3 +12,7 @@ EXTRA_PROGRAMS += \
 
 test_simple_simple_test_CPPFLAGS = $(test_cppflags)
 test_simple_threaded_test_CPPFLAGS = $(test_cppflags)
+
+test-simple:
+	@$(top_srcdir)/test/runtests.py --summary=$(top_builddir)/test/simple/summary.junit.xml \
+                test/simple/testlist.gen

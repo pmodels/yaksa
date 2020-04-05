@@ -3,7 +3,7 @@
 ##     See COPYRIGHT in top-level directory
 ##
 
-testlists += test/pack/testlist.cuda.gen
+pack_testlists += test/pack/testlist.cuda.gen
 EXTRA_DIST += test/pack/testlist.cuda.gen
 
 EXTRA_PROGRAMS += \
