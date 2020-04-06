@@ -39,7 +39,8 @@ int yaksuri_cuda_init_hook(void)
                           &yaksuri_cudai_global.pup_buf_pool);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    cudaError_t cerr = cudaStreamCreate(&yaksuri_cudai_global.stream);
+    cudaError_t cerr =
+        cudaStreamCreateWithFlags(&yaksuri_cudai_global.stream, cudaStreamNonBlocking);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
   fn_exit:
