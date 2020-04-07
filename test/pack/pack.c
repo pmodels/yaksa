@@ -384,19 +384,15 @@ int main(int argc, char **argv)
             assert(rc == YAKSA_SUCCESS);
             assert(actual_pack_bytes <= segment_lengths[j]);
 
-            if (request != YAKSA_REQUEST__NULL) {
-                rc = yaksa_request_wait(request);
-                assert(rc == YAKSA_SUCCESS);
-            }
+            rc = yaksa_request_wait(request);
+            assert(rc == YAKSA_SUCCESS);
 
             rc = yaksa_iunpack(tbuf, actual_pack_bytes, dbuf_d + dobj.DTP_buf_offset,
                                dobj.DTP_type_count, dobj.DTP_datatype, segment_starts[j], &request);
             assert(rc == YAKSA_SUCCESS);
 
-            if (request != YAKSA_REQUEST__NULL) {
-                rc = yaksa_request_wait(request);
-                assert(rc == YAKSA_SUCCESS);
-            }
+            rc = yaksa_request_wait(request);
+            assert(rc == YAKSA_SUCCESS);
         }
 
         copy_content_to_host(dobj.DTP_bufsize, dbuf_memtype, dbuf_d, dbuf_h);
