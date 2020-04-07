@@ -21,8 +21,8 @@ typedef struct pool_head {
     uintptr_t elems_in_chunk;
     uintptr_t maxelems;
 
-    yaksu_pool_malloc_fn malloc_fn;
-    yaksu_pool_free_fn free_fn;
+    yaksu_malloc_fn malloc_fn;
+    yaksu_free_fn free_fn;
 
     pthread_mutex_t mutex;
 
@@ -34,8 +34,7 @@ typedef struct pool_head {
 static pthread_mutex_t global_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int yaksu_pool_alloc(uintptr_t elemsize, uintptr_t elems_in_chunk, uintptr_t maxelems,
-                     yaksu_pool_malloc_fn malloc_fn, yaksu_pool_free_fn free_fn,
-                     yaksu_pool_s * pool)
+                     yaksu_malloc_fn malloc_fn, yaksu_free_fn free_fn, yaksu_pool_s * pool)
 {
     int rc = YAKSA_SUCCESS;
     pool_head_s *pool_head;
