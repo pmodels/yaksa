@@ -49,6 +49,8 @@ int main(int argc, char **argv)
             --argc;
             ++argv;
             iters = atoi(*argv);
+        } else if (!strcmp(*argv, "-verbose")) {
+            verbose = 1;
         } else {
             fprintf(stderr, "unknown argument %s\n", *argv);
             exit(1);
@@ -60,6 +62,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "   -count       number of base datatypes in the signature\n");
         fprintf(stderr, "   -seed        random seed (changes the datatypes generated)\n");
         fprintf(stderr, "   -iters       number of iterations\n");
+        fprintf(stderr, "   -verbose     verbose output\n");
         exit(1);
     }
 

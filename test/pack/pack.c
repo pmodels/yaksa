@@ -215,6 +215,8 @@ int main(int argc, char **argv)
                 fprintf(stderr, "unknown buffer type %s\n", *argv);
                 exit(1);
             }
+        } else if (!strcmp(*argv, "-verbose")) {
+            verbose = 1;
         } else {
             fprintf(stderr, "unknown argument %s\n", *argv);
             exit(1);
@@ -233,6 +235,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "   -sbuf-memtype memory type (unreg-host, reg-host, device)\n");
         fprintf(stderr, "   -dbuf-memtype memory type (unreg-host, reg-host, device)\n");
         fprintf(stderr, "   -tbuf-memtype memory type (unreg-host, reg-host, device)\n");
+        fprintf(stderr, "   -verbose     verbose output\n");
         exit(1);
     }
 
