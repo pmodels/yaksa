@@ -3,5 +3,5 @@
 ##     See COPYRIGHT in top-level directory
 ##
 
-pack_testlists += test/pack/testlist.cuda.gen
-EXTRA_DIST += test/pack/testlist.cuda.gen
+pack_testlists += $(top_srcdir)/test/pack/testlist.cuda.gen
+EXTRA_DIST += $(top_srcdir)/test/pack/testlist.cuda.gen

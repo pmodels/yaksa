@@ -3,8 +3,8 @@
 ##     See COPYRIGHT in top-level directory
 ##
 
-testlists += test/flatten/testlist.gen
-EXTRA_DIST += test/flatten/testlist.gen
+testlists += $(top_srcdir)/test/flatten/testlist.gen
+EXTRA_DIST += $(top_srcdir)/test/flatten/testlist.gen
 
 EXTRA_PROGRAMS += \
 	test/flatten/flatten
