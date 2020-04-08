@@ -10,7 +10,6 @@
 #include <cuda_runtime_api.h>
 
 #define YAKSURI_CUDAI_THREAD_BLOCK_SIZE  (256)
-#define YAKSURI_CUDAI_PUP_BUF_SIZE   (64 * 1024)
 
 /* *INDENT-OFF* */
 #ifdef __cplusplus
@@ -35,7 +34,6 @@ extern "C" {
     } while (0)
 
 typedef struct {
-    yaksu_pool_s pup_buf_pool;
     cudaStream_t stream;
 } yaksuri_cudai_global_s;
 extern yaksuri_cudai_global_s yaksuri_cudai_global;

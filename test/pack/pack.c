@@ -51,6 +51,68 @@ static void swap_segments(uintptr_t * starts, uintptr_t * lengths, int x, int y)
     lengths[y] = tmp;
 }
 
+typedef enum {
+    MEM_TYPE__UNSET,
+    MEM_TYPE__UNREGISTERED_HOST,
+    MEM_TYPE__REGISTERED_HOST,
+    MEM_TYPE__DEVICE,
+} mem_type_e;
+
+static void alloc_mem(size_t size, mem_type_e type, void **hostbuf, void **devicebuf)
+{
+    if (type == MEM_TYPE__UNREGISTERED_HOST) {
+        *devicebuf = malloc(size);
+        if (hostbuf)
+            *hostbuf = *devicebuf;
+#ifdef HAVE_CUDA
+    } else {
+        if (type == MEM_TYPE__REGISTERED_HOST) {
+            cudaMallocHost(devicebuf, size);
+            if (hostbuf)
+                *hostbuf = *devicebuf;
+        } else if (type == MEM_TYPE__DEVICE) {
+            cudaMalloc(devicebuf, size);
+            if (hostbuf)
+                cudaMallocHost(hostbuf, size);
+        }
+#endif
+    }
+}
+
+static void free_mem(mem_type_e type, void *hostbuf, void *devicebuf)
+{
+    if (type == MEM_TYPE__UNREGISTERED_HOST) {
+        free(hostbuf);
+#ifdef HAVE_CUDA
+    } else if (type == MEM_TYPE__REGISTERED_HOST) {
+        cudaFreeHost(devicebuf);
+    } else if (type == MEM_TYPE__DEVICE) {
+        cudaFree(devicebuf);
+        if (hostbuf) {
+            cudaFreeHost(hostbuf);
+        }
+#endif
+    }
+}
+
+static void copy_content_to_device(size_t size, mem_type_e type, void *devicebuf, void *hostbuf)
+{
+#ifdef HAVE_CUDA
+    if (type == MEM_TYPE__DEVICE) {
+        cudaMemcpy(devicebuf, hostbuf, size, cudaMemcpyHostToDevice);
+    }
+#endif
+}
+
+static void copy_content_to_host(size_t size, mem_type_e type, void *devicebuf, void *hostbuf)
+{
+#ifdef HAVE_CUDA
+    if (type == MEM_TYPE__DEVICE) {
+        cudaMemcpy(hostbuf, devicebuf, size, cudaMemcpyDeviceToHost);
+    }
+#endif
+}
+
 int main(int argc, char **argv)
 {
     DTP_pool_s dtp;
@@ -63,6 +125,9 @@ int main(int argc, char **argv)
     int segments = -1;
     int pack_order = PACK_ORDER__UNSET;
     int overlap = -1;
+    mem_type_e sbuf_memtype = MEM_TYPE__UNREGISTERED_HOST;
+    mem_type_e dbuf_memtype = MEM_TYPE__UNREGISTERED_HOST;
+    mem_type_e tbuf_memtype = MEM_TYPE__UNREGISTERED_HOST;
 
     while (--argc && ++argv) {
         if (!strcmp(*argv, "-datatype")) {
@@ -111,6 +176,45 @@ int main(int argc, char **argv)
                 fprintf(stderr, "unknown overlap type %s\n", *argv);
                 exit(1);
             }
+        } else if (!strcmp(*argv, "-sbuf-memtype")) {
+            --argc;
+            ++argv;
+            if (!strcmp(*argv, "unreg-host"))
+                sbuf_memtype = MEM_TYPE__UNREGISTERED_HOST;
+            else if (!strcmp(*argv, "reg-host"))
+                sbuf_memtype = MEM_TYPE__REGISTERED_HOST;
+            else if (!strcmp(*argv, "device"))
+                sbuf_memtype = MEM_TYPE__DEVICE;
+            else {
+                fprintf(stderr, "unknown buffer type %s\n", *argv);
+                exit(1);
+            }
+        } else if (!strcmp(*argv, "-dbuf-memtype")) {
+            --argc;
+            ++argv;
+            if (!strcmp(*argv, "unreg-host"))
+                dbuf_memtype = MEM_TYPE__UNREGISTERED_HOST;
+            else if (!strcmp(*argv, "reg-host"))
+                dbuf_memtype = MEM_TYPE__REGISTERED_HOST;
+            else if (!strcmp(*argv, "device"))
+                dbuf_memtype = MEM_TYPE__DEVICE;
+            else {
+                fprintf(stderr, "unknown buffer type %s\n", *argv);
+                exit(1);
+            }
+        } else if (!strcmp(*argv, "-tbuf-memtype")) {
+            --argc;
+            ++argv;
+            if (!strcmp(*argv, "unreg-host"))
+                tbuf_memtype = MEM_TYPE__UNREGISTERED_HOST;
+            else if (!strcmp(*argv, "reg-host"))
+                tbuf_memtype = MEM_TYPE__REGISTERED_HOST;
+            else if (!strcmp(*argv, "device"))
+                tbuf_memtype = MEM_TYPE__DEVICE;
+            else {
+                fprintf(stderr, "unknown buffer type %s\n", *argv);
+                exit(1);
+            }
         } else {
             fprintf(stderr, "unknown argument %s\n", *argv);
             exit(1);
@@ -126,6 +230,9 @@ int main(int argc, char **argv)
         fprintf(stderr, "   -segments    number of segments to chop the packing into\n");
         fprintf(stderr, "   -ordering  packing order of segments (normal, reverse, random)\n");
         fprintf(stderr, "   -overlap     should packing overlap (none, regular, irregular)\n");
+        fprintf(stderr, "   -sbuf-memtype memory type (unreg-host, reg-host, device)\n");
+        fprintf(stderr, "   -dbuf-memtype memory type (unreg-host, reg-host, device)\n");
+        fprintf(stderr, "   -tbuf-memtype memory type (unreg-host, reg-host, device)\n");
         exit(1);
     }
 
@@ -146,17 +253,19 @@ int main(int argc, char **argv)
         rc = DTP_obj_create(dtp, &sobj, maxbufsize);
         assert(rc == DTP_SUCCESS);
 
-        char *sbuf;
-        sbuf = (char *) malloc(sobj.DTP_bufsize);
-        assert(sbuf);
+        char *sbuf_h, *sbuf_d;
+        alloc_mem(sobj.DTP_bufsize, sbuf_memtype, (void **) &sbuf_h, (void **) &sbuf_d);
+        assert(sbuf_h);
+        assert(sbuf_d);
 
         if (verbose) {
             rc = DTP_obj_get_description(sobj, &desc);
             assert(rc == DTP_SUCCESS);
-            dprintf("==> sbuf %p, sobj (count: %zu):\n%s\n", sbuf, sobj.DTP_type_count, desc);
+            dprintf("==> sbuf_h %p, sbuf_d %p, sobj (count: %zu):\n%s\n", sbuf_h, sbuf_d,
+                    sobj.DTP_type_count, desc);
         }
 
-        rc = DTP_obj_buf_init(sobj, sbuf, 0, 1, basecount);
+        rc = DTP_obj_buf_init(sobj, sbuf_h, 0, 1, basecount);
         assert(rc == DTP_SUCCESS);
 
         uintptr_t ssize;
@@ -168,17 +277,19 @@ int main(int argc, char **argv)
         rc = DTP_obj_create(dtp, &dobj, maxbufsize);
         assert(rc == DTP_SUCCESS);
 
-        char *dbuf;
-        dbuf = (char *) malloc(dobj.DTP_bufsize);
-        assert(dbuf);
+        char *dbuf_h, *dbuf_d;
+        alloc_mem(dobj.DTP_bufsize, dbuf_memtype, (void **) &dbuf_h, (void **) &dbuf_d);
+        assert(dbuf_h);
+        assert(dbuf_d);
 
         if (verbose) {
             rc = DTP_obj_get_description(dobj, &desc);
             assert(rc == DTP_SUCCESS);
-            dprintf("==> dbuf %p, dobj (count: %zu):\n%s\n", dbuf, dobj.DTP_type_count, desc);
+            dprintf("==> dbuf_h %p, dbuf_d %p, dobj (count: %zu):\n%s\n", dbuf_h, dbuf_d,
+                    dobj.DTP_type_count, desc);
         }
 
-        rc = DTP_obj_buf_init(dobj, dbuf, -1, -1, basecount);
+        rc = DTP_obj_buf_init(dobj, dbuf_h, -1, -1, basecount);
         assert(rc == DTP_SUCCESS);
 
         uintptr_t dsize;
@@ -253,38 +364,18 @@ int main(int argc, char **argv)
         }
 
         /* the actual pack/unpack loop */
-        uintptr_t tbufsize = ssize * sobj.DTP_type_count;
-
-#ifdef CUDA_SBUF
-        char *sbuf_d, *orig_sbuf;
-        cudaMalloc((void **) &sbuf_d, sobj.DTP_bufsize);
-        assert(sbuf_d);
-        cudaMemcpy(sbuf_d, sbuf, sobj.DTP_bufsize, cudaMemcpyHostToDevice);
-        orig_sbuf = sbuf;
-        sbuf = sbuf_d;
-#endif
-
-#ifdef CUDA_DBUF
-        char *dbuf_d, *orig_dbuf;
-        cudaMalloc((void **) &dbuf_d, dobj.DTP_bufsize);
-        assert(dbuf_d);
-        cudaMemcpy(dbuf_d, dbuf, dobj.DTP_bufsize, cudaMemcpyHostToDevice);
-        orig_dbuf = dbuf;
-        dbuf = dbuf_d;
-#endif
+        copy_content_to_device(sobj.DTP_bufsize, sbuf_memtype, sbuf_d, sbuf_h);
+        copy_content_to_device(dobj.DTP_bufsize, dbuf_memtype, dbuf_d, dbuf_h);
 
         void *tbuf;
-#ifdef CUDA_TBUF
-        cudaMalloc((void **) &tbuf, tbufsize);
-#else
-        tbuf = malloc(tbufsize);
-#endif
+        uintptr_t tbufsize = ssize * sobj.DTP_type_count;
+        alloc_mem(tbufsize, tbuf_memtype, NULL, (void **) &tbuf);
 
         for (int j = 0; j < segments; j++) {
             uintptr_t actual_pack_bytes;
             yaksa_request_t request;
 
-            rc = yaksa_ipack(sbuf + sobj.DTP_buf_offset, sobj.DTP_type_count, sobj.DTP_datatype,
+            rc = yaksa_ipack(sbuf_d + sobj.DTP_buf_offset, sobj.DTP_type_count, sobj.DTP_datatype,
                              segment_starts[j], tbuf, segment_lengths[j], &actual_pack_bytes,
                              &request);
             assert(rc == YAKSA_SUCCESS);
@@ -295,7 +386,7 @@ int main(int argc, char **argv)
                 assert(rc == YAKSA_SUCCESS);
             }
 
-            rc = yaksa_iunpack(tbuf, actual_pack_bytes, dbuf + dobj.DTP_buf_offset,
+            rc = yaksa_iunpack(tbuf, actual_pack_bytes, dbuf_d + dobj.DTP_buf_offset,
                                dobj.DTP_type_count, dobj.DTP_datatype, segment_starts[j], &request);
             assert(rc == YAKSA_SUCCESS);
 
@@ -305,31 +396,15 @@ int main(int argc, char **argv)
             }
         }
 
-#ifdef CUDA_DBUF
-        cudaMemcpy(orig_dbuf, dbuf, dobj.DTP_bufsize, cudaMemcpyDeviceToHost);
-        dbuf = orig_dbuf;
-#endif
-        rc = DTP_obj_buf_check(dobj, dbuf, 0, 1, basecount);
+        copy_content_to_host(dobj.DTP_bufsize, dbuf_memtype, dbuf_d, dbuf_h);
+        rc = DTP_obj_buf_check(dobj, dbuf_h, 0, 1, basecount);
         assert(rc == DTP_SUCCESS);
 
 
         /* free allocated buffers and objects */
-#ifdef CUDA_SBUF
-        cudaFree(sbuf_d);
-        sbuf = orig_sbuf;
-#endif
-        free(sbuf);
-
-#ifdef CUDA_DBUF
-        cudaFree(dbuf_d);
-#endif
-        free(dbuf);
-
-#ifdef CUDA_TBUF
-        cudaFree(tbuf);
-#else
-        free(tbuf);
-#endif
+        free_mem(sbuf_memtype, sbuf_h, sbuf_d);
+        free_mem(dbuf_memtype, dbuf_h, dbuf_d);
+        free_mem(tbuf_memtype, NULL, tbuf);
 
         DTP_obj_free(sobj);
         DTP_obj_free(dobj);

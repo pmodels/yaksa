@@ -5,7 +5,6 @@
 
 #include "yaksi.h"
 #include "yaksu.h"
-#include "yaksur.h"
 
 int yaksi_request_create(yaksi_request_s ** request)
 {

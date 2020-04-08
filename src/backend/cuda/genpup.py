@@ -127,6 +127,7 @@ for b in builtin_types:
     OUTFILE.write("#include <string.h>\n")
     OUTFILE.write("#include <stdint.h>\n")
     OUTFILE.write("#include <wchar.h>\n")
+    OUTFILE.write("#include <assert.h>\n")
     OUTFILE.write("#include \"yaksuri_cudai.h\"\n")
     OUTFILE.write("#include \"yaksuri_cudai_pup.h\"\n")
     OUTFILE.write("\n")
@@ -234,7 +235,7 @@ for b in builtin_types:
 
                     ##### generate the host function
                     OUTFILE.write("int yaksuri_cudai_%s" % funcprefix),
-                    OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, yaksi_request_s *request)\n")
+                    OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, void *device_tmpbuf, yaksuri_cuda_event_t event)\n")
                     OUTFILE.write("{\n")
 
 
@@ -244,15 +245,49 @@ for b in builtin_types:
                     # generic variables
                     display("int rc = YAKSA_SUCCESS;\n");
                     display("cudaError_t cerr;\n");
-                    display("yaksuri_cuda_request_s *cuda_request = (yaksuri_cuda_request_s *) &request->backend_priv.cuda_priv;\n")
+                    display("struct cudaPointerAttributes outbuf_attr, inbuf_attr;\n")
+                    display("enum host_dev { HOST, DEVICE };\n")
+                    OUTFILE.write("\n");
+                    if (func == "pack"):
+                        display("cerr = cudaPointerGetAttributes(&outbuf_attr, outbuf);\n")
+                        display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
+                        display("cerr = cudaPointerGetAttributes(&inbuf_attr, (char *) inbuf + type->true_lb);\n")
+                        display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
+                    else:
+                        display("cerr = cudaPointerGetAttributes(&outbuf_attr, (char *) outbuf + type->true_lb);\n")
+                        display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
+                        display("cerr = cudaPointerGetAttributes(&inbuf_attr, inbuf);\n")
+                        display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
                     OUTFILE.write("\n");
 
                     # shortcut for builtin datatypes
                     if (len(darray) == 0):
-                        display("cerr = cudaMemcpyAsync(outbuf, inbuf, count * sizeof(%s), cudaMemcpyDeviceToDevice, yaksuri_cudai_global.stream);\n" % b)
-                        display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
+                        display("enum host_dev inbuf_type;\n")
+                        display("if (inbuf_attr.type == cudaMemoryTypeDevice || inbuf_attr.type == cudaMemoryTypeManaged)\n")
+                        display("    inbuf_type = DEVICE;\n")
+                        display("else\n")
+                        display("    inbuf_type = HOST;\n")
+                        OUTFILE.write("\n");
+                        display("enum host_dev outbuf_type;\n")
+                        display("if (outbuf_attr.type == cudaMemoryTypeDevice || outbuf_attr.type == cudaMemoryTypeManaged)\n")
+                        display("    outbuf_type = DEVICE;\n")
+                        display("else\n")
+                        display("    outbuf_type = HOST;\n")
+                        OUTFILE.write("\n");
+
+                        display("if (inbuf_type == DEVICE && outbuf_type == DEVICE) {\n")
+                        display("    cerr = cudaMemcpyAsync(outbuf, inbuf, count * type->size, cudaMemcpyDeviceToDevice, yaksuri_cudai_global.stream);\n")
+                        display("    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
+                        display("} else if (inbuf_type == DEVICE && outbuf_type == HOST) {\n")
+                        display("    cerr = cudaMemcpyAsync(outbuf, inbuf, count * type->size, cudaMemcpyDeviceToHost, yaksuri_cudai_global.stream);\n")
+                        display("    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
+                        display("} else if (inbuf_type == HOST && outbuf_type == DEVICE) {\n")
+                        display("    cerr = cudaMemcpyAsync(outbuf, inbuf, count * type->size, cudaMemcpyHostToDevice, yaksuri_cudai_global.stream);\n")
+                        display("    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
+                        display("}\n")
                     else:
                         display("rc = yaksuri_cudai_md_alloc(type);\n")
+                        display("assert(rc == YAKSA_SUCCESS);\n");
                         display("/* nvcc does not seem to like gotos */\n")
                         display("/* YAKSU_ERR_CHECK(rc, fn_fail); */\n")
                         OUTFILE.write("\n");
@@ -263,16 +298,50 @@ for b in builtin_types:
                         display("int n_blocks = count * cuda_type->num_elements / YAKSURI_CUDAI_THREAD_BLOCK_SIZE;\n")
                         display("n_blocks += !!(count * cuda_type->num_elements % YAKSURI_CUDAI_THREAD_BLOCK_SIZE);\n")
                         OUTFILE.write("\n");
+
                         display("void *args[4] = { &inbuf, &outbuf, &count, &cuda_type->md };\n")
+                        OUTFILE.write("\n");
+
+                        if (func == "unpack"):
+                            display("enum host_dev inbuf_type;\n")
+                            display("if (inbuf_attr.type == cudaMemoryTypeDevice || inbuf_attr.type == cudaMemoryTypeManaged)\n")
+                            display("    inbuf_type = DEVICE;\n")
+                            display("else\n")
+                            display("    inbuf_type = HOST;\n")
+                            OUTFILE.write("\n");
+
+                            display("if (inbuf_type == HOST) {\n")
+                            display("    cerr = cudaMemcpyAsync(device_tmpbuf, inbuf, count * type->size, cudaMemcpyHostToDevice, yaksuri_cudai_global.stream);\n")
+                            display("    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
+                            display("    args[0] = &device_tmpbuf;\n")
+                            display("}\n")
+                            OUTFILE.write("\n");
+                        else:
+                            display("enum host_dev outbuf_type;\n")
+                            display("if (outbuf_attr.type == cudaMemoryTypeDevice || outbuf_attr.type == cudaMemoryTypeManaged)\n")
+                            display("    outbuf_type = DEVICE;\n")
+                            display("else\n")
+                            display("    outbuf_type = HOST;\n")
+                            OUTFILE.write("\n");
+                            display("if (outbuf_type == HOST) {\n")
+                            display("    args[1] = &device_tmpbuf;\n")
+                            display("}\n")
+                            OUTFILE.write("\n");
+
                         display("cerr = cudaLaunchKernel((const void *) yaksuri_cudai_kernel_%s,\n" % funcprefix)
                         display("                        n_blocks, n_threads, args, 0, yaksuri_cudai_global.stream);\n")
                         display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
 
+                        if (func == "pack"):
+                            OUTFILE.write("\n");
+                            display("if (outbuf_type == HOST) {\n")
+                            display("    cerr = cudaMemcpyAsync(outbuf, device_tmpbuf, count * type->size, cudaMemcpyDeviceToHost, yaksuri_cudai_global.stream);\n")
+                            display("    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
+                            display("}\n")
+
                     OUTFILE.write("\n");
-                    display("cerr = cudaEventRecord(cuda_request->event, yaksuri_cudai_global.stream);\n")
+                    display("cerr = cudaEventRecord(event, yaksuri_cudai_global.stream);\n")
                     display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
-                    OUTFILE.write("\n");
-                    display("yaksu_atomic_incr(&request->cc);\n")
 
                     OUTFILE.write("\n");
                     indentation -= 1
@@ -470,7 +539,7 @@ for b in builtin_types:
                         s = s + "%s_" % d3
                     s = s + b.replace(" ", "_")
                     OUTFILE.write("%s" % s),
-                    OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, yaksi_request_s *request);\n")
+                    OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, void *device_tmpbuf, yaksuri_cuda_event_t event);\n")
 
 ## end of basic-type specific file
 OUTFILE.write("\n")

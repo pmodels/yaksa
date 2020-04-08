@@ -41,7 +41,7 @@ def gen_simple_tests(testlist):
     sys.stdout.write("done\n")
 
 ##### pack/iov tests generator
-def gen_pack_iov_tests(fn, testlist, create):
+def gen_pack_iov_tests(fn, testlist, create, extra_args):
     global seed
 
     segments = [ 1, 64 ]
@@ -59,7 +59,10 @@ def gen_pack_iov_tests(fn, testlist, create):
         sys.stderr.write("error creating testlist %s\n" % testlist)
         sys.exit()
 
-    sys.stdout.write("generating %s tests ... " % fn)
+    if (extra_args == ""):
+        sys.stdout.write("generating %s tests ... " % fn)
+    else:
+        sys.stdout.write("generating %s (%s) tests ... " % (fn, extra_args))
     for overlap in overlaps:
         for ordering in orderings:
             if (overlap != "none" and ordering != "normal"):
@@ -88,6 +91,8 @@ def gen_pack_iov_tests(fn, testlist, create):
                         outstr += "-segments %d " % segment
                         outstr += "-ordering %s " % ordering
                         outstr += "-overlap %s" % overlap
+                        if (extra_args != ""):
+                            outstr += extra_args
                         outfile.write(outstr + "\n")
                 outfile.write("\n")
     outfile.close()
@@ -131,11 +136,19 @@ def gen_flatten_tests(testlist):
 if __name__ == '__main__':
     gen_simple_tests("test/simple/testlist.gen")
 
-    gen_pack_iov_tests("pack", "test/pack/testlist.gen", "create")
+    gen_pack_iov_tests("pack", "test/pack/testlist.gen", "create", \
+                       " -sbuf-memtype unreg-host -tbuf-memtype unreg-host -dbuf-memtype unreg-host")
     create_testlist("test/pack/testlist.cuda.gen")
-    # gen_pack_iov_tests("pack_cuda_sbuf_tbuf", "test/pack/testlist.cuda.gen", "append")
-    # gen_pack_iov_tests("pack_cuda_dbuf_tbuf", "test/pack/testlist.cuda.gen", "append")
-    gen_pack_iov_tests("pack_cuda_sbuf_dbuf_tbuf", "test/pack/testlist.cuda.gen", "append")
-    gen_pack_iov_tests("iov", "test/iov/testlist.gen", "create")
+    gen_pack_iov_tests("pack", "test/pack/testlist.cuda.gen", "append", \
+                       " -sbuf-memtype device -tbuf-memtype device -dbuf-memtype device")
+    gen_pack_iov_tests("pack", "test/pack/testlist.cuda.gen", "append", \
+                       " -sbuf-memtype device -tbuf-memtype reg-host -dbuf-memtype device")
+    gen_pack_iov_tests("pack", "test/pack/testlist.cuda.gen", "append", \
+                       " -sbuf-memtype device -tbuf-memtype unreg-host -dbuf-memtype device")
+    gen_pack_iov_tests("pack", "test/pack/testlist.cuda.gen", "append", \
+                       " -sbuf-memtype reg-host -tbuf-memtype device -dbuf-memtype reg-host")
+    gen_pack_iov_tests("pack", "test/pack/testlist.cuda.gen", "append", \
+                       " -sbuf-memtype unreg-host -tbuf-memtype device -dbuf-memtype unreg-host")
 
+    gen_pack_iov_tests("iov", "test/iov/testlist.gen", "create", "")
     gen_flatten_tests("test/flatten/testlist.gen")

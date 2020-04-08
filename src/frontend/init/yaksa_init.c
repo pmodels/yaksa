@@ -153,6 +153,13 @@ int yaksa_init(void)
 
     INIT_BUILTIN(uint8_t, BYTE, rc, fn_fail);
 
+
+    /* initialize the backend */
+    rc = yaksur_init_hook();
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+
+    /* done */
     yaksi_global.is_initialized = 1;
 
   fn_exit:
@@ -164,6 +171,11 @@ int yaksa_init(void)
 int yaksa_finalize(void)
 {
     int rc = YAKSA_SUCCESS;
+
+    /* finalize the backend */
+    rc = yaksur_finalize_hook();
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
 
     /* free the builtin datatypes */
     for (int i = 0; i < YAKSI_TYPE__LAST; i++) {
