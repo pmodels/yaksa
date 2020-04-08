@@ -46,8 +46,8 @@ static uintptr_t get_num_elements(yaksi_type_s * type)
     }
 }
 
-int yaksuri_cuda_type_create_hook(yaksi_type_s * type, yaksur_gpudev_pup_fn * pack,
-                                  yaksur_gpudev_pup_fn * unpack)
+int yaksuri_cudai_type_create_hook(yaksi_type_s * type, yaksur_gpudev_pup_fn * pack,
+                                   yaksur_gpudev_pup_fn * unpack)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -67,7 +67,7 @@ int yaksuri_cuda_type_create_hook(yaksi_type_s * type, yaksur_gpudev_pup_fn * pa
     goto fn_exit;
 }
 
-int yaksuri_cuda_type_free_hook(yaksi_type_s * type)
+int yaksuri_cudai_type_free_hook(yaksi_type_s * type)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_cudai_type_s *cuda = (yaksuri_cudai_type_s *) type->backend.cuda.priv;

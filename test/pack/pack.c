@@ -65,17 +65,18 @@ static void alloc_mem(size_t size, mem_type_e type, void **hostbuf, void **devic
         if (hostbuf)
             *hostbuf = *devicebuf;
 #ifdef HAVE_CUDA
-    } else {
-        if (type == MEM_TYPE__REGISTERED_HOST) {
-            cudaMallocHost(devicebuf, size);
-            if (hostbuf)
-                *hostbuf = *devicebuf;
-        } else if (type == MEM_TYPE__DEVICE) {
-            cudaMalloc(devicebuf, size);
-            if (hostbuf)
-                cudaMallocHost(hostbuf, size);
-        }
+    } else if (type == MEM_TYPE__REGISTERED_HOST) {
+        cudaMallocHost(devicebuf, size);
+        if (hostbuf)
+            *hostbuf = *devicebuf;
+    } else if (type == MEM_TYPE__DEVICE) {
+        cudaMalloc(devicebuf, size);
+        if (hostbuf)
+            cudaMallocHost(hostbuf, size);
 #endif
+    } else {
+        fprintf(stderr, "ERROR: unsupported memory type\n");
+        exit(1);
     }
 }
 
@@ -256,7 +257,7 @@ int main(int argc, char **argv)
         rc = DTP_obj_create(dtp, &sobj, maxbufsize);
         assert(rc == DTP_SUCCESS);
 
-        char *sbuf_h, *sbuf_d;
+        char *sbuf_h = NULL, *sbuf_d = NULL;
         alloc_mem(sobj.DTP_bufsize, sbuf_memtype, (void **) &sbuf_h, (void **) &sbuf_d);
         assert(sbuf_h);
         assert(sbuf_d);

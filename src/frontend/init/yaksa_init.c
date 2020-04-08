@@ -94,23 +94,15 @@ int yaksa_init(void)
         assert(type->id == i);
     }
 
-
     /* initialize the request pool */
     rc = yaksu_pool_alloc(sizeof(yaksi_request_s), CHUNK_SIZE, UINTPTR_MAX, malloc, free,
                           &yaksi_global.request_pool);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    /* these are the first set of allocations for our builtin
-     * requests, so the indices should match that of the request
-     * themselves */
-    for (int i = 0; i < YAKSI_REQUEST__LAST; i++) {
-        struct yaksi_request_s *request;
 
-        rc = yaksi_request_create(&request);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-
-        assert(request->id == i);
-    }
+    /* initialize the backend */
+    rc = yaksur_init_hook();
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
 
     /* setup builtin datatypes */
@@ -152,11 +144,6 @@ int yaksa_init(void)
     INIT_BUILTIN_PAIRTYPE(long double, int, yaksi_long_double_int_s, LONG_DOUBLE_INT, rc, fn_fail);
 
     INIT_BUILTIN(uint8_t, BYTE, rc, fn_fail);
-
-
-    /* initialize the backend */
-    rc = yaksur_init_hook();
-    YAKSU_ERR_CHECK(rc, fn_fail);
 
 
     /* done */
