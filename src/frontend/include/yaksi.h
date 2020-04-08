@@ -109,7 +109,7 @@ typedef struct yaksi_type_s {
     } u;
 
     /* give some private space for the backend to store content */
-    yaksur_type_s backend_priv;
+    yaksur_type_s backend;
 } yaksi_type_s;
 
 typedef struct yaksi_request_s {
@@ -118,7 +118,7 @@ typedef struct yaksi_request_s {
     yaksu_atomic_int cc;        /* completion counter */
 
     /* give some private space for the backend to store content */
-    yaksur_request_s backend_priv;
+    yaksur_request_s backend;
 } yaksi_request_s;
 
 

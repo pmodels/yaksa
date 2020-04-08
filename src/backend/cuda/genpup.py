@@ -235,7 +235,7 @@ for b in builtin_types:
 
                     ##### generate the host function
                     OUTFILE.write("int yaksuri_cudai_%s" % funcprefix),
-                    OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, void *device_tmpbuf, yaksuri_cuda_event_t event)\n")
+                    OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, void *device_tmpbuf, void *event)\n")
                     OUTFILE.write("{\n")
 
 
@@ -291,7 +291,7 @@ for b in builtin_types:
                         display("/* nvcc does not seem to like gotos */\n")
                         display("/* YAKSU_ERR_CHECK(rc, fn_fail); */\n")
                         OUTFILE.write("\n");
-                        display("yaksuri_cuda_type_s *cuda_type = (yaksuri_cuda_type_s *) &type->backend_priv.cuda_priv;\n")
+                        display("yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;\n")
                         OUTFILE.write("\n");
 
                         display("int n_threads = YAKSURI_CUDAI_THREAD_BLOCK_SIZE;\n")
@@ -340,7 +340,7 @@ for b in builtin_types:
                             display("}\n")
 
                     OUTFILE.write("\n");
-                    display("cerr = cudaEventRecord(event, yaksuri_cudai_global.stream);\n")
+                    display("cerr = cudaEventRecord((cudaEvent_t) event, yaksuri_cudai_global.stream);\n")
                     display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
 
                     OUTFILE.write("\n");
@@ -395,8 +395,8 @@ def switcher_builtin_element(typelist, pupstr, key, val):
         nesting_level = len(typelist) + 1
 
     display("if (max_nesting_level >= %d) {\n" % nesting_level)
-    display("    type->backend_priv.cuda.pack = yaksuri_cudai_%s_%s;\n" % (pupstr, val))
-    display("    type->backend_priv.cuda.unpack = yaksuri_cudai_un%s_%s;\n" % (pupstr, val))
+    display("    *pack = yaksuri_cudai_%s_%s;\n" % (pupstr, val))
+    display("    *unpack = yaksuri_cudai_un%s_%s;\n" % (pupstr, val))
     display("}\n")
 
     if (t != ""):
@@ -466,12 +466,12 @@ OUTFILE.write("\
 #include \"yaksuri_cudai.h\"\n\
 #include \"yaksuri_cudai_pup.h\"\n\
 \n\
-int yaksuri_cudai_populate_pupfns(yaksi_type_s * type)\n\
+int yaksuri_cudai_populate_pupfns(yaksi_type_s * type, yaksur_gpudev_pup_fn *pack, yaksur_gpudev_pup_fn *unpack)\n\
 {\n\
     int rc = YAKSA_SUCCESS;\n\
 \n\
-    type->backend_priv.cuda.pack = NULL;\n\
-    type->backend_priv.cuda.unpack = NULL;\n\
+    *pack = NULL;\n\
+    *unpack = NULL;\n\
 \n\
     char *str = getenv(\"YAKSA_ENV_MAX_NESTING_LEVEL\");\n\
     int max_nesting_level;\n\
@@ -539,7 +539,7 @@ for b in builtin_types:
                         s = s + "%s_" % d3
                     s = s + b.replace(" ", "_")
                     OUTFILE.write("%s" % s),
-                    OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, void *device_tmpbuf, yaksuri_cuda_event_t event);\n")
+                    OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, void *device_tmpbuf, void *event);\n")
 
 ## end of basic-type specific file
 OUTFILE.write("\n")

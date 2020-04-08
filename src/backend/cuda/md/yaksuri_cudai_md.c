@@ -13,13 +13,15 @@
 
 static yaksuri_cudai_md_s *type_to_md(yaksi_type_s * type)
 {
-    return type->backend_priv.cuda_priv.md;
+    yaksuri_cudai_type_s *cuda = type->backend.cuda.priv;
+
+    return cuda->md;
 }
 
 int yaksuri_cudai_md_alloc(yaksi_type_s * type)
 {
     int rc = YAKSA_SUCCESS;
-    yaksuri_cuda_type_s *cuda = (yaksuri_cuda_type_s *) & type->backend_priv.cuda_priv;
+    yaksuri_cudai_type_s *cuda = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
     cudaError_t cerr;
 
     pthread_mutex_lock(&cuda->mdmutex);

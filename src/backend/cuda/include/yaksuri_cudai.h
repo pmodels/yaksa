@@ -7,6 +7,8 @@
 #define YAKSURI_CUDAI_H_INCLUDED
 
 #include "yaksi.h"
+#include <stdint.h>
+#include <pthread.h>
 #include <cuda_runtime_api.h>
 
 #define YAKSURI_CUDAI_THREAD_BLOCK_SIZE  (256)
@@ -75,9 +77,15 @@ typedef struct yaksuri_cudai_md_s {
     uintptr_t num_elements;
 } yaksuri_cudai_md_s;
 
+typedef struct yaksuri_cudai_type_s {
+    yaksuri_cudai_md_s *md;
+    pthread_mutex_t mdmutex;
+    uintptr_t num_elements;
+} yaksuri_cudai_type_s;
 
 int yaksuri_cudai_md_alloc(yaksi_type_s * type);
-int yaksuri_cudai_populate_pupfns(yaksi_type_s * type);
+int yaksuri_cudai_populate_pupfns(yaksi_type_s * type, yaksur_gpudev_pup_fn * pack,
+                                  yaksur_gpudev_pup_fn * unpack);
 
 /* *INDENT-OFF* */
 #ifdef __cplusplus

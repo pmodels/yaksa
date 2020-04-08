@@ -27,11 +27,12 @@ int yaksuri_seq_finalize_hook(void)
     goto fn_exit;
 }
 
-int yaksuri_seq_type_create_hook(yaksi_type_s * type)
+int yaksuri_seq_type_create_hook(yaksi_type_s * type, yaksur_seq_pup_fn * pack,
+                                 yaksur_seq_pup_fn * unpack)
 {
     int rc = YAKSA_SUCCESS;
 
-    rc = yaksuri_seqi_populate_pupfns(type);
+    rc = yaksuri_seqi_populate_pupfns(type, pack, unpack);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:

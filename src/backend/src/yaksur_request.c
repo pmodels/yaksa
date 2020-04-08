@@ -12,10 +12,11 @@
 int yaksur_request_test(yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
+    yaksuri_request_s *backend = (yaksuri_request_s *) request->backend.priv;
 
-    if (request->backend_priv.kind == YAKSUR_REQUEST_KIND__DEVICE_NATIVE) {
+    if (backend->kind == YAKSURI_REQUEST_KIND__DEVICE_NATIVE) {
         int completed;
-        rc = yaksuri_cuda_event_query(request->backend_priv.event, &completed);
+        rc = yaksuri_cuda_event_query(backend->event, &completed);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (completed) {
@@ -35,9 +36,10 @@ int yaksur_request_test(yaksi_request_s * request)
 int yaksur_request_wait(yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
+    yaksuri_request_s *backend = (yaksuri_request_s *) request->backend.priv;
 
-    if (request->backend_priv.kind == YAKSUR_REQUEST_KIND__DEVICE_NATIVE) {
-        rc = yaksuri_cuda_event_synchronize(request->backend_priv.event);
+    if (backend->kind == YAKSURI_REQUEST_KIND__DEVICE_NATIVE) {
+        rc = yaksuri_cuda_event_synchronize(backend->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         yaksu_atomic_decr(&request->cc);

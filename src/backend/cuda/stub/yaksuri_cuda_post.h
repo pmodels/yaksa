@@ -27,9 +27,13 @@ static int yaksuri_cuda_finalize_hook(void)
     return YAKSA_SUCCESS;
 }
 
-static int yaksuri_cuda_type_create_hook(yaksi_type_s * type) ATTRIBUTE((unused));
-static int yaksuri_cuda_type_create_hook(yaksi_type_s * type)
+static int yaksuri_cuda_type_create_hook(yaksi_type_s * type, yaksur_gpudev_pup_fn * pack,
+                                         yaksur_gpudev_pup_fn * unpack) ATTRIBUTE((unused));
+static int yaksuri_cuda_type_create_hook(yaksi_type_s * type, yaksur_gpudev_pup_fn * pack,
+                                         yaksur_gpudev_pup_fn * unpack)
 {
+    *pack = NULL;
+    *unpack = NULL;
     return YAKSA_SUCCESS;
 }
 
@@ -39,26 +43,26 @@ static int yaksuri_cuda_type_free_hook(yaksi_type_s * type)
     return YAKSA_SUCCESS;
 }
 
-static int yaksuri_cuda_event_create(yaksuri_cuda_event_t * event) ATTRIBUTE((unused));
-static int yaksuri_cuda_event_create(yaksuri_cuda_event_t * event)
+static int yaksuri_cuda_event_create(void **event) ATTRIBUTE((unused));
+static int yaksuri_cuda_event_create(void **event)
 {
     return YAKSA_SUCCESS;
 }
 
-static int yaksuri_cuda_event_destroy(yaksuri_cuda_event_t event) ATTRIBUTE((unused));
-static int yaksuri_cuda_event_destroy(yaksuri_cuda_event_t event)
+static int yaksuri_cuda_event_destroy(void *event) ATTRIBUTE((unused));
+static int yaksuri_cuda_event_destroy(void *event)
 {
     return YAKSA_SUCCESS;
 }
 
-static int yaksuri_cuda_event_query(yaksuri_cuda_event_t event, int *completed) ATTRIBUTE((unused));
-static int yaksuri_cuda_event_query(yaksuri_cuda_event_t event, int *completed)
+static int yaksuri_cuda_event_query(void *event, int *completed) ATTRIBUTE((unused));
+static int yaksuri_cuda_event_query(void *event, int *completed)
 {
     return YAKSA_SUCCESS;
 }
 
-static int yaksuri_cuda_event_synchronize(yaksuri_cuda_event_t event) ATTRIBUTE((unused));
-static int yaksuri_cuda_event_synchronize(yaksuri_cuda_event_t event)
+static int yaksuri_cuda_event_synchronize(void *event) ATTRIBUTE((unused));
+static int yaksuri_cuda_event_synchronize(void *event)
 {
     return YAKSA_SUCCESS;
 }
