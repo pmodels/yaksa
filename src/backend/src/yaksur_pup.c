@@ -3,24 +3,65 @@
  *     See COPYRIGHT in top-level directory
  */
 
+#include <assert.h>
 #include "yaksa.h"
 #include "yaksi.h"
 #include "yaksu.h"
 #include "yaksuri.h"
+
+static int get_memory_type(const void *buf, yaksur_memory_type_e * memtype,
+                           yaksuri_gpudev_id_e * id)
+{
+    int rc = YAKSA_SUCCESS;
+
+    /* Each GPU backend can claim "ownership" of the input buffer */
+    for (*id = YAKSURI_GPUDEV_ID__UNSET + 1; *id < YAKSURI_GPUDEV_ID__LAST; (*id)++) {
+        if (yaksuri_global.gpudev[*id].info) {
+            rc = yaksuri_global.gpudev[*id].info->get_memory_type(buf, memtype);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+
+            if (*memtype == YAKSUR_MEMORY_TYPE__DEVICE || YAKSUR_MEMORY_TYPE__REGISTERED_HOST)
+                break;
+        }
+    }
+
+    if (*id == YAKSURI_GPUDEV_ID__LAST) {
+        *id = YAKSURI_GPUDEV_ID__UNSET;
+        *memtype = YAKSUR_MEMORY_TYPE__UNREGISTERED_HOST;
+    }
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
 
 int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
                  yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
     yaksur_memory_type_e inbuf_memtype, outbuf_memtype;
+    yaksuri_gpudev_id_e inbuf_gpudev, outbuf_gpudev, id;
     yaksuri_type_s *type_backend = (yaksuri_type_s *) type->backend.priv;
     yaksuri_request_s *request_backend = (yaksuri_request_s *) request->backend.priv;
 
-    rc = yaksuri_cuda_get_memory_type((const char *) inbuf + type->true_lb, &inbuf_memtype);
+    rc = get_memory_type((const char *) inbuf + type->true_lb, &inbuf_memtype, &inbuf_gpudev);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    rc = yaksuri_cuda_get_memory_type(outbuf, &outbuf_memtype);
+    rc = get_memory_type(outbuf, &outbuf_memtype, &outbuf_gpudev);
     YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (inbuf_gpudev == YAKSURI_GPUDEV_ID__UNSET && outbuf_gpudev == YAKSURI_GPUDEV_ID__UNSET) {
+        id = YAKSURI_GPUDEV_ID__UNSET;
+    } else if (inbuf_gpudev != YAKSURI_GPUDEV_ID__UNSET &&
+               outbuf_gpudev != YAKSURI_GPUDEV_ID__UNSET) {
+        assert(inbuf_gpudev == outbuf_gpudev);
+        id = inbuf_gpudev;
+    } else if (inbuf_gpudev != YAKSURI_GPUDEV_ID__UNSET) {
+        id = inbuf_gpudev;
+    } else if (outbuf_gpudev != YAKSURI_GPUDEV_ID__UNSET) {
+        id = outbuf_gpudev;
+    }
 
     if (inbuf_memtype != YAKSUR_MEMORY_TYPE__DEVICE && outbuf_memtype != YAKSUR_MEMORY_TYPE__DEVICE) {
         if (type_backend->seq.pack) {
@@ -29,14 +70,22 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
         } else {
             rc = YAKSA_ERR__NOT_SUPPORTED;
         }
-    } else if (inbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE &&
-               outbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE) {
-        if (type_backend->cuda.pack) {
-            rc = type_backend->cuda.pack(inbuf, outbuf, count, type, NULL, request_backend->event);
+        goto fn_exit;
+    }
+
+    request_backend->gpudev_id = id;
+    assert(yaksuri_global.gpudev[id].info);
+    rc = yaksuri_global.gpudev[id].info->event_create(&request_backend->event);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (inbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE && outbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE) {
+        if (type_backend->gpudev[id].pack) {
+            rc = type_backend->gpudev[id].pack(inbuf, outbuf, count, type, NULL,
+                                               request_backend->event);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             int completed;
-            rc = yaksuri_cuda_event_query(request_backend->event, &completed);
+            rc = yaksuri_global.gpudev[id].info->event_query(request_backend->event, &completed);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             if (!completed) {
@@ -87,14 +136,27 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
 {
     int rc = YAKSA_SUCCESS;
     yaksur_memory_type_e inbuf_memtype, outbuf_memtype;
+    yaksuri_gpudev_id_e inbuf_gpudev, outbuf_gpudev, id;
     yaksuri_type_s *type_backend = (yaksuri_type_s *) type->backend.priv;
     yaksuri_request_s *request_backend = (yaksuri_request_s *) request->backend.priv;
 
-    rc = yaksuri_cuda_get_memory_type(inbuf, &inbuf_memtype);
+    rc = get_memory_type(inbuf, &inbuf_memtype, &inbuf_gpudev);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    rc = yaksuri_cuda_get_memory_type((char *) outbuf + type->true_lb, &outbuf_memtype);
+    rc = get_memory_type((char *) outbuf + type->true_lb, &outbuf_memtype, &outbuf_gpudev);
     YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (inbuf_gpudev == YAKSURI_GPUDEV_ID__UNSET && outbuf_gpudev == YAKSURI_GPUDEV_ID__UNSET) {
+        id = YAKSURI_GPUDEV_ID__UNSET;
+    } else if (inbuf_gpudev != YAKSURI_GPUDEV_ID__UNSET &&
+               outbuf_gpudev != YAKSURI_GPUDEV_ID__UNSET) {
+        assert(inbuf_gpudev == outbuf_gpudev);
+        id = inbuf_gpudev;
+    } else if (inbuf_gpudev != YAKSURI_GPUDEV_ID__UNSET) {
+        id = inbuf_gpudev;
+    } else if (outbuf_gpudev != YAKSURI_GPUDEV_ID__UNSET) {
+        id = outbuf_gpudev;
+    }
 
     if (inbuf_memtype != YAKSUR_MEMORY_TYPE__DEVICE && outbuf_memtype != YAKSUR_MEMORY_TYPE__DEVICE) {
         if (type_backend->seq.unpack) {
@@ -103,15 +165,22 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
         } else {
             rc = YAKSA_ERR__NOT_SUPPORTED;
         }
-    } else if (inbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE &&
-               outbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE) {
-        if (type_backend->cuda.unpack) {
-            rc = type_backend->cuda.unpack(inbuf, outbuf, count, type, NULL,
-                                           request_backend->event);
+        goto fn_exit;
+    }
+
+    request_backend->gpudev_id = id;
+    assert(yaksuri_global.gpudev[id].info);
+    rc = yaksuri_global.gpudev[id].info->event_create(&request_backend->event);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (inbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE && outbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE) {
+        if (type_backend->gpudev[id].unpack) {
+            rc = type_backend->gpudev[id].unpack(inbuf, outbuf, count, type, NULL,
+                                                 request_backend->event);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             int completed;
-            rc = yaksuri_cuda_event_query(request_backend->event, &completed);
+            rc = yaksuri_global.gpudev[id].info->event_query(request_backend->event, &completed);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             if (!completed) {

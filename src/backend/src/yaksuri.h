@@ -8,17 +8,21 @@
 
 #include "yaksi.h"
 
+typedef enum yaksuri_gpudev_id_e {
+    YAKSURI_GPUDEV_ID__UNSET = -1,
+    YAKSURI_GPUDEV_ID__CUDA = 0,
+    YAKSURI_GPUDEV_ID__LAST,
+} yaksuri_gpudev_id_e;
+
 typedef struct {
     struct {
         struct {
             void *slab;
             uintptr_t slab_head_offset;
             uintptr_t slab_tail_offset;
-
-            yaksu_malloc_fn malloc;
-            yaksu_free_fn free;
         } device, host;
-    } cuda;
+        yaksur_gpudev_info_s *info;
+    } gpudev[YAKSURI_GPUDEV_ID__LAST];
 } yaksuri_global_s;
 extern yaksuri_global_s yaksuri_global;
 
@@ -31,10 +35,11 @@ typedef struct yaksuri_type_s {
     struct {
         yaksur_gpudev_pup_fn pack;
         yaksur_gpudev_pup_fn unpack;
-    } cuda;
+    } gpudev[YAKSURI_GPUDEV_ID__LAST];
 } yaksuri_type_s;
 
 typedef struct {
+    yaksuri_gpudev_id_e gpudev_id;
     void *event;
 
     enum {

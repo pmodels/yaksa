@@ -82,12 +82,14 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                              yaksi_request_s * request, yaksuri_progress_elem_kind_e kind)
 {
     int rc = YAKSA_SUCCESS;
-    yaksuri_type_s *backend = (yaksuri_type_s *) type->backend.priv;
+    yaksuri_type_s *type_backend = (yaksuri_type_s *) type->backend.priv;
+    yaksuri_request_s *request_backend = (yaksuri_request_s *) request->backend.priv;
+    yaksuri_gpudev_id_e id = request_backend->gpudev_id;
 
     /* if we need to go through the progress engine, make sure we only
      * take on types, where at least one count of the type fits into
      * our temporary buffers. */
-    if (type->size > TMPBUF_SLAB_SIZE || backend->cuda.pack == NULL) {
+    if (type->size > TMPBUF_SLAB_SIZE || type_backend->gpudev[id].pack == NULL) {
         rc = YAKSA_ERR__NOT_SUPPORTED;
         goto fn_exit;
     }
@@ -124,7 +126,8 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
     goto fn_exit;
 }
 
-static int alloc_subop(progress_subop_s ** subop, bool need_host_buf, bool need_device_buf)
+static int alloc_subop(yaksuri_gpudev_id_e id, bool need_host_buf, bool need_device_buf,
+                       progress_subop_s ** subop)
 {
     int rc = YAKSA_SUCCESS;
     progress_elem_s *elem = progress_head;
@@ -138,27 +141,27 @@ static int alloc_subop(progress_subop_s ** subop, bool need_host_buf, bool need_
     /* figure out if we actually have enough buffer space */
     if (need_device_buf) {
         uintptr_t d_nelems;
-        if (yaksuri_global.cuda.device.slab_head_offset == 0 &&
-            yaksuri_global.cuda.device.slab_tail_offset == 0) {
+        if (yaksuri_global.gpudev[id].device.slab_head_offset == 0 &&
+            yaksuri_global.gpudev[id].device.slab_tail_offset == 0) {
             d_nelems = TMPBUF_SLAB_SIZE / elem->pup.type->size;
-            device_tmpbuf_offset = yaksuri_global.cuda.device.slab_tail_offset;
-        } else if (yaksuri_global.cuda.device.slab_tail_offset >
-                   yaksuri_global.cuda.device.slab_head_offset) {
+            device_tmpbuf_offset = yaksuri_global.gpudev[id].device.slab_tail_offset;
+        } else if (yaksuri_global.gpudev[id].device.slab_tail_offset >
+                   yaksuri_global.gpudev[id].device.slab_head_offset) {
             uintptr_t count =
                 (TMPBUF_SLAB_SIZE -
-                 yaksuri_global.cuda.device.slab_tail_offset) / elem->pup.type->size;
+                 yaksuri_global.gpudev[id].device.slab_tail_offset) / elem->pup.type->size;
             if (count) {
                 d_nelems = count;
-                device_tmpbuf_offset = yaksuri_global.cuda.device.slab_tail_offset;
+                device_tmpbuf_offset = yaksuri_global.gpudev[id].device.slab_tail_offset;
             } else {
-                d_nelems = yaksuri_global.cuda.device.slab_head_offset / elem->pup.type->size;
+                d_nelems = yaksuri_global.gpudev[id].device.slab_head_offset / elem->pup.type->size;
                 device_tmpbuf_offset = 0;
             }
         } else {
             d_nelems =
-                (yaksuri_global.cuda.device.slab_head_offset -
-                 yaksuri_global.cuda.device.slab_tail_offset) / elem->pup.type->size;
-            device_tmpbuf_offset = yaksuri_global.cuda.device.slab_tail_offset;
+                (yaksuri_global.gpudev[id].device.slab_head_offset -
+                 yaksuri_global.gpudev[id].device.slab_tail_offset) / elem->pup.type->size;
+            device_tmpbuf_offset = yaksuri_global.gpudev[id].device.slab_tail_offset;
         }
 
         if (nelems > d_nelems)
@@ -167,27 +170,27 @@ static int alloc_subop(progress_subop_s ** subop, bool need_host_buf, bool need_
 
     if (need_host_buf) {
         uintptr_t h_nelems;
-        if (yaksuri_global.cuda.host.slab_head_offset == 0 &&
-            yaksuri_global.cuda.host.slab_tail_offset == 0) {
+        if (yaksuri_global.gpudev[id].host.slab_head_offset == 0 &&
+            yaksuri_global.gpudev[id].host.slab_tail_offset == 0) {
             h_nelems = TMPBUF_SLAB_SIZE / elem->pup.type->size;
-            host_tmpbuf_offset = yaksuri_global.cuda.host.slab_tail_offset;
-        } else if (yaksuri_global.cuda.host.slab_tail_offset >
-                   yaksuri_global.cuda.host.slab_head_offset) {
+            host_tmpbuf_offset = yaksuri_global.gpudev[id].host.slab_tail_offset;
+        } else if (yaksuri_global.gpudev[id].host.slab_tail_offset >
+                   yaksuri_global.gpudev[id].host.slab_head_offset) {
             uintptr_t count =
                 (TMPBUF_SLAB_SIZE -
-                 yaksuri_global.cuda.host.slab_tail_offset) / elem->pup.type->size;
+                 yaksuri_global.gpudev[id].host.slab_tail_offset) / elem->pup.type->size;
             if (count) {
                 h_nelems = count;
-                host_tmpbuf_offset = yaksuri_global.cuda.host.slab_tail_offset;
+                host_tmpbuf_offset = yaksuri_global.gpudev[id].host.slab_tail_offset;
             } else {
-                h_nelems = yaksuri_global.cuda.host.slab_head_offset / elem->pup.type->size;
+                h_nelems = yaksuri_global.gpudev[id].host.slab_head_offset / elem->pup.type->size;
                 host_tmpbuf_offset = 0;
             }
         } else {
             h_nelems =
-                (yaksuri_global.cuda.host.slab_head_offset -
-                 yaksuri_global.cuda.host.slab_tail_offset) / elem->pup.type->size;
-            host_tmpbuf_offset = yaksuri_global.cuda.host.slab_tail_offset;
+                (yaksuri_global.gpudev[id].host.slab_head_offset -
+                 yaksuri_global.gpudev[id].host.slab_tail_offset) / elem->pup.type->size;
+            host_tmpbuf_offset = yaksuri_global.gpudev[id].host.slab_tail_offset;
         }
 
         if (nelems > h_nelems)
@@ -205,18 +208,20 @@ static int alloc_subop(progress_subop_s ** subop, bool need_host_buf, bool need_
 
     /* allocate the actual buffer space */
     if (need_device_buf) {
-        if (yaksuri_global.cuda.device.slab == NULL) {
-            yaksuri_global.cuda.device.slab = yaksuri_global.cuda.device.malloc(TMPBUF_SLAB_SIZE);
+        if (yaksuri_global.gpudev[id].device.slab == NULL) {
+            yaksuri_global.gpudev[id].device.slab =
+                yaksuri_global.gpudev[id].info->device_malloc(TMPBUF_SLAB_SIZE);
         }
-        yaksuri_global.cuda.device.slab_tail_offset =
+        yaksuri_global.gpudev[id].device.slab_tail_offset =
             device_tmpbuf_offset + nelems * elem->pup.type->size;
     }
 
     if (need_host_buf) {
-        if (yaksuri_global.cuda.host.slab == NULL) {
-            yaksuri_global.cuda.host.slab = yaksuri_global.cuda.host.malloc(TMPBUF_SLAB_SIZE);
+        if (yaksuri_global.gpudev[id].host.slab == NULL) {
+            yaksuri_global.gpudev[id].host.slab =
+                yaksuri_global.gpudev[id].info->host_malloc(TMPBUF_SLAB_SIZE);
         }
-        yaksuri_global.cuda.host.slab_tail_offset =
+        yaksuri_global.gpudev[id].host.slab_tail_offset =
             host_tmpbuf_offset + nelems * elem->pup.type->size;
     }
 
@@ -227,10 +232,11 @@ static int alloc_subop(progress_subop_s ** subop, bool need_host_buf, bool need_
     (*subop)->count_offset = elem->pup.completed_count + elem->pup.issued_count;
     (*subop)->count = nelems;
     (*subop)->device_tmpbuf =
-        (void *) ((char *) yaksuri_global.cuda.device.slab + device_tmpbuf_offset);
-    (*subop)->host_tmpbuf = (void *) ((char *) yaksuri_global.cuda.host.slab + host_tmpbuf_offset);
+        (void *) ((char *) yaksuri_global.gpudev[id].device.slab + device_tmpbuf_offset);
+    (*subop)->host_tmpbuf =
+        (void *) ((char *) yaksuri_global.gpudev[id].host.slab + host_tmpbuf_offset);
 
-    rc = yaksuri_cuda_event_create(&(*subop)->event);
+    rc = yaksuri_global.gpudev[id].info->event_create(&(*subop)->event);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     (*subop)->next = NULL;
@@ -252,46 +258,49 @@ static int free_subop(progress_subop_s * subop)
 {
     int rc = YAKSA_SUCCESS;
     progress_elem_s *elem = progress_head;
+    yaksuri_request_s *request_backend = (yaksuri_request_s *) elem->request->backend.priv;
+    yaksuri_gpudev_id_e id = request_backend->gpudev_id;
 
-    rc = yaksuri_cuda_event_destroy(subop->event);
+    rc = yaksuri_global.gpudev[id].info->event_destroy(subop->event);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     /* free the device buffer */
     if (subop->device_tmpbuf) {
         assert(subop->device_tmpbuf ==
-               (char *) yaksuri_global.cuda.device.slab +
-               yaksuri_global.cuda.device.slab_head_offset);
+               (char *) yaksuri_global.gpudev[id].device.slab +
+               yaksuri_global.gpudev[id].device.slab_head_offset);
         progress_subop_s *tmp;
         for (tmp = subop; tmp->next; tmp = tmp->next) {
             if (tmp->next->device_tmpbuf) {
-                yaksuri_global.cuda.device.slab_head_offset =
+                yaksuri_global.gpudev[id].device.slab_head_offset =
                     (uintptr_t) ((char *) tmp->next->device_tmpbuf -
-                                 (char *) yaksuri_global.cuda.device.slab);
+                                 (char *) yaksuri_global.gpudev[id].device.slab);
                 break;
             }
         }
         if (tmp->next == NULL) {
-            yaksuri_global.cuda.device.slab_head_offset =
-                yaksuri_global.cuda.device.slab_tail_offset = 0;
+            yaksuri_global.gpudev[id].device.slab_head_offset =
+                yaksuri_global.gpudev[id].device.slab_tail_offset = 0;
         }
     }
 
     /* free the host buffer */
     if (subop->host_tmpbuf) {
         assert(subop->host_tmpbuf ==
-               (char *) yaksuri_global.cuda.host.slab + yaksuri_global.cuda.host.slab_head_offset);
+               (char *) yaksuri_global.gpudev[id].host.slab +
+               yaksuri_global.gpudev[id].host.slab_head_offset);
         progress_subop_s *tmp;
         for (tmp = subop; tmp->next; tmp = tmp->next) {
             if (tmp->next->host_tmpbuf) {
-                yaksuri_global.cuda.host.slab_head_offset =
+                yaksuri_global.gpudev[id].host.slab_head_offset =
                     (uintptr_t) ((char *) tmp->next->host_tmpbuf -
-                                 (char *) yaksuri_global.cuda.host.slab);
+                                 (char *) yaksuri_global.gpudev[id].host.slab);
                 break;
             }
         }
         if (tmp->next == NULL) {
-            yaksuri_global.cuda.host.slab_head_offset = yaksuri_global.cuda.host.slab_tail_offset =
-                0;
+            yaksuri_global.gpudev[id].host.slab_head_offset =
+                yaksuri_global.gpudev[id].host.slab_tail_offset = 0;
         }
     }
 
@@ -341,28 +350,31 @@ int yaksuri_progress_poke(void)
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     progress_elem_s *elem = progress_head;
-    yaksuri_type_s *backend = (yaksuri_type_s *) elem->pup.type->backend.priv;
-    yaksuri_type_s *byte_backend = (yaksuri_type_s *) byte_type->backend.priv;
+    yaksuri_request_s *request_backend = (yaksuri_request_s *) elem->request->backend.priv;
+    yaksuri_gpudev_id_e id = request_backend->gpudev_id;
+    yaksuri_type_s *type_backend = (yaksuri_type_s *) elem->pup.type->backend.priv;
+    yaksuri_type_s *byte_type_backend = (yaksuri_type_s *) byte_type->backend.priv;
 
     /****************************************************************************/
     /* Step 1: Check for completion and free up any held up resources */
     /****************************************************************************/
     for (progress_subop_s * subop = elem->pup.subop_head; subop;) {
         int completed;
-        rc = yaksuri_cuda_event_query(subop->event, &completed);
+        rc = yaksuri_global.gpudev[id].info->event_query(subop->event, &completed);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (completed) {
             if (elem->kind == YAKSURI_PROGRESS_ELEM_KIND__PACK_D2URH) {
                 char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->size;
-                rc = byte_backend->seq.pack(subop->host_tmpbuf, dbuf,
-                                            subop->count * elem->pup.type->size, byte_type);
+                rc = byte_type_backend->seq.pack(subop->host_tmpbuf, dbuf,
+                                                 subop->count * elem->pup.type->size, byte_type);
                 YAKSU_ERR_CHECK(rc, fn_fail);
             } else if (elem->kind == YAKSURI_PROGRESS_ELEM_KIND__UNPACK_D2RH ||
                        elem->kind == YAKSURI_PROGRESS_ELEM_KIND__UNPACK_D2URH) {
                 char *dbuf =
                     (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->extent;
-                rc = backend->seq.unpack(subop->host_tmpbuf, dbuf, subop->count, elem->pup.type);
+                rc = type_backend->seq.unpack(subop->host_tmpbuf, dbuf, subop->count,
+                                              elem->pup.type);
                 YAKSU_ERR_CHECK(rc, fn_fail);
             }
 
@@ -412,7 +424,7 @@ int yaksuri_progress_poke(void)
             need_device_tmpbuf = true;
         }
 
-        rc = alloc_subop(&subop, need_host_tmpbuf, need_device_tmpbuf);
+        rc = alloc_subop(id, need_host_tmpbuf, need_device_tmpbuf, &subop);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (subop == NULL) {
@@ -427,8 +439,8 @@ int yaksuri_progress_poke(void)
                     char *dbuf =
                         (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->size;
 
-                    rc = backend->cuda.pack(sbuf, dbuf, subop->count, elem->pup.type,
-                                            subop->device_tmpbuf, subop->event);
+                    rc = type_backend->gpudev[id].pack(sbuf, dbuf, subop->count, elem->pup.type,
+                                                       subop->device_tmpbuf, subop->event);
                     YAKSU_ERR_CHECK(rc, fn_fail);
                 }
                 break;
@@ -438,8 +450,9 @@ int yaksuri_progress_poke(void)
                     const char *sbuf = (const char *) elem->pup.inbuf +
                         subop->count_offset * elem->pup.type->extent;
 
-                    rc = backend->cuda.pack(sbuf, subop->host_tmpbuf, subop->count,
-                                            elem->pup.type, subop->device_tmpbuf, subop->event);
+                    rc = type_backend->gpudev[id].pack(sbuf, subop->host_tmpbuf, subop->count,
+                                                       elem->pup.type, subop->device_tmpbuf,
+                                                       subop->event);
                     YAKSU_ERR_CHECK(rc, fn_fail);
                 }
                 break;
@@ -452,12 +465,13 @@ int yaksuri_progress_poke(void)
                     char *dbuf =
                         (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->size;
 
-                    rc = backend->seq.pack(sbuf, subop->host_tmpbuf, subop->count, elem->pup.type);
+                    rc = type_backend->seq.pack(sbuf, subop->host_tmpbuf, subop->count,
+                                                elem->pup.type);
                     YAKSU_ERR_CHECK(rc, fn_fail);
 
-                    rc = byte_backend->cuda.pack(subop->host_tmpbuf, dbuf,
-                                                 subop->count * elem->pup.type->size,
-                                                 byte_type, NULL, subop->event);
+                    rc = byte_type_backend->gpudev[id].pack(subop->host_tmpbuf, dbuf,
+                                                            subop->count * elem->pup.type->size,
+                                                            byte_type, NULL, subop->event);
                     YAKSU_ERR_CHECK(rc, fn_fail);
                 }
                 break;
@@ -469,8 +483,8 @@ int yaksuri_progress_poke(void)
                     char *dbuf =
                         (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->extent;
 
-                    rc = backend->cuda.unpack(sbuf, dbuf, subop->count, elem->pup.type,
-                                              subop->device_tmpbuf, subop->event);
+                    rc = type_backend->gpudev[id].unpack(sbuf, dbuf, subop->count, elem->pup.type,
+                                                         subop->device_tmpbuf, subop->event);
                     YAKSU_ERR_CHECK(rc, fn_fail);
                 }
                 break;
@@ -482,12 +496,14 @@ int yaksuri_progress_poke(void)
                     char *dbuf =
                         (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->extent;
 
-                    rc = byte_backend->seq.unpack(sbuf, subop->host_tmpbuf,
-                                                  subop->count * elem->pup.type->size, byte_type);
+                    rc = byte_type_backend->seq.unpack(sbuf, subop->host_tmpbuf,
+                                                       subop->count * elem->pup.type->size,
+                                                       byte_type);
                     YAKSU_ERR_CHECK(rc, fn_fail);
 
-                    rc = backend->cuda.unpack(subop->host_tmpbuf, dbuf, subop->count,
-                                              elem->pup.type, subop->device_tmpbuf, subop->event);
+                    rc = type_backend->gpudev[id].unpack(subop->host_tmpbuf, dbuf, subop->count,
+                                                         elem->pup.type, subop->device_tmpbuf,
+                                                         subop->event);
                     YAKSU_ERR_CHECK(rc, fn_fail);
                 }
                 break;
@@ -498,9 +514,9 @@ int yaksuri_progress_poke(void)
                     const char *sbuf = (const char *) elem->pup.inbuf +
                         subop->count_offset * elem->pup.type->size;
 
-                    rc = byte_backend->cuda.unpack(sbuf, subop->host_tmpbuf,
-                                                   subop->count * elem->pup.type->size,
-                                                   byte_type, NULL, subop->event);
+                    rc = byte_type_backend->gpudev[id].unpack(sbuf, subop->host_tmpbuf,
+                                                              subop->count * elem->pup.type->size,
+                                                              byte_type, NULL, subop->event);
                     YAKSU_ERR_CHECK(rc, fn_fail);
                 }
                 break;

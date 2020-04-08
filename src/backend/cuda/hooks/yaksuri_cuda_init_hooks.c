@@ -44,18 +44,11 @@ static void cuda_device_free(void *ptr)
 
 yaksuri_cudai_global_s yaksuri_cudai_global;
 
-int yaksuri_cuda_init_hook(yaksu_malloc_fn * host_malloc_fn, yaksu_free_fn * host_free_fn,
-                           yaksu_malloc_fn * device_malloc_fn, yaksu_free_fn * device_free_fn)
+static int finalize_hook(void)
 {
     int rc = YAKSA_SUCCESS;
 
-    *host_malloc_fn = cuda_host_malloc;
-    *host_free_fn = cuda_host_free;
-    *device_malloc_fn = cuda_device_malloc;
-    *device_free_fn = cuda_device_free;
-
-    cudaError_t cerr =
-        cudaStreamCreateWithFlags(&yaksuri_cudai_global.stream, cudaStreamNonBlocking);
+    cudaError_t cerr = cudaStreamDestroy(yaksuri_cudai_global.stream);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
   fn_exit:
@@ -64,11 +57,27 @@ int yaksuri_cuda_init_hook(yaksu_malloc_fn * host_malloc_fn, yaksu_free_fn * hos
     goto fn_exit;
 }
 
-int yaksuri_cuda_finalize_hook(void)
+int yaksuri_cuda_init_hook(yaksur_gpudev_info_s ** info)
 {
     int rc = YAKSA_SUCCESS;
 
-    cudaError_t cerr = cudaStreamDestroy(yaksuri_cudai_global.stream);
+    *info = (yaksur_gpudev_info_s *) malloc(sizeof(yaksur_gpudev_info_s));
+
+    (*info)->host_malloc = cuda_host_malloc;
+    (*info)->host_free = cuda_host_free;
+    (*info)->device_malloc = cuda_device_malloc;
+    (*info)->device_free = cuda_device_free;
+    (*info)->event_create = yaksuri_cudai_event_create;
+    (*info)->event_destroy = yaksuri_cudai_event_destroy;
+    (*info)->event_query = yaksuri_cudai_event_query;
+    (*info)->event_synchronize = yaksuri_cudai_event_synchronize;
+    (*info)->type_create = yaksuri_cudai_type_create_hook;
+    (*info)->type_free = yaksuri_cudai_type_free_hook;
+    (*info)->get_memory_type = yaksuri_cudai_get_memory_type;
+    (*info)->finalize = finalize_hook;
+
+    cudaError_t cerr =
+        cudaStreamCreateWithFlags(&yaksuri_cudai_global.stream, cudaStreamNonBlocking);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
   fn_exit:

@@ -8,7 +8,7 @@
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 
-int yaksuri_cuda_get_memory_type(const void *buf, yaksur_memory_type_e * memtype)
+int yaksuri_cudai_get_memory_type(const void *buf, yaksur_memory_type_e * memtype)
 {
     int rc = YAKSA_SUCCESS;
 

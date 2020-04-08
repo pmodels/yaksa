@@ -83,6 +83,18 @@ typedef struct yaksuri_cudai_type_s {
     uintptr_t num_elements;
 } yaksuri_cudai_type_s;
 
+int yaksuri_cudai_finalize_hook(void);
+int yaksuri_cudai_type_create_hook(yaksi_type_s * type, yaksur_gpudev_pup_fn * pack,
+                                   yaksur_gpudev_pup_fn * unpack);
+int yaksuri_cudai_type_free_hook(yaksi_type_s * type);
+
+int yaksuri_cudai_event_create(void **event);
+int yaksuri_cudai_event_destroy(void *event);
+int yaksuri_cudai_event_query(void *event, int *completed);
+int yaksuri_cudai_event_synchronize(void *event);
+
+int yaksuri_cudai_get_memory_type(const void *buf, yaksur_memory_type_e * memtype);
+
 int yaksuri_cudai_md_alloc(yaksi_type_s * type);
 int yaksuri_cudai_populate_pupfns(yaksi_type_s * type, yaksur_gpudev_pup_fn * pack,
                                   yaksur_gpudev_pup_fn * unpack);

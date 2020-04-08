@@ -10,7 +10,7 @@
 #include "yaksu.h"
 #include "yaksuri_cudai.h"
 
-int yaksuri_cuda_event_create(void **event)
+int yaksuri_cudai_event_create(void **event)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -23,7 +23,7 @@ int yaksuri_cuda_event_create(void **event)
     goto fn_exit;
 }
 
-int yaksuri_cuda_event_destroy(void *event)
+int yaksuri_cudai_event_destroy(void *event)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -36,7 +36,7 @@ int yaksuri_cuda_event_destroy(void *event)
     goto fn_exit;
 }
 
-int yaksuri_cuda_event_query(void *event, int *completed)
+int yaksuri_cudai_event_query(void *event, int *completed)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -55,7 +55,7 @@ int yaksuri_cuda_event_query(void *event, int *completed)
     goto fn_exit;
 }
 
-int yaksuri_cuda_event_synchronize(void *event)
+int yaksuri_cudai_event_synchronize(void *event)
 {
     int rc = YAKSA_SUCCESS;
 
