@@ -108,6 +108,8 @@ int main(int argc, char **argv)
                 fprintf(stderr, "unknown overlap type %s\n", *argv);
                 exit(1);
             }
+        } else if (!strcmp(*argv, "-verbose")) {
+            verbose = 1;
         } else {
             fprintf(stderr, "unknown argument %s\n", *argv);
             exit(1);
@@ -123,6 +125,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "   -segments    number of segments to chop the iov into\n");
         fprintf(stderr, "   -ordering   iov order of segments (normal, reverse, random)\n");
         fprintf(stderr, "   -overlap     should iovs overlap (none, regular, irregular)\n");
+        fprintf(stderr, "   -verbose     verbose output\n");
         exit(1);
     }
 

@@ -22,6 +22,27 @@ typedef struct {
 } yaksuri_global_s;
 extern yaksuri_global_s yaksuri_global;
 
+typedef struct yaksuri_type_s {
+    struct {
+        yaksur_seq_pup_fn pack;
+        yaksur_seq_pup_fn unpack;
+    } seq;
+
+    struct {
+        yaksur_gpudev_pup_fn pack;
+        yaksur_gpudev_pup_fn unpack;
+    } cuda;
+} yaksuri_type_s;
+
+typedef struct {
+    void *event;
+
+    enum {
+        YAKSURI_REQUEST_KIND__DEVICE_NATIVE,
+        YAKSURI_REQUEST_KIND__HOST_DEVICE_HYBRID,
+    } kind;
+} yaksuri_request_s;
+
 typedef enum {
     YAKSURI_PROGRESS_ELEM_KIND__PACK_D2RH,
     YAKSURI_PROGRESS_ELEM_KIND__PACK_D2URH,

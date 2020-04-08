@@ -56,10 +56,13 @@ int yaksur_type_create_hook(yaksi_type_s * type)
 {
     int rc = YAKSA_SUCCESS;
 
-    rc = yaksuri_seq_type_create_hook(type);
+    type->backend.priv = malloc(sizeof(yaksuri_type_s));
+    yaksuri_type_s *backend = (yaksuri_type_s *) type->backend.priv;
+
+    rc = yaksuri_seq_type_create_hook(type, &backend->seq.pack, &backend->seq.unpack);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    rc = yaksuri_cuda_type_create_hook(type);
+    rc = yaksuri_cuda_type_create_hook(type, &backend->cuda.pack, &backend->cuda.unpack);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
@@ -78,6 +81,8 @@ int yaksur_type_free_hook(yaksi_type_s * type)
     rc = yaksuri_cuda_type_free_hook(type);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
+    free(type->backend.priv);
+
   fn_exit:
     return rc;
   fn_fail:
@@ -88,7 +93,10 @@ int yaksur_request_create_hook(yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
 
-    rc = yaksuri_cuda_event_create(&request->backend_priv.event);
+    request->backend.priv = malloc(sizeof(yaksuri_request_s));
+    yaksuri_request_s *backend = (yaksuri_request_s *) request->backend.priv;
+
+    rc = yaksuri_cuda_event_create(&backend->event);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
@@ -100,9 +108,12 @@ int yaksur_request_create_hook(yaksi_request_s * request)
 int yaksur_request_free_hook(yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
+    yaksuri_request_s *backend = (yaksuri_request_s *) request->backend.priv;
 
-    rc = yaksuri_cuda_event_destroy(request->backend_priv.event);
+    rc = yaksuri_cuda_event_destroy(backend->event);
     YAKSU_ERR_CHECK(rc, fn_fail);
+
+    free(backend);
 
   fn_exit:
     return rc;

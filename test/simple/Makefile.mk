@@ -3,8 +3,8 @@
 ##     See COPYRIGHT in top-level directory
 ##
 
-testlists += test/simple/testlist.gen
-EXTRA_DIST += test/simple/testlist.gen
+testlists += $(top_srcdir)/test/simple/testlist.gen
+EXTRA_DIST += $(top_srcdir)/test/simple/testlist.gen
 
 EXTRA_PROGRAMS += \
 	test/simple/simple_test \

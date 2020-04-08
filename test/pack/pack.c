@@ -99,7 +99,7 @@ static void copy_content_to_device(size_t size, mem_type_e type, void *devicebuf
 {
 #ifdef HAVE_CUDA
     if (type == MEM_TYPE__DEVICE) {
-        cudaMemcpy(devicebuf, hostbuf, size, cudaMemcpyHostToDevice);
+        cudaMemcpy(devicebuf, hostbuf, size, cudaMemcpyDefault);
     }
 #endif
 }
@@ -108,7 +108,7 @@ static void copy_content_to_host(size_t size, mem_type_e type, void *devicebuf, 
 {
 #ifdef HAVE_CUDA
     if (type == MEM_TYPE__DEVICE) {
-        cudaMemcpy(hostbuf, devicebuf, size, cudaMemcpyDeviceToHost);
+        cudaMemcpy(hostbuf, devicebuf, size, cudaMemcpyDefault);
     }
 #endif
 }
@@ -215,6 +215,8 @@ int main(int argc, char **argv)
                 fprintf(stderr, "unknown buffer type %s\n", *argv);
                 exit(1);
             }
+        } else if (!strcmp(*argv, "-verbose")) {
+            verbose = 1;
         } else {
             fprintf(stderr, "unknown argument %s\n", *argv);
             exit(1);
@@ -233,6 +235,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "   -sbuf-memtype memory type (unreg-host, reg-host, device)\n");
         fprintf(stderr, "   -dbuf-memtype memory type (unreg-host, reg-host, device)\n");
         fprintf(stderr, "   -tbuf-memtype memory type (unreg-host, reg-host, device)\n");
+        fprintf(stderr, "   -verbose     verbose output\n");
         exit(1);
     }
 
@@ -381,19 +384,15 @@ int main(int argc, char **argv)
             assert(rc == YAKSA_SUCCESS);
             assert(actual_pack_bytes <= segment_lengths[j]);
 
-            if (request != YAKSA_REQUEST__NULL) {
-                rc = yaksa_request_wait(request);
-                assert(rc == YAKSA_SUCCESS);
-            }
+            rc = yaksa_request_wait(request);
+            assert(rc == YAKSA_SUCCESS);
 
             rc = yaksa_iunpack(tbuf, actual_pack_bytes, dbuf_d + dobj.DTP_buf_offset,
                                dobj.DTP_type_count, dobj.DTP_datatype, segment_starts[j], &request);
             assert(rc == YAKSA_SUCCESS);
 
-            if (request != YAKSA_REQUEST__NULL) {
-                rc = yaksa_request_wait(request);
-                assert(rc == YAKSA_SUCCESS);
-            }
+            rc = yaksa_request_wait(request);
+            assert(rc == YAKSA_SUCCESS);
         }
 
         copy_content_to_host(dobj.DTP_bufsize, dbuf_memtype, dbuf_d, dbuf_h);

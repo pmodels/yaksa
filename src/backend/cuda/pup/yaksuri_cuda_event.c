@@ -10,11 +10,11 @@
 #include "yaksu.h"
 #include "yaksuri_cudai.h"
 
-int yaksuri_cuda_event_create(yaksuri_cuda_event_t * event)
+int yaksuri_cuda_event_create(void **event)
 {
     int rc = YAKSA_SUCCESS;
 
-    cudaError_t cerr = cudaEventCreate(event);
+    cudaError_t cerr = cudaEventCreate((cudaEvent_t *) event);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
   fn_exit:
@@ -23,11 +23,11 @@ int yaksuri_cuda_event_create(yaksuri_cuda_event_t * event)
     goto fn_exit;
 }
 
-int yaksuri_cuda_event_destroy(yaksuri_cuda_event_t event)
+int yaksuri_cuda_event_destroy(void *event)
 {
     int rc = YAKSA_SUCCESS;
 
-    cudaError_t cerr = cudaEventDestroy(event);
+    cudaError_t cerr = cudaEventDestroy((cudaEvent_t) event);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
   fn_exit:
@@ -36,11 +36,11 @@ int yaksuri_cuda_event_destroy(yaksuri_cuda_event_t event)
     goto fn_exit;
 }
 
-int yaksuri_cuda_event_query(yaksuri_cuda_event_t event, int *completed)
+int yaksuri_cuda_event_query(void *event, int *completed)
 {
     int rc = YAKSA_SUCCESS;
 
-    cudaError_t cerr = cudaEventQuery(event);
+    cudaError_t cerr = cudaEventQuery((cudaEvent_t) event);
     if (cerr == cudaSuccess) {
         *completed = 1;
     } else if (cerr == cudaErrorNotReady) {
@@ -55,11 +55,11 @@ int yaksuri_cuda_event_query(yaksuri_cuda_event_t event, int *completed)
     goto fn_exit;
 }
 
-int yaksuri_cuda_event_synchronize(yaksuri_cuda_event_t event)
+int yaksuri_cuda_event_synchronize(void *event)
 {
     int rc = YAKSA_SUCCESS;
 
-    cudaError_t cerr = cudaEventSynchronize(event);
+    cudaError_t cerr = cudaEventSynchronize((cudaEvent_t) event);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
   fn_exit:

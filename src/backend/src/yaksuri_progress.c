@@ -16,7 +16,7 @@ typedef struct progress_subop_s {
     uintptr_t count;
     void *device_tmpbuf;
     void *host_tmpbuf;
-    yaksuri_cuda_event_t event;
+    void *event;
 
     struct progress_subop_s *next;
 } progress_subop_s;
@@ -82,11 +82,12 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                              yaksi_request_s * request, yaksuri_progress_elem_kind_e kind)
 {
     int rc = YAKSA_SUCCESS;
+    yaksuri_type_s *backend = (yaksuri_type_s *) type->backend.priv;
 
     /* if we need to go through the progress engine, make sure we only
      * take on types, where at least one count of the type fits into
      * our temporary buffers. */
-    if (type->size > TMPBUF_SLAB_SIZE || type->backend_priv.cuda.pack == NULL) {
+    if (type->size > TMPBUF_SLAB_SIZE || backend->cuda.pack == NULL) {
         rc = YAKSA_ERR__NOT_SUPPORTED;
         goto fn_exit;
     }
@@ -340,6 +341,8 @@ int yaksuri_progress_poke(void)
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     progress_elem_s *elem = progress_head;
+    yaksuri_type_s *backend = (yaksuri_type_s *) elem->pup.type->backend.priv;
+    yaksuri_type_s *byte_backend = (yaksuri_type_s *) byte_type->backend.priv;
 
     /****************************************************************************/
     /* Step 1: Check for completion and free up any held up resources */
@@ -352,16 +355,14 @@ int yaksuri_progress_poke(void)
         if (completed) {
             if (elem->kind == YAKSURI_PROGRESS_ELEM_KIND__PACK_D2URH) {
                 char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->size;
-                rc = byte_type->backend_priv.seq.pack(subop->host_tmpbuf, dbuf,
-                                                      subop->count * elem->pup.type->size,
-                                                      byte_type);
+                rc = byte_backend->seq.pack(subop->host_tmpbuf, dbuf,
+                                            subop->count * elem->pup.type->size, byte_type);
                 YAKSU_ERR_CHECK(rc, fn_fail);
             } else if (elem->kind == YAKSURI_PROGRESS_ELEM_KIND__UNPACK_D2RH ||
                        elem->kind == YAKSURI_PROGRESS_ELEM_KIND__UNPACK_D2URH) {
                 char *dbuf =
                     (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->extent;
-                rc = elem->pup.type->backend_priv.seq.unpack(subop->host_tmpbuf, dbuf, subop->count,
-                                                             elem->pup.type);
+                rc = backend->seq.unpack(subop->host_tmpbuf, dbuf, subop->count, elem->pup.type);
                 YAKSU_ERR_CHECK(rc, fn_fail);
             }
 
@@ -426,10 +427,8 @@ int yaksuri_progress_poke(void)
                     char *dbuf =
                         (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->size;
 
-                    rc = elem->pup.type->backend_priv.cuda.pack(sbuf, dbuf,
-                                                                subop->count,
-                                                                elem->pup.type,
-                                                                subop->device_tmpbuf, subop->event);
+                    rc = backend->cuda.pack(sbuf, dbuf, subop->count, elem->pup.type,
+                                            subop->device_tmpbuf, subop->event);
                     YAKSU_ERR_CHECK(rc, fn_fail);
                 }
                 break;
@@ -439,10 +438,8 @@ int yaksuri_progress_poke(void)
                     const char *sbuf = (const char *) elem->pup.inbuf +
                         subop->count_offset * elem->pup.type->extent;
 
-                    rc = elem->pup.type->backend_priv.cuda.pack(sbuf, subop->host_tmpbuf,
-                                                                subop->count,
-                                                                elem->pup.type,
-                                                                subop->device_tmpbuf, subop->event);
+                    rc = backend->cuda.pack(sbuf, subop->host_tmpbuf, subop->count,
+                                            elem->pup.type, subop->device_tmpbuf, subop->event);
                     YAKSU_ERR_CHECK(rc, fn_fail);
                 }
                 break;
@@ -455,13 +452,12 @@ int yaksuri_progress_poke(void)
                     char *dbuf =
                         (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->size;
 
-                    rc = elem->pup.type->backend_priv.seq.pack(sbuf, subop->host_tmpbuf,
-                                                               subop->count, elem->pup.type);
+                    rc = backend->seq.pack(sbuf, subop->host_tmpbuf, subop->count, elem->pup.type);
                     YAKSU_ERR_CHECK(rc, fn_fail);
 
-                    rc = byte_type->backend_priv.cuda.pack(subop->host_tmpbuf, dbuf,
-                                                           subop->count * elem->pup.type->size,
-                                                           byte_type, NULL, subop->event);
+                    rc = byte_backend->cuda.pack(subop->host_tmpbuf, dbuf,
+                                                 subop->count * elem->pup.type->size,
+                                                 byte_type, NULL, subop->event);
                     YAKSU_ERR_CHECK(rc, fn_fail);
                 }
                 break;
@@ -473,11 +469,8 @@ int yaksuri_progress_poke(void)
                     char *dbuf =
                         (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->extent;
 
-                    rc = elem->pup.type->backend_priv.cuda.unpack(sbuf, dbuf,
-                                                                  subop->count,
-                                                                  elem->pup.type,
-                                                                  subop->device_tmpbuf,
-                                                                  subop->event);
+                    rc = backend->cuda.unpack(sbuf, dbuf, subop->count, elem->pup.type,
+                                              subop->device_tmpbuf, subop->event);
                     YAKSU_ERR_CHECK(rc, fn_fail);
                 }
                 break;
@@ -489,16 +482,12 @@ int yaksuri_progress_poke(void)
                     char *dbuf =
                         (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->extent;
 
-                    rc = byte_type->backend_priv.seq.unpack(sbuf, subop->host_tmpbuf,
-                                                            subop->count * elem->pup.type->size,
-                                                            byte_type);
+                    rc = byte_backend->seq.unpack(sbuf, subop->host_tmpbuf,
+                                                  subop->count * elem->pup.type->size, byte_type);
                     YAKSU_ERR_CHECK(rc, fn_fail);
 
-                    rc = elem->pup.type->backend_priv.cuda.unpack(subop->host_tmpbuf, dbuf,
-                                                                  subop->count,
-                                                                  elem->pup.type,
-                                                                  subop->device_tmpbuf,
-                                                                  subop->event);
+                    rc = backend->cuda.unpack(subop->host_tmpbuf, dbuf, subop->count,
+                                              elem->pup.type, subop->device_tmpbuf, subop->event);
                     YAKSU_ERR_CHECK(rc, fn_fail);
                 }
                 break;
@@ -509,9 +498,9 @@ int yaksuri_progress_poke(void)
                     const char *sbuf = (const char *) elem->pup.inbuf +
                         subop->count_offset * elem->pup.type->size;
 
-                    rc = byte_type->backend_priv.cuda.unpack(sbuf, subop->host_tmpbuf,
-                                                             subop->count * elem->pup.type->size,
-                                                             byte_type, NULL, subop->event);
+                    rc = byte_backend->cuda.unpack(sbuf, subop->host_tmpbuf,
+                                                   subop->count * elem->pup.type->size,
+                                                   byte_type, NULL, subop->event);
                     YAKSU_ERR_CHECK(rc, fn_fail);
                 }
                 break;

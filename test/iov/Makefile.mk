@@ -3,8 +3,8 @@
 ##     See COPYRIGHT in top-level directory
 ##
 
-testlists += test/iov/testlist.gen
-EXTRA_DIST += test/iov/testlist.gen
+testlists += $(top_srcdir)/test/iov/testlist.gen
+EXTRA_DIST += $(top_srcdir)/test/iov/testlist.gen
 
 EXTRA_PROGRAMS += \
 	test/iov/iov

@@ -3,8 +3,8 @@
 ##     See COPYRIGHT in top-level directory
 ##
 
-pack_testlists = test/pack/testlist.gen
-EXTRA_DIST += test/pack/testlist.gen
+pack_testlists = $(top_srcdir)/test/pack/testlist.gen
+EXTRA_DIST += $(top_srcdir)/test/pack/testlist.gen
 
 EXTRA_PROGRAMS += \
 	test/pack/pack
@@ -12,7 +12,7 @@ EXTRA_PROGRAMS += \
 test_pack_pack_CPPFLAGS = $(test_cppflags)
 
 if BUILD_CUDA_TESTS
-include $(srcdir)/test/pack/Makefile.cuda.mk
+include $(top_srcdir)/test/pack/Makefile.cuda.mk
 endif BUILD_CUDA_TESTS
 
 testlists += $(pack_testlists)
