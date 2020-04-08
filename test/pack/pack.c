@@ -99,7 +99,7 @@ static void copy_content_to_device(size_t size, mem_type_e type, void *devicebuf
 {
 #ifdef HAVE_CUDA
     if (type == MEM_TYPE__DEVICE) {
-        cudaMemcpy(devicebuf, hostbuf, size, cudaMemcpyHostToDevice);
+        cudaMemcpy(devicebuf, hostbuf, size, cudaMemcpyDefault);
     }
 #endif
 }
@@ -108,7 +108,7 @@ static void copy_content_to_host(size_t size, mem_type_e type, void *devicebuf, 
 {
 #ifdef HAVE_CUDA
     if (type == MEM_TYPE__DEVICE) {
-        cudaMemcpy(hostbuf, devicebuf, size, cudaMemcpyDeviceToHost);
+        cudaMemcpy(hostbuf, devicebuf, size, cudaMemcpyDefault);
     }
 #endif
 }
