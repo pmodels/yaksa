@@ -14,6 +14,11 @@ typedef enum yaksuri_gpudev_id_e {
     YAKSURI_GPUDEV_ID__LAST,
 } yaksuri_gpudev_id_e;
 
+typedef enum yaksuri_pup_e {
+    YAKSURI_PUPTYPE__PACK,
+    YAKSURI_PUPTYPE__UNPACK,
+} yaksuri_puptype_e;
+
 typedef struct {
     struct {
         struct {
@@ -48,19 +53,9 @@ typedef struct {
     } kind;
 } yaksuri_request_s;
 
-typedef enum {
-    YAKSURI_PROGRESS_ELEM_KIND__PACK_D2RH,
-    YAKSURI_PROGRESS_ELEM_KIND__PACK_D2URH,
-    YAKSURI_PROGRESS_ELEM_KIND__PACK_RH2D,
-    YAKSURI_PROGRESS_ELEM_KIND__PACK_URH2D,
-    YAKSURI_PROGRESS_ELEM_KIND__UNPACK_D2RH,
-    YAKSURI_PROGRESS_ELEM_KIND__UNPACK_D2URH,
-    YAKSURI_PROGRESS_ELEM_KIND__UNPACK_RH2D,
-    YAKSURI_PROGRESS_ELEM_KIND__UNPACK_URH2D,
-} yaksuri_progress_elem_kind_e;
-
 int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                             yaksi_request_s * request, yaksuri_progress_elem_kind_e kind);
+                             yaksi_request_s * request, yaksur_ptr_attr_s inattr,
+                             yaksur_ptr_attr_s outattr, yaksuri_puptype_e puptype);
 int yaksuri_progress_poke(void);
 
 #endif /* YAKSURI_H_INCLUDED */

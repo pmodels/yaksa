@@ -14,11 +14,13 @@
 #include "yaksuri_seq_pre.h"
 #include "yaksuri_cuda_pre.h"
 
-typedef enum {
-    YAKSUR_MEMORY_TYPE__UNREGISTERED_HOST,
-    YAKSUR_MEMORY_TYPE__REGISTERED_HOST,
-    YAKSUR_MEMORY_TYPE__DEVICE,
-} yaksur_memory_type_e;
+typedef struct {
+    enum {
+        YAKSUR_PTR_TYPE__UNREGISTERED_HOST,
+        YAKSUR_PTR_TYPE__REGISTERED_HOST,
+        YAKSUR_PTR_TYPE__DEVICE,
+    } type;
+} yaksur_ptr_attr_s;
 
 struct yaksi_type_s;
 typedef int (*yaksur_seq_pup_fn) (const void *inbuf, void *outbuf, uintptr_t count,
@@ -44,7 +46,7 @@ typedef int (*yaksur_finalize_fn) (void);
 typedef int (*yaksur_type_create_fn) (struct yaksi_type_s *, yaksur_gpudev_pup_fn *,
                                       yaksur_gpudev_pup_fn *);
 typedef int (*yaksur_type_free_fn) (struct yaksi_type_s *);
-typedef int (*yaksur_get_memory_type) (const void *, yaksur_memory_type_e *);
+typedef int (*yaksur_get_ptr_attr) (const void *, yaksur_ptr_attr_s *);
 
 typedef struct yaksur_gpudev_info_s {
     yaksu_malloc_fn host_malloc;
@@ -57,7 +59,7 @@ typedef struct yaksur_gpudev_info_s {
     yaksur_event_synchronize_fn event_synchronize;
     yaksur_type_create_fn type_create;
     yaksur_type_free_fn type_free;
-    yaksur_get_memory_type get_memory_type;
+    yaksur_get_ptr_attr get_ptr_attr;
     yaksur_finalize_fn finalize;
 } yaksur_gpudev_info_s;
 

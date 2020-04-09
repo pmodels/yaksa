@@ -22,9 +22,12 @@ typedef struct progress_subop_s {
 } progress_subop_s;
 
 typedef struct progress_elem_s {
-    yaksuri_progress_elem_kind_e kind;
-
     struct {
+        yaksuri_puptype_e puptype;
+
+        yaksur_ptr_attr_s inattr;
+        yaksur_ptr_attr_s outattr;
+
         const void *inbuf;
         void *outbuf;
         uintptr_t count;
@@ -79,7 +82,8 @@ static int progress_dequeue(progress_elem_s * elem)
 }
 
 int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                             yaksi_request_s * request, yaksuri_progress_elem_kind_e kind)
+                             yaksi_request_s * request, yaksur_ptr_attr_s inattr,
+                             yaksur_ptr_attr_s outattr, yaksuri_puptype_e puptype)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_type_s *type_backend = (yaksuri_type_s *) type->backend.priv;
@@ -98,7 +102,9 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
     progress_elem_s *newelem;
     newelem = (progress_elem_s *) malloc(sizeof(progress_elem_s));
 
-    newelem->kind = kind;
+    newelem->pup.puptype = puptype;
+    newelem->pup.inattr = inattr;
+    newelem->pup.outattr = outattr;
     newelem->pup.inbuf = inbuf;
     newelem->pup.outbuf = outbuf;
     newelem->pup.count = count;
@@ -364,13 +370,17 @@ int yaksuri_progress_poke(void)
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (completed) {
-            if (elem->kind == YAKSURI_PROGRESS_ELEM_KIND__PACK_D2URH) {
+            if (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+                elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
+                elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) {
                 char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->size;
                 rc = byte_type_backend->seq.pack(subop->host_tmpbuf, dbuf,
                                                  subop->count * elem->pup.type->size, byte_type);
                 YAKSU_ERR_CHECK(rc, fn_fail);
-            } else if (elem->kind == YAKSURI_PROGRESS_ELEM_KIND__UNPACK_D2RH ||
-                       elem->kind == YAKSURI_PROGRESS_ELEM_KIND__UNPACK_D2URH) {
+            } else if (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+                       elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
+                       (elem->pup.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST ||
+                        elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST)) {
                 char *dbuf =
                     (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->extent;
                 rc = type_backend->seq.unpack(subop->host_tmpbuf, dbuf, subop->count,
@@ -408,19 +418,39 @@ int yaksuri_progress_poke(void)
         progress_subop_s *subop;
         bool need_device_tmpbuf = false, need_host_tmpbuf = false;
 
-        if (elem->kind == YAKSURI_PROGRESS_ELEM_KIND__PACK_D2URH ||
-            elem->kind == YAKSURI_PROGRESS_ELEM_KIND__PACK_RH2D ||
-            elem->kind == YAKSURI_PROGRESS_ELEM_KIND__PACK_URH2D ||
-            elem->kind == YAKSURI_PROGRESS_ELEM_KIND__UNPACK_URH2D ||
-            elem->kind == YAKSURI_PROGRESS_ELEM_KIND__UNPACK_D2RH ||
-            elem->kind == YAKSURI_PROGRESS_ELEM_KIND__UNPACK_D2URH) {
+        if ((elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+             elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
+             elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) ||
+            (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+             elem->pup.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
+             elem->pup.outattr.type == YAKSUR_PTR_TYPE__DEVICE) ||
+            (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+             elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
+             elem->pup.outattr.type == YAKSUR_PTR_TYPE__DEVICE) ||
+            (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+             elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
+             elem->pup.outattr.type == YAKSUR_PTR_TYPE__DEVICE) ||
+            (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+             elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
+             elem->pup.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
+            (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+             elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
+             elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST)) {
             need_host_tmpbuf = true;
         }
 
-        if (elem->kind == YAKSURI_PROGRESS_ELEM_KIND__PACK_D2RH ||
-            elem->kind == YAKSURI_PROGRESS_ELEM_KIND__PACK_D2URH ||
-            elem->kind == YAKSURI_PROGRESS_ELEM_KIND__UNPACK_RH2D ||
-            elem->kind == YAKSURI_PROGRESS_ELEM_KIND__UNPACK_URH2D) {
+        if ((elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+             elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
+             elem->pup.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
+            (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+             elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
+             elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) ||
+            (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+             elem->pup.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
+             elem->pup.outattr.type == YAKSUR_PTR_TYPE__DEVICE) ||
+            (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+             elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
+             elem->pup.outattr.type == YAKSUR_PTR_TYPE__DEVICE)) {
             need_device_tmpbuf = true;
         }
 
@@ -431,99 +461,83 @@ int yaksuri_progress_poke(void)
             break;
         }
 
-        switch (elem->kind) {
-            case YAKSURI_PROGRESS_ELEM_KIND__PACK_D2RH:
-                {
-                    const char *sbuf = (const char *) elem->pup.inbuf +
-                        subop->count_offset * elem->pup.type->extent;
-                    char *dbuf =
-                        (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->size;
+        if (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+            elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
+            elem->pup.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
+            const char *sbuf = (const char *) elem->pup.inbuf +
+                subop->count_offset * elem->pup.type->extent;
+            char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->size;
 
-                    rc = type_backend->gpudev[id].pack(sbuf, dbuf, subop->count, elem->pup.type,
-                                                       subop->device_tmpbuf, subop->event);
-                    YAKSU_ERR_CHECK(rc, fn_fail);
-                }
-                break;
+            rc = type_backend->gpudev[id].pack(sbuf, dbuf, subop->count, elem->pup.type,
+                                               subop->device_tmpbuf, subop->event);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+        } else if (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+                   elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
+                   elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) {
+            const char *sbuf = (const char *) elem->pup.inbuf +
+                subop->count_offset * elem->pup.type->extent;
 
-            case YAKSURI_PROGRESS_ELEM_KIND__PACK_D2URH:
-                {
-                    const char *sbuf = (const char *) elem->pup.inbuf +
-                        subop->count_offset * elem->pup.type->extent;
+            rc = type_backend->gpudev[id].pack(sbuf, subop->host_tmpbuf, subop->count,
+                                               elem->pup.type, subop->device_tmpbuf, subop->event);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+        } else if ((elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+                    elem->pup.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
+                    elem->pup.outattr.type == YAKSUR_PTR_TYPE__DEVICE) ||
+                   (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+                    elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
+                    elem->pup.outattr.type == YAKSUR_PTR_TYPE__DEVICE)) {
+            const char *sbuf = (const char *) elem->pup.inbuf +
+                subop->count_offset * elem->pup.type->extent;
+            char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->size;
 
-                    rc = type_backend->gpudev[id].pack(sbuf, subop->host_tmpbuf, subop->count,
-                                                       elem->pup.type, subop->device_tmpbuf,
-                                                       subop->event);
-                    YAKSU_ERR_CHECK(rc, fn_fail);
-                }
-                break;
+            rc = type_backend->seq.pack(sbuf, subop->host_tmpbuf, subop->count, elem->pup.type);
+            YAKSU_ERR_CHECK(rc, fn_fail);
 
-            case YAKSURI_PROGRESS_ELEM_KIND__PACK_RH2D:
-            case YAKSURI_PROGRESS_ELEM_KIND__PACK_URH2D:
-                {
-                    const char *sbuf = (const char *) elem->pup.inbuf +
-                        subop->count_offset * elem->pup.type->extent;
-                    char *dbuf =
-                        (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->size;
+            rc = byte_type_backend->gpudev[id].pack(subop->host_tmpbuf, dbuf,
+                                                    subop->count * elem->pup.type->size,
+                                                    byte_type, NULL, subop->event);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+        } else if (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+                   elem->pup.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
+                   elem->pup.outattr.type == YAKSUR_PTR_TYPE__DEVICE) {
+            const char *sbuf = (const char *) elem->pup.inbuf +
+                subop->count_offset * elem->pup.type->size;
+            char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->extent;
 
-                    rc = type_backend->seq.pack(sbuf, subop->host_tmpbuf, subop->count,
-                                                elem->pup.type);
-                    YAKSU_ERR_CHECK(rc, fn_fail);
+            rc = type_backend->gpudev[id].unpack(sbuf, dbuf, subop->count, elem->pup.type,
+                                                 subop->device_tmpbuf, subop->event);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+        } else if (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+                   elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
+                   elem->pup.outattr.type == YAKSUR_PTR_TYPE__DEVICE) {
+            const char *sbuf = (const char *) elem->pup.inbuf +
+                subop->count_offset * elem->pup.type->size;
+            char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->extent;
 
-                    rc = byte_type_backend->gpudev[id].pack(subop->host_tmpbuf, dbuf,
-                                                            subop->count * elem->pup.type->size,
-                                                            byte_type, NULL, subop->event);
-                    YAKSU_ERR_CHECK(rc, fn_fail);
-                }
-                break;
+            rc = byte_type_backend->seq.unpack(sbuf, subop->host_tmpbuf,
+                                               subop->count * elem->pup.type->size, byte_type);
+            YAKSU_ERR_CHECK(rc, fn_fail);
 
-            case YAKSURI_PROGRESS_ELEM_KIND__UNPACK_RH2D:
-                {
-                    const char *sbuf = (const char *) elem->pup.inbuf +
-                        subop->count_offset * elem->pup.type->size;
-                    char *dbuf =
-                        (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->extent;
+            rc = type_backend->gpudev[id].unpack(subop->host_tmpbuf, dbuf, subop->count,
+                                                 elem->pup.type, subop->device_tmpbuf,
+                                                 subop->event);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+        } else if ((elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+                    elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
+                    elem->pup.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
+                   (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+                    elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
+                    elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST)) {
+            const char *sbuf = (const char *) elem->pup.inbuf +
+                subop->count_offset * elem->pup.type->size;
 
-                    rc = type_backend->gpudev[id].unpack(sbuf, dbuf, subop->count, elem->pup.type,
-                                                         subop->device_tmpbuf, subop->event);
-                    YAKSU_ERR_CHECK(rc, fn_fail);
-                }
-                break;
-
-            case YAKSURI_PROGRESS_ELEM_KIND__UNPACK_URH2D:
-                {
-                    const char *sbuf = (const char *) elem->pup.inbuf +
-                        subop->count_offset * elem->pup.type->size;
-                    char *dbuf =
-                        (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->extent;
-
-                    rc = byte_type_backend->seq.unpack(sbuf, subop->host_tmpbuf,
-                                                       subop->count * elem->pup.type->size,
-                                                       byte_type);
-                    YAKSU_ERR_CHECK(rc, fn_fail);
-
-                    rc = type_backend->gpudev[id].unpack(subop->host_tmpbuf, dbuf, subop->count,
-                                                         elem->pup.type, subop->device_tmpbuf,
-                                                         subop->event);
-                    YAKSU_ERR_CHECK(rc, fn_fail);
-                }
-                break;
-
-            case YAKSURI_PROGRESS_ELEM_KIND__UNPACK_D2RH:
-            case YAKSURI_PROGRESS_ELEM_KIND__UNPACK_D2URH:
-                {
-                    const char *sbuf = (const char *) elem->pup.inbuf +
-                        subop->count_offset * elem->pup.type->size;
-
-                    rc = byte_type_backend->gpudev[id].unpack(sbuf, subop->host_tmpbuf,
-                                                              subop->count * elem->pup.type->size,
-                                                              byte_type, NULL, subop->event);
-                    YAKSU_ERR_CHECK(rc, fn_fail);
-                }
-                break;
-
-            default:
-                rc = YAKSA_ERR__INTERNAL;
-                goto fn_fail;
+            rc = byte_type_backend->gpudev[id].unpack(sbuf, subop->host_tmpbuf,
+                                                      subop->count * elem->pup.type->size,
+                                                      byte_type, NULL, subop->event);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+        } else {
+            rc = YAKSA_ERR__INTERNAL;
+            goto fn_fail;
         }
 
         elem->pup.issued_count += subop->count;

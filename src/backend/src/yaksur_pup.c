@@ -9,25 +9,25 @@
 #include "yaksu.h"
 #include "yaksuri.h"
 
-static int get_memory_type(const void *buf, yaksur_memory_type_e * memtype,
-                           yaksuri_gpudev_id_e * id)
+static int get_ptr_attr(const void *buf, yaksur_ptr_attr_s * ptrattr, yaksuri_gpudev_id_e * id)
 {
     int rc = YAKSA_SUCCESS;
 
     /* Each GPU backend can claim "ownership" of the input buffer */
     for (*id = YAKSURI_GPUDEV_ID__UNSET + 1; *id < YAKSURI_GPUDEV_ID__LAST; (*id)++) {
         if (yaksuri_global.gpudev[*id].info) {
-            rc = yaksuri_global.gpudev[*id].info->get_memory_type(buf, memtype);
+            rc = yaksuri_global.gpudev[*id].info->get_ptr_attr(buf, ptrattr);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
-            if (*memtype == YAKSUR_MEMORY_TYPE__DEVICE || YAKSUR_MEMORY_TYPE__REGISTERED_HOST)
+            if (ptrattr->type == YAKSUR_PTR_TYPE__DEVICE ||
+                ptrattr->type == YAKSUR_PTR_TYPE__REGISTERED_HOST)
                 break;
         }
     }
 
     if (*id == YAKSURI_GPUDEV_ID__LAST) {
         *id = YAKSURI_GPUDEV_ID__UNSET;
-        *memtype = YAKSUR_MEMORY_TYPE__UNREGISTERED_HOST;
+        ptrattr->type = YAKSUR_PTR_TYPE__UNREGISTERED_HOST;
     }
 
   fn_exit:
@@ -40,15 +40,15 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
                  yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
-    yaksur_memory_type_e inbuf_memtype, outbuf_memtype;
+    yaksur_ptr_attr_s inattr, outattr;
     yaksuri_gpudev_id_e inbuf_gpudev, outbuf_gpudev, id;
     yaksuri_type_s *type_backend = (yaksuri_type_s *) type->backend.priv;
     yaksuri_request_s *request_backend = (yaksuri_request_s *) request->backend.priv;
 
-    rc = get_memory_type((const char *) inbuf + type->true_lb, &inbuf_memtype, &inbuf_gpudev);
+    rc = get_ptr_attr((const char *) inbuf + type->true_lb, &inattr, &inbuf_gpudev);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    rc = get_memory_type(outbuf, &outbuf_memtype, &outbuf_gpudev);
+    rc = get_ptr_attr(outbuf, &outattr, &outbuf_gpudev);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     if (inbuf_gpudev == YAKSURI_GPUDEV_ID__UNSET && outbuf_gpudev == YAKSURI_GPUDEV_ID__UNSET) {
@@ -63,7 +63,7 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
         id = outbuf_gpudev;
     }
 
-    if (inbuf_memtype != YAKSUR_MEMORY_TYPE__DEVICE && outbuf_memtype != YAKSUR_MEMORY_TYPE__DEVICE) {
+    if (inattr.type != YAKSUR_PTR_TYPE__DEVICE && outattr.type != YAKSUR_PTR_TYPE__DEVICE) {
         if (type_backend->seq.pack) {
             rc = type_backend->seq.pack(inbuf, outbuf, count, type);
             YAKSU_ERR_CHECK(rc, fn_fail);
@@ -78,7 +78,7 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
     rc = yaksuri_global.gpudev[id].info->event_create(&request_backend->event);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    if (inbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE && outbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE) {
+    if (inattr.type == YAKSUR_PTR_TYPE__DEVICE && outattr.type == YAKSUR_PTR_TYPE__DEVICE) {
         if (type_backend->gpudev[id].pack) {
             rc = type_backend->gpudev[id].pack(inbuf, outbuf, count, type, NULL,
                                                request_backend->event);
@@ -99,27 +99,9 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
     } else {
         request_backend->kind = YAKSURI_REQUEST_KIND__STAGED;
 
-        if (inbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE &&
-            outbuf_memtype == YAKSUR_MEMORY_TYPE__REGISTERED_HOST) {
-            rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, request,
-                                          YAKSURI_PROGRESS_ELEM_KIND__PACK_D2RH);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        } else if (inbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE &&
-                   outbuf_memtype == YAKSUR_MEMORY_TYPE__UNREGISTERED_HOST) {
-            rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, request,
-                                          YAKSURI_PROGRESS_ELEM_KIND__PACK_D2URH);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        } else if (inbuf_memtype == YAKSUR_MEMORY_TYPE__REGISTERED_HOST &&
-                   outbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE) {
-            rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, request,
-                                          YAKSURI_PROGRESS_ELEM_KIND__PACK_RH2D);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        } else if (inbuf_memtype == YAKSUR_MEMORY_TYPE__UNREGISTERED_HOST &&
-                   outbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE) {
-            rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, request,
-                                          YAKSURI_PROGRESS_ELEM_KIND__PACK_URH2D);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        }
+        rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, request,
+                                      inattr, outattr, YAKSURI_PUPTYPE__PACK);
+        YAKSU_ERR_CHECK(rc, fn_fail);
 
         rc = yaksuri_progress_poke();
         YAKSU_ERR_CHECK(rc, fn_fail);
@@ -135,15 +117,15 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
                    yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
-    yaksur_memory_type_e inbuf_memtype, outbuf_memtype;
+    yaksur_ptr_attr_s inattr, outattr;
     yaksuri_gpudev_id_e inbuf_gpudev, outbuf_gpudev, id;
     yaksuri_type_s *type_backend = (yaksuri_type_s *) type->backend.priv;
     yaksuri_request_s *request_backend = (yaksuri_request_s *) request->backend.priv;
 
-    rc = get_memory_type(inbuf, &inbuf_memtype, &inbuf_gpudev);
+    rc = get_ptr_attr(inbuf, &inattr, &inbuf_gpudev);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    rc = get_memory_type((char *) outbuf + type->true_lb, &outbuf_memtype, &outbuf_gpudev);
+    rc = get_ptr_attr((char *) outbuf + type->true_lb, &outattr, &outbuf_gpudev);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     if (inbuf_gpudev == YAKSURI_GPUDEV_ID__UNSET && outbuf_gpudev == YAKSURI_GPUDEV_ID__UNSET) {
@@ -158,7 +140,7 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
         id = outbuf_gpudev;
     }
 
-    if (inbuf_memtype != YAKSUR_MEMORY_TYPE__DEVICE && outbuf_memtype != YAKSUR_MEMORY_TYPE__DEVICE) {
+    if (inattr.type != YAKSUR_PTR_TYPE__DEVICE && outattr.type != YAKSUR_PTR_TYPE__DEVICE) {
         if (type_backend->seq.unpack) {
             rc = type_backend->seq.unpack(inbuf, outbuf, count, type);
             YAKSU_ERR_CHECK(rc, fn_fail);
@@ -173,7 +155,7 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
     rc = yaksuri_global.gpudev[id].info->event_create(&request_backend->event);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    if (inbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE && outbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE) {
+    if (inattr.type == YAKSUR_PTR_TYPE__DEVICE && outattr.type == YAKSUR_PTR_TYPE__DEVICE) {
         if (type_backend->gpudev[id].unpack) {
             rc = type_backend->gpudev[id].unpack(inbuf, outbuf, count, type, NULL,
                                                  request_backend->event);
@@ -194,27 +176,9 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
     } else {
         request_backend->kind = YAKSURI_REQUEST_KIND__STAGED;
 
-        if (inbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE &&
-            outbuf_memtype == YAKSUR_MEMORY_TYPE__REGISTERED_HOST) {
-            rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, request,
-                                          YAKSURI_PROGRESS_ELEM_KIND__UNPACK_D2RH);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        } else if (inbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE &&
-                   outbuf_memtype == YAKSUR_MEMORY_TYPE__UNREGISTERED_HOST) {
-            rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, request,
-                                          YAKSURI_PROGRESS_ELEM_KIND__UNPACK_D2URH);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        } else if (inbuf_memtype == YAKSUR_MEMORY_TYPE__REGISTERED_HOST &&
-                   outbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE) {
-            rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, request,
-                                          YAKSURI_PROGRESS_ELEM_KIND__UNPACK_RH2D);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        } else if (inbuf_memtype == YAKSUR_MEMORY_TYPE__UNREGISTERED_HOST &&
-                   outbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE) {
-            rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, request,
-                                          YAKSURI_PROGRESS_ELEM_KIND__UNPACK_URH2D);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        }
+        rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, request,
+                                      inattr, outattr, YAKSURI_PUPTYPE__UNPACK);
+        YAKSU_ERR_CHECK(rc, fn_fail);
 
         rc = yaksuri_progress_poke();
         YAKSU_ERR_CHECK(rc, fn_fail);

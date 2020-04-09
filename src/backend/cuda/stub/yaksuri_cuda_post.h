@@ -60,11 +60,11 @@ static int yaksuri_cudai_event_synchronize(void *event)
     return YAKSA_SUCCESS;
 }
 
-static int yaksuri_cudai_get_memory_type(const void *buf,
-                                         yaksur_memory_type_e * memtype) ATTRIBUTE((unused));
-static int yaksuri_cudai_get_memory_type(const void *buf, yaksur_memory_type_e * memtype)
+static int yaksuri_cudai_get_ptr_attr(const void *buf,
+                                      yaksur_ptr_attr_s * ptrattr) ATTRIBUTE((unused));
+static int yaksuri_cudai_get_ptr_attr(const void *buf, yaksur_ptr_attr_s * ptrattr)
 {
-    *memtype = YAKSUR_MEMORY_TYPE__UNREGISTERED_HOST;
+    ptrattr->type = YAKSUR_PTR_TYPE__UNREGISTERED_HOST;
 
     return YAKSA_SUCCESS;
 }

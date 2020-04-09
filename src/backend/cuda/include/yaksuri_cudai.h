@@ -93,7 +93,7 @@ int yaksuri_cudai_event_destroy(void *event);
 int yaksuri_cudai_event_query(void *event, int *completed);
 int yaksuri_cudai_event_synchronize(void *event);
 
-int yaksuri_cudai_get_memory_type(const void *buf, yaksur_memory_type_e * memtype);
+int yaksuri_cudai_get_ptr_attr(const void *buf, yaksur_ptr_attr_s * ptrattr);
 
 int yaksuri_cudai_md_alloc(yaksi_type_s * type);
 int yaksuri_cudai_populate_pupfns(yaksi_type_s * type, yaksur_gpudev_pup_fn * pack,
