@@ -72,8 +72,6 @@ int main(int argc, char **argv)
     assert(rc == DTP_SUCCESS);
 
     for (int i = 0; i < iters; i++) {
-        char *desc;
-
         dprintf("==== iter %d ====\n", i);
 
         /* create the source object */
@@ -84,9 +82,11 @@ int main(int argc, char **argv)
         assert(sbuf);
 
         if (verbose) {
+            char *desc;
             rc = DTP_obj_get_description(sobj, &desc);
             assert(rc == DTP_SUCCESS);
             dprintf("==> sbuf %p, sobj (count: %zu):\n%s\n", sbuf, sobj.DTP_type_count, desc);
+            free(desc);
         }
 
         rc = DTP_obj_buf_init(sobj, sbuf, 0, 1, basecount);

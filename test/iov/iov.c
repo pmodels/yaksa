@@ -138,8 +138,6 @@ int main(int argc, char **argv)
     uintptr_t *segment_lengths = (uintptr_t *) malloc(segments * sizeof(uintptr_t));
 
     for (int i = 0; i < iters; i++) {
-        char *desc;
-
         dprintf("==== iter %d ====\n", i);
 
         /* create the source object */
@@ -150,10 +148,12 @@ int main(int argc, char **argv)
         assert(sbuf);
 
         if (verbose) {
+            char *desc;
             rc = DTP_obj_get_description(sobj, &desc);
             assert(rc == DTP_SUCCESS);
             dprintf("==> sbuf %p (with offset) %p, sobj (count: %zu):\n%s\n",
                     sbuf, sbuf + sobj.DTP_buf_offset, sobj.DTP_type_count, desc);
+            free(desc);
         }
 
         rc = DTP_obj_buf_init(sobj, sbuf, 0, 1, basecount);
@@ -172,10 +172,12 @@ int main(int argc, char **argv)
         assert(dbuf);
 
         if (verbose) {
+            char *desc;
             rc = DTP_obj_get_description(dobj, &desc);
             assert(rc == DTP_SUCCESS);
             dprintf("==> dbuf %p (with offset) %p, dobj (count: %zu):\n%s\n",
                     dbuf, dbuf + dobj.DTP_buf_offset, dobj.DTP_type_count, desc);
+            free(desc);
         }
 
         rc = DTP_obj_buf_init(dobj, dbuf, -1, -1, basecount);
