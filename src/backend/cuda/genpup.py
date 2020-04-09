@@ -245,18 +245,18 @@ for b in builtin_types:
                     # generic variables
                     display("int rc = YAKSA_SUCCESS;\n");
                     display("cudaError_t cerr;\n");
-                    display("struct cudaPointerAttributes outbuf_attr, inbuf_attr;\n")
+                    display("struct cudaPointerAttributes outattr, inattr;\n")
                     display("enum host_dev { HOST, DEVICE };\n")
                     OUTFILE.write("\n");
                     if (func == "pack"):
-                        display("cerr = cudaPointerGetAttributes(&outbuf_attr, outbuf);\n")
+                        display("cerr = cudaPointerGetAttributes(&outattr, outbuf);\n")
                         display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
-                        display("cerr = cudaPointerGetAttributes(&inbuf_attr, (char *) inbuf + type->true_lb);\n")
+                        display("cerr = cudaPointerGetAttributes(&inattr, (char *) inbuf + type->true_lb);\n")
                         display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
                     else:
-                        display("cerr = cudaPointerGetAttributes(&outbuf_attr, (char *) outbuf + type->true_lb);\n")
+                        display("cerr = cudaPointerGetAttributes(&outattr, (char *) outbuf + type->true_lb);\n")
                         display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
-                        display("cerr = cudaPointerGetAttributes(&inbuf_attr, inbuf);\n")
+                        display("cerr = cudaPointerGetAttributes(&inattr, inbuf);\n")
                         display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
                     OUTFILE.write("\n");
 
@@ -283,7 +283,7 @@ for b in builtin_types:
 
                         if (func == "unpack"):
                             display("enum host_dev inbuf_type;\n")
-                            display("if (inbuf_attr.type == cudaMemoryTypeDevice || inbuf_attr.type == cudaMemoryTypeManaged)\n")
+                            display("if (inattr.type == cudaMemoryTypeDevice || inattr.type == cudaMemoryTypeManaged)\n")
                             display("    inbuf_type = DEVICE;\n")
                             display("else\n")
                             display("    inbuf_type = HOST;\n")
@@ -297,7 +297,7 @@ for b in builtin_types:
                             OUTFILE.write("\n");
                         else:
                             display("enum host_dev outbuf_type;\n")
-                            display("if (outbuf_attr.type == cudaMemoryTypeDevice || outbuf_attr.type == cudaMemoryTypeManaged)\n")
+                            display("if (outattr.type == cudaMemoryTypeDevice || outattr.type == cudaMemoryTypeManaged)\n")
                             display("    outbuf_type = DEVICE;\n")
                             display("else\n")
                             display("    outbuf_type = HOST;\n")
