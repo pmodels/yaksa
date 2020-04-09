@@ -129,7 +129,7 @@ for b in builtin_types:
     OUTFILE.write("#include <wchar.h>\n")
     OUTFILE.write("#include <assert.h>\n")
     OUTFILE.write("#include \"yaksuri_cudai.h\"\n")
-    OUTFILE.write("#include \"yaksuri_cudai_pup.h\"\n")
+    OUTFILE.write("#include \"yaksuri_cudai_populate_pupfns.h\"\n")
     OUTFILE.write("\n")
 
     for d1 in derived_types:
@@ -428,7 +428,7 @@ def switcher(typelist, pupstr, nests):
     display("}\n")
 
 
-OUTFILE = open("src/backend/cuda/pup/yaksuri_cudai_pup.c", "w")
+OUTFILE = open("src/backend/cuda/pup/yaksuri_cudai_populate_pupfns.c", "w")
 OUTFILE.write("\
 /*\n\
  * Copyright (C) by Argonne National Laboratory\n\
@@ -443,7 +443,7 @@ OUTFILE.write("\
 #include \"yaksi.h\"\n\
 #include \"yaksu.h\"\n\
 #include \"yaksuri_cudai.h\"\n\
-#include \"yaksuri_cudai_pup.h\"\n\
+#include \"yaksuri_cudai_populate_pupfns.h\"\n\
 \n\
 int yaksuri_cudai_populate_pupfns(yaksi_type_s * type, yaksur_gpudev_pup_fn *pack, yaksur_gpudev_pup_fn *unpack)\n\
 {\n\
@@ -477,7 +477,7 @@ OUTFILE.close()
 ########################################################################################
 ##### Primary header file
 ########################################################################################
-OUTFILE = open("src/backend/cuda/pup/yaksuri_cudai_pup.h", "w")
+OUTFILE = open("src/backend/cuda/pup/yaksuri_cudai_populate_pupfns.h", "w")
 OUTFILE.write("/*\n")
 OUTFILE.write("* Copyright (C) by Argonne National Laboratory\n")
 OUTFILE.write("*     See COPYRIGHT in top-level directory\n")
