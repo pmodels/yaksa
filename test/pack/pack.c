@@ -96,20 +96,11 @@ static void free_mem(mem_type_e type, void *hostbuf, void *devicebuf)
     }
 }
 
-static void copy_content_to_device(size_t size, mem_type_e type, void *devicebuf, void *hostbuf)
+static void copy_content(const void *sbuf, void *dbuf, size_t size, mem_type_e type)
 {
 #ifdef HAVE_CUDA
     if (type == MEM_TYPE__DEVICE) {
-        cudaMemcpy(devicebuf, hostbuf, size, cudaMemcpyDefault);
-    }
-#endif
-}
-
-static void copy_content_to_host(size_t size, mem_type_e type, void *devicebuf, void *hostbuf)
-{
-#ifdef HAVE_CUDA
-    if (type == MEM_TYPE__DEVICE) {
-        cudaMemcpy(hostbuf, devicebuf, size, cudaMemcpyDefault);
+        cudaMemcpy(dbuf, sbuf, size, cudaMemcpyDefault);
     }
 #endif
 }
@@ -370,8 +361,8 @@ int main(int argc, char **argv)
         }
 
         /* the actual pack/unpack loop */
-        copy_content_to_device(sobj.DTP_bufsize, sbuf_memtype, sbuf_d, sbuf_h);
-        copy_content_to_device(dobj.DTP_bufsize, dbuf_memtype, dbuf_d, dbuf_h);
+        copy_content(sbuf_h, sbuf_d, sobj.DTP_bufsize, sbuf_memtype);
+        copy_content(dbuf_h, dbuf_d, dobj.DTP_bufsize, dbuf_memtype);
 
         void *tbuf;
         uintptr_t tbufsize = ssize * sobj.DTP_type_count;
@@ -398,7 +389,7 @@ int main(int argc, char **argv)
             assert(rc == YAKSA_SUCCESS);
         }
 
-        copy_content_to_host(dobj.DTP_bufsize, dbuf_memtype, dbuf_d, dbuf_h);
+        copy_content(dbuf_d, dbuf_h, dobj.DTP_bufsize, dbuf_memtype);
         rc = DTP_obj_buf_check(dobj, dbuf_h, 0, 1, basecount);
         assert(rc == DTP_SUCCESS);
 
