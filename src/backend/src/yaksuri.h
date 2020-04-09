@@ -43,8 +43,8 @@ typedef struct {
     void *event;
 
     enum {
-        YAKSURI_REQUEST_KIND__DEVICE_NATIVE,
-        YAKSURI_REQUEST_KIND__HOST_DEVICE_HYBRID,
+        YAKSURI_REQUEST_KIND__DIRECT,
+        YAKSURI_REQUEST_KIND__STAGED,
     } kind;
 } yaksuri_request_s;
 

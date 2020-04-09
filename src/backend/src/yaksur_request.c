@@ -15,7 +15,7 @@ int yaksur_request_test(yaksi_request_s * request)
     yaksuri_request_s *backend = (yaksuri_request_s *) request->backend.priv;
     yaksuri_gpudev_id_e id = backend->gpudev_id;
 
-    if (backend->kind == YAKSURI_REQUEST_KIND__DEVICE_NATIVE) {
+    if (backend->kind == YAKSURI_REQUEST_KIND__DIRECT) {
         int completed;
         rc = yaksuri_global.gpudev[id].info->event_query(backend->event, &completed);
         YAKSU_ERR_CHECK(rc, fn_fail);
@@ -40,7 +40,7 @@ int yaksur_request_wait(yaksi_request_s * request)
     yaksuri_request_s *backend = (yaksuri_request_s *) request->backend.priv;
     yaksuri_gpudev_id_e id = backend->gpudev_id;
 
-    if (backend->kind == YAKSURI_REQUEST_KIND__DEVICE_NATIVE) {
+    if (backend->kind == YAKSURI_REQUEST_KIND__DIRECT) {
         rc = yaksuri_global.gpudev[id].info->event_synchronize(backend->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
 

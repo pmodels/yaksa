@@ -92,12 +92,12 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
                 yaksu_atomic_store(&request->cc, 1);
             }
 
-            request_backend->kind = YAKSURI_REQUEST_KIND__DEVICE_NATIVE;
+            request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
         } else {
             rc = YAKSA_ERR__NOT_SUPPORTED;
         }
     } else {
-        request_backend->kind = YAKSURI_REQUEST_KIND__HOST_DEVICE_HYBRID;
+        request_backend->kind = YAKSURI_REQUEST_KIND__STAGED;
 
         if (inbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE &&
             outbuf_memtype == YAKSUR_MEMORY_TYPE__REGISTERED_HOST) {
@@ -187,12 +187,12 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
                 yaksu_atomic_store(&request->cc, 1);
             }
 
-            request_backend->kind = YAKSURI_REQUEST_KIND__DEVICE_NATIVE;
+            request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
         } else {
             rc = YAKSA_ERR__NOT_SUPPORTED;
         }
     } else {
-        request_backend->kind = YAKSURI_REQUEST_KIND__HOST_DEVICE_HYBRID;
+        request_backend->kind = YAKSURI_REQUEST_KIND__STAGED;
 
         if (inbuf_memtype == YAKSUR_MEMORY_TYPE__DEVICE &&
             outbuf_memtype == YAKSUR_MEMORY_TYPE__REGISTERED_HOST) {
