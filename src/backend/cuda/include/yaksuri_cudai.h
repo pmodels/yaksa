@@ -36,7 +36,8 @@ extern "C" {
     } while (0)
 
 typedef struct {
-    cudaStream_t stream;
+    int ndevices;
+    cudaStream_t *stream;
 } yaksuri_cudai_global_s;
 extern yaksuri_cudai_global_s yaksuri_cudai_global;
 
@@ -79,9 +80,9 @@ typedef struct yaksuri_cudai_md_s {
 
 typedef struct yaksuri_cudai_type_s {
     void (*pack) (const void *inbuf, void *outbuf, uintptr_t count, yaksuri_cudai_md_s * md,
-                  int n_threads, int n_blocks);
+                  int n_threads, int n_blocks, int device);
     void (*unpack) (const void *inbuf, void *outbuf, uintptr_t count, yaksuri_cudai_md_s * md,
-                    int n_threads, int n_blocks);
+                    int n_threads, int n_blocks, int device);
     yaksuri_cudai_md_s *md;
     pthread_mutex_t mdmutex;
     uintptr_t num_elements;

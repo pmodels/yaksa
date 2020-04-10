@@ -20,12 +20,15 @@ typedef enum yaksuri_pup_e {
 } yaksuri_puptype_e;
 
 typedef struct {
+    void *slab;
+    uintptr_t slab_head_offset;
+    uintptr_t slab_tail_offset;
+} yaksuri_slab_s;
+
+typedef struct {
     struct {
-        struct {
-            void *slab;
-            uintptr_t slab_head_offset;
-            uintptr_t slab_tail_offset;
-        } device, host;
+        yaksuri_slab_s host;
+        yaksuri_slab_s *device;
         yaksur_gpudev_info_s *info;
     } gpudev[YAKSURI_GPUDEV_ID__LAST];
 } yaksuri_global_s;

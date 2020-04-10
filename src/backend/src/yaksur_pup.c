@@ -76,17 +76,17 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
         goto fn_exit;
     }
 
-    request_backend->gpudev_id = id;
-    assert(yaksuri_global.gpudev[id].info);
+    bool is_supported;
+    rc = yaksuri_global.gpudev[id].info->pup_is_supported(type, &is_supported);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
-    if (inattr.type == YAKSUR_PTR_TYPE__DEVICE && outattr.type == YAKSUR_PTR_TYPE__DEVICE) {
-        bool is_supported;
-        rc = yaksuri_global.gpudev[id].info->pup_is_supported(type, &is_supported);
-        YAKSU_ERR_CHECK(rc, fn_fail);
+    if (!is_supported) {
+        rc = YAKSA_ERR__NOT_SUPPORTED;
+    } else {
+        request_backend->gpudev_id = id;
+        assert(yaksuri_global.gpudev[id].info);
 
-        if (!is_supported) {
-            rc = YAKSA_ERR__NOT_SUPPORTED;
-        } else {
+        if (inattr.type == YAKSUR_PTR_TYPE__DEVICE && outattr.type == YAKSUR_PTR_TYPE__DEVICE) {
             rc = yaksuri_global.gpudev[id].info->ipack(inbuf, outbuf, count, type, NULL,
                                                        &request_backend->event);
             YAKSU_ERR_CHECK(rc, fn_fail);
@@ -100,16 +100,16 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
             }
 
             request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
+        } else {
+            request_backend->kind = YAKSURI_REQUEST_KIND__STAGED;
+
+            rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, request,
+                                          inattr, outattr, YAKSURI_PUPTYPE__PACK);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+
+            rc = yaksuri_progress_poke();
+            YAKSU_ERR_CHECK(rc, fn_fail);
         }
-    } else {
-        request_backend->kind = YAKSURI_REQUEST_KIND__STAGED;
-
-        rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, request,
-                                      inattr, outattr, YAKSURI_PUPTYPE__PACK);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-
-        rc = yaksuri_progress_poke();
-        YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
   fn_exit:
@@ -158,17 +158,17 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
         goto fn_exit;
     }
 
-    request_backend->gpudev_id = id;
-    assert(yaksuri_global.gpudev[id].info);
+    bool is_supported;
+    rc = yaksuri_global.gpudev[id].info->pup_is_supported(type, &is_supported);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
-    if (inattr.type == YAKSUR_PTR_TYPE__DEVICE && outattr.type == YAKSUR_PTR_TYPE__DEVICE) {
-        bool is_supported;
-        rc = yaksuri_global.gpudev[id].info->pup_is_supported(type, &is_supported);
-        YAKSU_ERR_CHECK(rc, fn_fail);
+    if (!is_supported) {
+        rc = YAKSA_ERR__NOT_SUPPORTED;
+    } else {
+        request_backend->gpudev_id = id;
+        assert(yaksuri_global.gpudev[id].info);
 
-        if (!is_supported) {
-            rc = YAKSA_ERR__NOT_SUPPORTED;
-        } else {
+        if (inattr.type == YAKSUR_PTR_TYPE__DEVICE && outattr.type == YAKSUR_PTR_TYPE__DEVICE) {
             rc = yaksuri_global.gpudev[id].info->iunpack(inbuf, outbuf, count, type, NULL,
                                                          &request_backend->event);
             YAKSU_ERR_CHECK(rc, fn_fail);
@@ -182,16 +182,16 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
             }
 
             request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
+        } else {
+            request_backend->kind = YAKSURI_REQUEST_KIND__STAGED;
+
+            rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, request,
+                                          inattr, outattr, YAKSURI_PUPTYPE__UNPACK);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+
+            rc = yaksuri_progress_poke();
+            YAKSU_ERR_CHECK(rc, fn_fail);
         }
-    } else {
-        request_backend->kind = YAKSURI_REQUEST_KIND__STAGED;
-
-        rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, request,
-                                      inattr, outattr, YAKSURI_PUPTYPE__UNPACK);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-
-        rc = yaksuri_progress_poke();
-        YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
   fn_exit:

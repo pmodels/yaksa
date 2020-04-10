@@ -86,17 +86,11 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                              yaksur_ptr_attr_s outattr, yaksuri_puptype_e puptype)
 {
     int rc = YAKSA_SUCCESS;
-    yaksuri_request_s *request_backend = (yaksuri_request_s *) request->backend.priv;
-    yaksuri_gpudev_id_e id = request_backend->gpudev_id;
 
     /* if we need to go through the progress engine, make sure we only
      * take on types, where at least one count of the type fits into
      * our temporary buffers. */
-    bool is_supported;
-    rc = yaksuri_global.gpudev[id].info->pup_is_supported(type, &is_supported);
-    YAKSU_ERR_CHECK(rc, fn_fail);
-
-    if (type->size > TMPBUF_SLAB_SIZE || !is_supported) {
+    if (type->size > TMPBUF_SLAB_SIZE) {
         rc = YAKSA_ERR__NOT_SUPPORTED;
         goto fn_exit;
     }
@@ -135,49 +129,94 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
     goto fn_exit;
 }
 
-static int alloc_subop(yaksuri_gpudev_id_e id, bool need_host_buf, bool need_device_buf,
-                       progress_subop_s ** subop)
+static int alloc_subop(progress_subop_s ** subop)
 {
     int rc = YAKSA_SUCCESS;
     progress_elem_s *elem = progress_head;
     uintptr_t device_tmpbuf_offset = 0, host_tmpbuf_offset = 0;
     uintptr_t nelems = UINTPTR_MAX;
+    yaksuri_request_s *request_backend = (yaksuri_request_s *) elem->request->backend.priv;
+    yaksuri_gpudev_id_e id = request_backend->gpudev_id;
+    bool need_device_tmpbuf = false, need_host_tmpbuf = false;
+    int devid;
 
-    assert(need_host_buf || need_device_buf);
+    if ((elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+         elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
+         elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) ||
+        (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+         elem->pup.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
+         elem->pup.outattr.type == YAKSUR_PTR_TYPE__DEVICE) ||
+        (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+         elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
+         elem->pup.outattr.type == YAKSUR_PTR_TYPE__DEVICE) ||
+        (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+         elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
+         elem->pup.outattr.type == YAKSUR_PTR_TYPE__DEVICE) ||
+        (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+         elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
+         elem->pup.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
+        (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+         elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
+         elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST)) {
+        need_host_tmpbuf = true;
+    }
+
+    if ((elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+         elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
+         elem->pup.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
+        (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+         elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
+         elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST)) {
+        need_device_tmpbuf = true;
+        devid = elem->pup.inattr.device;
+    }
+
+    if ((elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+         elem->pup.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
+         elem->pup.outattr.type == YAKSUR_PTR_TYPE__DEVICE) ||
+        (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+         elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
+         elem->pup.outattr.type == YAKSUR_PTR_TYPE__DEVICE)) {
+        need_device_tmpbuf = true;
+        devid = elem->pup.outattr.device;
+    }
+
+    assert(need_host_tmpbuf || need_device_tmpbuf);
 
     *subop = NULL;
 
     /* figure out if we actually have enough buffer space */
-    if (need_device_buf) {
+    if (need_device_tmpbuf) {
         uintptr_t d_nelems;
-        if (yaksuri_global.gpudev[id].device.slab_head_offset == 0 &&
-            yaksuri_global.gpudev[id].device.slab_tail_offset == 0) {
+        if (yaksuri_global.gpudev[id].device[devid].slab_head_offset == 0 &&
+            yaksuri_global.gpudev[id].device[devid].slab_tail_offset == 0) {
             d_nelems = TMPBUF_SLAB_SIZE / elem->pup.type->size;
-            device_tmpbuf_offset = yaksuri_global.gpudev[id].device.slab_tail_offset;
-        } else if (yaksuri_global.gpudev[id].device.slab_tail_offset >
-                   yaksuri_global.gpudev[id].device.slab_head_offset) {
+            device_tmpbuf_offset = yaksuri_global.gpudev[id].device[devid].slab_tail_offset;
+        } else if (yaksuri_global.gpudev[id].device[devid].slab_tail_offset >
+                   yaksuri_global.gpudev[id].device[devid].slab_head_offset) {
             uintptr_t count =
                 (TMPBUF_SLAB_SIZE -
-                 yaksuri_global.gpudev[id].device.slab_tail_offset) / elem->pup.type->size;
+                 yaksuri_global.gpudev[id].device[devid].slab_tail_offset) / elem->pup.type->size;
             if (count) {
                 d_nelems = count;
-                device_tmpbuf_offset = yaksuri_global.gpudev[id].device.slab_tail_offset;
+                device_tmpbuf_offset = yaksuri_global.gpudev[id].device[devid].slab_tail_offset;
             } else {
-                d_nelems = yaksuri_global.gpudev[id].device.slab_head_offset / elem->pup.type->size;
+                d_nelems =
+                    yaksuri_global.gpudev[id].device[devid].slab_head_offset / elem->pup.type->size;
                 device_tmpbuf_offset = 0;
             }
         } else {
             d_nelems =
-                (yaksuri_global.gpudev[id].device.slab_head_offset -
-                 yaksuri_global.gpudev[id].device.slab_tail_offset) / elem->pup.type->size;
-            device_tmpbuf_offset = yaksuri_global.gpudev[id].device.slab_tail_offset;
+                (yaksuri_global.gpudev[id].device[devid].slab_head_offset -
+                 yaksuri_global.gpudev[id].device[devid].slab_tail_offset) / elem->pup.type->size;
+            device_tmpbuf_offset = yaksuri_global.gpudev[id].device[devid].slab_tail_offset;
         }
 
         if (nelems > d_nelems)
             nelems = d_nelems;
     }
 
-    if (need_host_buf) {
+    if (need_host_tmpbuf) {
         uintptr_t h_nelems;
         if (yaksuri_global.gpudev[id].host.slab_head_offset == 0 &&
             yaksuri_global.gpudev[id].host.slab_tail_offset == 0) {
@@ -216,16 +255,16 @@ static int alloc_subop(yaksuri_gpudev_id_e id, bool need_host_buf, bool need_dev
 
 
     /* allocate the actual buffer space */
-    if (need_device_buf) {
-        if (yaksuri_global.gpudev[id].device.slab == NULL) {
-            yaksuri_global.gpudev[id].device.slab =
+    if (need_device_tmpbuf) {
+        if (yaksuri_global.gpudev[id].device[devid].slab == NULL) {
+            yaksuri_global.gpudev[id].device[devid].slab =
                 yaksuri_global.gpudev[id].info->device_malloc(TMPBUF_SLAB_SIZE);
         }
-        yaksuri_global.gpudev[id].device.slab_tail_offset =
+        yaksuri_global.gpudev[id].device[devid].slab_tail_offset =
             device_tmpbuf_offset + nelems * elem->pup.type->size;
     }
 
-    if (need_host_buf) {
+    if (need_host_tmpbuf) {
         if (yaksuri_global.gpudev[id].host.slab == NULL) {
             yaksuri_global.gpudev[id].host.slab =
                 yaksuri_global.gpudev[id].info->host_malloc(TMPBUF_SLAB_SIZE);
@@ -240,11 +279,19 @@ static int alloc_subop(yaksuri_gpudev_id_e id, bool need_host_buf, bool need_dev
 
     (*subop)->count_offset = elem->pup.completed_count + elem->pup.issued_count;
     (*subop)->count = nelems;
-    (*subop)->device_tmpbuf =
-        (void *) ((char *) yaksuri_global.gpudev[id].device.slab + device_tmpbuf_offset);
-    (*subop)->host_tmpbuf =
-        (void *) ((char *) yaksuri_global.gpudev[id].host.slab + host_tmpbuf_offset);
+    if (need_device_tmpbuf)
+        (*subop)->device_tmpbuf =
+            (void *) ((char *) yaksuri_global.gpudev[id].device[devid].slab + device_tmpbuf_offset);
+    else
+        (*subop)->device_tmpbuf = NULL;
 
+    if (need_host_tmpbuf)
+        (*subop)->host_tmpbuf =
+            (void *) ((char *) yaksuri_global.gpudev[id].host.slab + host_tmpbuf_offset);
+    else
+        (*subop)->host_tmpbuf = NULL;
+
+    (*subop)->event = NULL;
     (*subop)->next = NULL;
 
     if (elem->pup.subop_tail == NULL) {
@@ -272,21 +319,23 @@ static int free_subop(progress_subop_s * subop)
 
     /* free the device buffer */
     if (subop->device_tmpbuf) {
+        int devid;
+
+        if (elem->pup.puptype == YAKSURI_PUPTYPE__PACK)
+            devid = elem->pup.inattr.device;
+        else
+            devid = elem->pup.outattr.device;
+
         assert(subop->device_tmpbuf ==
-               (char *) yaksuri_global.gpudev[id].device.slab +
-               yaksuri_global.gpudev[id].device.slab_head_offset);
-        progress_subop_s *tmp;
-        for (tmp = subop; tmp->next; tmp = tmp->next) {
-            if (tmp->next->device_tmpbuf) {
-                yaksuri_global.gpudev[id].device.slab_head_offset =
-                    (uintptr_t) ((char *) tmp->next->device_tmpbuf -
-                                 (char *) yaksuri_global.gpudev[id].device.slab);
-                break;
-            }
-        }
-        if (tmp->next == NULL) {
-            yaksuri_global.gpudev[id].device.slab_head_offset =
-                yaksuri_global.gpudev[id].device.slab_tail_offset = 0;
+               (char *) yaksuri_global.gpudev[id].device[devid].slab +
+               yaksuri_global.gpudev[id].device[devid].slab_head_offset);
+        if (subop->next) {
+            yaksuri_global.gpudev[id].device[devid].slab_head_offset =
+                (uintptr_t) ((char *) subop->next->device_tmpbuf -
+                             (char *) yaksuri_global.gpudev[id].device[devid].slab);
+        } else {
+            yaksuri_global.gpudev[id].device[devid].slab_head_offset =
+                yaksuri_global.gpudev[id].device[devid].slab_tail_offset = 0;
         }
     }
 
@@ -295,16 +344,11 @@ static int free_subop(progress_subop_s * subop)
         assert(subop->host_tmpbuf ==
                (char *) yaksuri_global.gpudev[id].host.slab +
                yaksuri_global.gpudev[id].host.slab_head_offset);
-        progress_subop_s *tmp;
-        for (tmp = subop; tmp->next; tmp = tmp->next) {
-            if (tmp->next->host_tmpbuf) {
-                yaksuri_global.gpudev[id].host.slab_head_offset =
-                    (uintptr_t) ((char *) tmp->next->host_tmpbuf -
-                                 (char *) yaksuri_global.gpudev[id].host.slab);
-                break;
-            }
-        }
-        if (tmp->next == NULL) {
+        if (subop->next) {
+            yaksuri_global.gpudev[id].host.slab_head_offset =
+                (uintptr_t) ((char *) subop->next->device_tmpbuf -
+                             (char *) yaksuri_global.gpudev[id].host.slab);
+        } else {
             yaksuri_global.gpudev[id].host.slab_head_offset =
                 yaksuri_global.gpudev[id].host.slab_tail_offset = 0;
         }
@@ -413,45 +457,8 @@ int yaksuri_progress_poke(void)
     /****************************************************************************/
     while (elem->pup.completed_count + elem->pup.issued_count < elem->pup.count) {
         progress_subop_s *subop;
-        bool need_device_tmpbuf = false, need_host_tmpbuf = false;
 
-        if ((elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
-             elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
-             elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) ||
-            (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
-             elem->pup.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
-             elem->pup.outattr.type == YAKSUR_PTR_TYPE__DEVICE) ||
-            (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
-             elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
-             elem->pup.outattr.type == YAKSUR_PTR_TYPE__DEVICE) ||
-            (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
-             elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
-             elem->pup.outattr.type == YAKSUR_PTR_TYPE__DEVICE) ||
-            (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
-             elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
-             elem->pup.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
-            (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
-             elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
-             elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST)) {
-            need_host_tmpbuf = true;
-        }
-
-        if ((elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
-             elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
-             elem->pup.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
-            (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
-             elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
-             elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) ||
-            (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
-             elem->pup.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
-             elem->pup.outattr.type == YAKSUR_PTR_TYPE__DEVICE) ||
-            (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
-             elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
-             elem->pup.outattr.type == YAKSUR_PTR_TYPE__DEVICE)) {
-            need_device_tmpbuf = true;
-        }
-
-        rc = alloc_subop(id, need_host_tmpbuf, need_device_tmpbuf, &subop);
+        rc = alloc_subop(&subop);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (subop == NULL) {

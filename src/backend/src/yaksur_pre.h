@@ -20,6 +20,7 @@ typedef struct {
         YAKSUR_PTR_TYPE__REGISTERED_HOST,
         YAKSUR_PTR_TYPE__DEVICE,
     } type;
+    int device;
 } yaksur_ptr_attr_s;
 
 struct yaksi_type_s;
@@ -34,6 +35,7 @@ typedef struct {
     void *priv;
 } yaksur_request_s;
 
+typedef int (*yaksur_get_num_devices_fn) (int *);
 typedef int (*yaksur_pup_fn) (const void *, void *, uintptr_t, struct yaksi_type_s *,
                               void *, void **);
 typedef int (*yaksur_pup_is_supported_fn) (struct yaksi_type_s *, bool *);
@@ -46,6 +48,7 @@ typedef int (*yaksur_type_free_fn) (struct yaksi_type_s *);
 typedef int (*yaksur_get_ptr_attr) (const void *, yaksur_ptr_attr_s *);
 
 typedef struct yaksur_gpudev_info_s {
+    yaksur_get_num_devices_fn get_num_devices;
     yaksur_pup_fn ipack;
     yaksur_pup_fn iunpack;
     yaksur_pup_is_supported_fn pup_is_supported;

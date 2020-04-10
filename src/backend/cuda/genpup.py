@@ -238,11 +238,11 @@ for b in builtin_types:
 
 
                         ##### generate the host function
-                        OUTFILE.write("void yaksuri_cudai_%s(const void *inbuf, void *outbuf, uintptr_t count, yaksuri_cudai_md_s *md, int n_threads, int n_blocks)\n" % funcprefix)
+                        OUTFILE.write("void yaksuri_cudai_%s(const void *inbuf, void *outbuf, uintptr_t count, yaksuri_cudai_md_s *md, int n_threads, int n_blocks, int device)\n" % funcprefix)
                         OUTFILE.write("{\n")
                         OUTFILE.write("    void *args[] = { &inbuf, &outbuf, &count, &md };\n")
                         OUTFILE.write("    cudaError_t cerr = cudaLaunchKernel((const void *) yaksuri_cudai_kernel_%s,\n" % funcprefix)
-                        OUTFILE.write("                dim3(n_blocks), dim3(n_threads), args, 0, yaksuri_cudai_global.stream);\n")
+                        OUTFILE.write("                dim3(n_blocks), dim3(n_threads), args, 0, yaksuri_cudai_global.stream[device]);\n")
                         OUTFILE.write("    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
                         OUTFILE.write("}\n\n")
 
@@ -435,7 +435,7 @@ for b in builtin_types:
                     if (d3 != ""):
                         s = s + "%s_" % d3
                     s = s + b.replace(" ", "_")
-                    OUTFILE.write("%s(const void *inbuf, void *outbuf, uintptr_t count, yaksuri_cudai_md_s *md, int n_threads, int n_blocks);\n" % s)
+                    OUTFILE.write("%s(const void *inbuf, void *outbuf, uintptr_t count, yaksuri_cudai_md_s *md, int n_threads, int n_blocks, int device);\n" % s)
 
 ## end of basic-type specific file
 OUTFILE.write("\n")

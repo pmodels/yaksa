@@ -47,8 +47,22 @@ yaksuri_cudai_global_s yaksuri_cudai_global;
 static int finalize_hook(void)
 {
     int rc = YAKSA_SUCCESS;
+    cudaError_t cerr;
 
-    cudaError_t cerr = cudaStreamDestroy(yaksuri_cudai_global.stream);
+    int cur_device;
+    cerr = cudaGetDevice(&cur_device);
+    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
+    for (int i = 0; i < yaksuri_cudai_global.ndevices; i++) {
+        cerr = cudaSetDevice(i);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
+        cerr = cudaStreamDestroy(yaksuri_cudai_global.stream[i]);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    }
+    free(yaksuri_cudai_global.stream);
+
+    cerr = cudaSetDevice(cur_device);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
   fn_exit:
@@ -57,12 +71,41 @@ static int finalize_hook(void)
     goto fn_exit;
 }
 
+static int get_num_devices(int *ndevices)
+{
+    *ndevices = yaksuri_cudai_global.ndevices;
+
+    return YAKSA_SUCCESS;
+}
+
 int yaksuri_cuda_init_hook(yaksur_gpudev_info_s ** info)
 {
     int rc = YAKSA_SUCCESS;
+    cudaError_t cerr;
+
+    cerr = cudaGetDeviceCount(&yaksuri_cudai_global.ndevices);
+    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
+    yaksuri_cudai_global.stream = (cudaStream_t *)
+        malloc(yaksuri_cudai_global.ndevices * sizeof(cudaStream_t));
+
+    int cur_device;
+    cerr = cudaGetDevice(&cur_device);
+    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
+    for (int i = 0; i < yaksuri_cudai_global.ndevices; i++) {
+        cerr = cudaSetDevice(i);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
+        cerr = cudaStreamCreateWithFlags(&yaksuri_cudai_global.stream[i], cudaStreamNonBlocking);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    }
+
+    cerr = cudaSetDevice(cur_device);
+    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
     *info = (yaksur_gpudev_info_s *) malloc(sizeof(yaksur_gpudev_info_s));
-
+    (*info)->get_num_devices = get_num_devices;
     (*info)->ipack = yaksuri_cudai_ipack;
     (*info)->iunpack = yaksuri_cudai_iunpack;
     (*info)->pup_is_supported = yaksuri_cudai_pup_is_supported;
@@ -77,10 +120,6 @@ int yaksuri_cuda_init_hook(yaksur_gpudev_info_s ** info)
     (*info)->type_free = yaksuri_cudai_type_free_hook;
     (*info)->get_ptr_attr = yaksuri_cudai_get_ptr_attr;
     (*info)->finalize = finalize_hook;
-
-    cudaError_t cerr =
-        cudaStreamCreateWithFlags(&yaksuri_cudai_global.stream, cudaStreamNonBlocking);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
   fn_exit:
     return rc;
