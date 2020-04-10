@@ -42,7 +42,6 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
     int rc = YAKSA_SUCCESS;
     yaksur_ptr_attr_s inattr, outattr;
     yaksuri_gpudev_id_e inbuf_gpudev, outbuf_gpudev, id;
-    yaksuri_type_s *type_backend = (yaksuri_type_s *) type->backend.priv;
     yaksuri_request_s *request_backend = (yaksuri_request_s *) request->backend.priv;
 
     rc = get_ptr_attr((const char *) inbuf + type->true_lb, &inattr, &inbuf_gpudev);
@@ -64,11 +63,15 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
     }
 
     if (inattr.type != YAKSUR_PTR_TYPE__DEVICE && outattr.type != YAKSUR_PTR_TYPE__DEVICE) {
-        if (type_backend->seq.pack) {
-            rc = type_backend->seq.pack(inbuf, outbuf, count, type);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        } else {
+        bool is_supported;
+        rc = yaksuri_seq_pup_is_supported(type, &is_supported);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        if (!is_supported) {
             rc = YAKSA_ERR__NOT_SUPPORTED;
+        } else {
+            rc = yaksuri_seq_ipack(inbuf, outbuf, count, type);
+            YAKSU_ERR_CHECK(rc, fn_fail);
         }
         goto fn_exit;
     }
@@ -79,9 +82,15 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     if (inattr.type == YAKSUR_PTR_TYPE__DEVICE && outattr.type == YAKSUR_PTR_TYPE__DEVICE) {
-        if (type_backend->gpudev[id].pack) {
-            rc = type_backend->gpudev[id].pack(inbuf, outbuf, count, type, NULL,
-                                               request_backend->event);
+        bool is_supported;
+        rc = yaksuri_global.gpudev[id].info->pup_is_supported(type, &is_supported);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        if (!is_supported) {
+            rc = YAKSA_ERR__NOT_SUPPORTED;
+        } else {
+            rc = yaksuri_global.gpudev[id].info->ipack(inbuf, outbuf, count, type, NULL,
+                                                       request_backend->event);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             int completed;
@@ -93,8 +102,6 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
             }
 
             request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
-        } else {
-            rc = YAKSA_ERR__NOT_SUPPORTED;
         }
     } else {
         request_backend->kind = YAKSURI_REQUEST_KIND__STAGED;
@@ -119,7 +126,6 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
     int rc = YAKSA_SUCCESS;
     yaksur_ptr_attr_s inattr, outattr;
     yaksuri_gpudev_id_e inbuf_gpudev, outbuf_gpudev, id;
-    yaksuri_type_s *type_backend = (yaksuri_type_s *) type->backend.priv;
     yaksuri_request_s *request_backend = (yaksuri_request_s *) request->backend.priv;
 
     rc = get_ptr_attr(inbuf, &inattr, &inbuf_gpudev);
@@ -141,11 +147,15 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
     }
 
     if (inattr.type != YAKSUR_PTR_TYPE__DEVICE && outattr.type != YAKSUR_PTR_TYPE__DEVICE) {
-        if (type_backend->seq.unpack) {
-            rc = type_backend->seq.unpack(inbuf, outbuf, count, type);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        } else {
+        bool is_supported;
+        rc = yaksuri_seq_pup_is_supported(type, &is_supported);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        if (!is_supported) {
             rc = YAKSA_ERR__NOT_SUPPORTED;
+        } else {
+            rc = yaksuri_seq_iunpack(inbuf, outbuf, count, type);
+            YAKSU_ERR_CHECK(rc, fn_fail);
         }
         goto fn_exit;
     }
@@ -156,9 +166,15 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     if (inattr.type == YAKSUR_PTR_TYPE__DEVICE && outattr.type == YAKSUR_PTR_TYPE__DEVICE) {
-        if (type_backend->gpudev[id].unpack) {
-            rc = type_backend->gpudev[id].unpack(inbuf, outbuf, count, type, NULL,
-                                                 request_backend->event);
+        bool is_supported;
+        rc = yaksuri_global.gpudev[id].info->pup_is_supported(type, &is_supported);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        if (!is_supported) {
+            rc = YAKSA_ERR__NOT_SUPPORTED;
+        } else {
+            rc = yaksuri_global.gpudev[id].info->iunpack(inbuf, outbuf, count, type, NULL,
+                                                         request_backend->event);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             int completed;
@@ -170,8 +186,6 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
             }
 
             request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
-        } else {
-            rc = YAKSA_ERR__NOT_SUPPORTED;
         }
     } else {
         request_backend->kind = YAKSURI_REQUEST_KIND__STAGED;

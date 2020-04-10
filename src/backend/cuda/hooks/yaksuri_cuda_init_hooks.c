@@ -63,6 +63,9 @@ int yaksuri_cuda_init_hook(yaksur_gpudev_info_s ** info)
 
     *info = (yaksur_gpudev_info_s *) malloc(sizeof(yaksur_gpudev_info_s));
 
+    (*info)->ipack = yaksuri_cudai_ipack;
+    (*info)->iunpack = yaksuri_cudai_iunpack;
+    (*info)->pup_is_supported = yaksuri_cudai_pup_is_supported;
     (*info)->host_malloc = cuda_host_malloc;
     (*info)->host_free = cuda_host_free;
     (*info)->device_malloc = cuda_device_malloc;

@@ -64,16 +64,12 @@ int yaksur_type_create_hook(yaksi_type_s * type)
 {
     int rc = YAKSA_SUCCESS;
 
-    type->backend.priv = malloc(sizeof(yaksuri_type_s));
-    yaksuri_type_s *backend = (yaksuri_type_s *) type->backend.priv;
-
-    rc = yaksuri_seq_type_create_hook(type, &backend->seq.pack, &backend->seq.unpack);
+    rc = yaksuri_seq_type_create_hook(type);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     for (yaksuri_gpudev_id_e id = YAKSURI_GPUDEV_ID__UNSET + 1; id < YAKSURI_GPUDEV_ID__LAST; id++) {
         if (yaksuri_global.gpudev[id].info) {
-            rc = yaksuri_global.gpudev[id].info->type_create(type, &backend->gpudev[id].pack,
-                                                             &backend->gpudev[id].unpack);
+            rc = yaksuri_global.gpudev[id].info->type_create(type);
             YAKSU_ERR_CHECK(rc, fn_fail);
         }
     }
@@ -97,8 +93,6 @@ int yaksur_type_free_hook(yaksi_type_s * type)
             YAKSU_ERR_CHECK(rc, fn_fail);
         }
     }
-
-    free(type->backend.priv);
 
   fn_exit:
     return rc;

@@ -23,10 +23,6 @@ typedef struct {
 } yaksur_ptr_attr_s;
 
 struct yaksi_type_s;
-typedef int (*yaksur_seq_pup_fn) (const void *inbuf, void *outbuf, uintptr_t count,
-                                  struct yaksi_type_s * type);
-typedef int (*yaksur_gpudev_pup_fn) (const void *inbuf, void *outbuf, uintptr_t count,
-                                     struct yaksi_type_s * type, void *device_tmpbuf, void *event);
 
 typedef struct yaksur_type_s {
     void *priv;
@@ -38,17 +34,22 @@ typedef struct {
     void *priv;
 } yaksur_request_s;
 
+typedef int (*yaksur_pup_fn) (const void *, void *, uintptr_t, struct yaksi_type_s *,
+                              void *, void *);
+typedef int (*yaksur_pup_is_supported_fn) (struct yaksi_type_s *, bool *);
 typedef int (*yaksur_event_create_fn) (void **);
 typedef int (*yaksur_event_destroy_fn) (void *);
 typedef int (*yaksur_event_query_fn) (void *, int *);
 typedef int (*yaksur_event_synchronize_fn) (void *);
 typedef int (*yaksur_finalize_fn) (void);
-typedef int (*yaksur_type_create_fn) (struct yaksi_type_s *, yaksur_gpudev_pup_fn *,
-                                      yaksur_gpudev_pup_fn *);
+typedef int (*yaksur_type_create_fn) (struct yaksi_type_s *);
 typedef int (*yaksur_type_free_fn) (struct yaksi_type_s *);
 typedef int (*yaksur_get_ptr_attr) (const void *, yaksur_ptr_attr_s *);
 
 typedef struct yaksur_gpudev_info_s {
+    yaksur_pup_fn ipack;
+    yaksur_pup_fn iunpack;
+    yaksur_pup_is_supported_fn pup_is_supported;
     yaksu_malloc_fn host_malloc;
     yaksu_free_fn host_free;
     yaksu_malloc_fn device_malloc;

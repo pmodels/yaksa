@@ -6,6 +6,7 @@
 #include "yaksi.h"
 #include "yaksu.h"
 #include "yaksuri_seqi.h"
+#include <stdlib.h>
 
 int yaksuri_seq_init_hook(void)
 {
@@ -27,12 +28,13 @@ int yaksuri_seq_finalize_hook(void)
     goto fn_exit;
 }
 
-int yaksuri_seq_type_create_hook(yaksi_type_s * type, yaksur_seq_pup_fn * pack,
-                                 yaksur_seq_pup_fn * unpack)
+int yaksuri_seq_type_create_hook(yaksi_type_s * type)
 {
     int rc = YAKSA_SUCCESS;
 
-    rc = yaksuri_seqi_populate_pupfns(type, pack, unpack);
+    type->backend.seq.priv = malloc(sizeof(yaksuri_seqi_type_s));
+
+    rc = yaksuri_seqi_populate_pupfns(type);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
@@ -44,6 +46,8 @@ int yaksuri_seq_type_create_hook(yaksi_type_s * type, yaksur_seq_pup_fn * pack,
 int yaksuri_seq_type_free_hook(yaksi_type_s * type)
 {
     int rc = YAKSA_SUCCESS;
+
+    free(type->backend.seq.priv);
 
   fn_exit:
     return rc;

@@ -6,7 +6,8 @@
 AM_CPPFLAGS += -I$(top_srcdir)/src/backend/seq/pup
 
 libyaksa_la_SOURCES += \
-	src/backend/seq/pup/yaksuri_seqi_pup.c \
+	src/backend/seq/pup/yaksuri_seq_pup.c \
+	src/backend/seq/pup/yaksuri_seqi_populate_pupfns.c \
 	src/backend/seq/pup/yaksuri_seqi_pup_char.c \
 	src/backend/seq/pup/yaksuri_seqi_pup_double.c \
 	src/backend/seq/pup/yaksuri_seqi_pup_float.c \
@@ -22,4 +23,4 @@ libyaksa_la_SOURCES += \
 	src/backend/seq/pup/yaksuri_seqi_pup_wchar_t.c
 
 noinst_HEADERS += \
-	src/backend/seq/pup/yaksuri_seqi_pup.h
+	src/backend/seq/pup/yaksuri_seqi_populate_pupfns.h

@@ -10,7 +10,8 @@
  * internal headers, except for yaksa_config.h, in order to get the
  * configure checks. */
 
-/* dummy typedefs, as we do not have anything to store */
-typedef int yaksuri_seq_type_s;
+typedef struct {
+    void *priv;
+} yaksuri_seq_type_s;
 
 #endif /* YAKSURI_SEQ_PRE_H_INCLUDED */

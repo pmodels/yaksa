@@ -31,18 +31,6 @@ typedef struct {
 } yaksuri_global_s;
 extern yaksuri_global_s yaksuri_global;
 
-typedef struct yaksuri_type_s {
-    struct {
-        yaksur_seq_pup_fn pack;
-        yaksur_seq_pup_fn unpack;
-    } seq;
-
-    struct {
-        yaksur_gpudev_pup_fn pack;
-        yaksur_gpudev_pup_fn unpack;
-    } gpudev[YAKSURI_GPUDEV_ID__LAST];
-} yaksuri_type_s;
-
 typedef struct {
     yaksuri_gpudev_id_e gpudev_id;
     void *event;

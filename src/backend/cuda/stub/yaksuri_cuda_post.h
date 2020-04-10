@@ -20,13 +20,9 @@ static int yaksuri_cudai_finalize_hook(void)
     return YAKSA_SUCCESS;
 }
 
-static int yaksuri_cudai_type_create_hook(yaksi_type_s * type, yaksur_gpudev_pup_fn * pack,
-                                          yaksur_gpudev_pup_fn * unpack) ATTRIBUTE((unused));
-static int yaksuri_cudai_type_create_hook(yaksi_type_s * type, yaksur_gpudev_pup_fn * pack,
-                                          yaksur_gpudev_pup_fn * unpack)
+static int yaksuri_cudai_type_create_hook(yaksi_type_s * type) ATTRIBUTE((unused));
+static int yaksuri_cudai_type_create_hook(yaksi_type_s * type)
 {
-    *pack = NULL;
-    *unpack = NULL;
     return YAKSA_SUCCESS;
 }
 

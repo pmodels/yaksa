@@ -50,8 +50,8 @@ missing
 /src/backend/seq/pup/yaksuri_seqi_pup_long_long.c
 /src/backend/seq/pup/yaksuri_seqi_pup_short.c
 /src/backend/seq/pup/yaksuri_seqi_pup_wchar_t.c
-/src/backend/seq/pup/yaksuri_seqi_pup.c
-/src/backend/seq/pup/yaksuri_seqi_pup.h
+/src/backend/seq/pup/yaksuri_seqi_populate_pupfns.c
+/src/backend/seq/pup/yaksuri_seqi_populate_pupfns.h
 /src/backend/cuda/pup/yaksuri_cudai_pup_char.cu
 /src/backend/cuda/pup/yaksuri_cudai_pup_double.cu
 /src/backend/cuda/pup/yaksuri_cudai_pup_float.cu
