@@ -78,8 +78,6 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
 
     request_backend->gpudev_id = id;
     assert(yaksuri_global.gpudev[id].info);
-    rc = yaksuri_global.gpudev[id].info->event_create(&request_backend->event);
-    YAKSU_ERR_CHECK(rc, fn_fail);
 
     if (inattr.type == YAKSUR_PTR_TYPE__DEVICE && outattr.type == YAKSUR_PTR_TYPE__DEVICE) {
         bool is_supported;
@@ -90,7 +88,7 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
             rc = YAKSA_ERR__NOT_SUPPORTED;
         } else {
             rc = yaksuri_global.gpudev[id].info->ipack(inbuf, outbuf, count, type, NULL,
-                                                       request_backend->event);
+                                                       &request_backend->event);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             int completed;
@@ -162,8 +160,6 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
 
     request_backend->gpudev_id = id;
     assert(yaksuri_global.gpudev[id].info);
-    rc = yaksuri_global.gpudev[id].info->event_create(&request_backend->event);
-    YAKSU_ERR_CHECK(rc, fn_fail);
 
     if (inattr.type == YAKSUR_PTR_TYPE__DEVICE && outattr.type == YAKSUR_PTR_TYPE__DEVICE) {
         bool is_supported;
@@ -174,7 +170,7 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
             rc = YAKSA_ERR__NOT_SUPPORTED;
         } else {
             rc = yaksuri_global.gpudev[id].info->iunpack(inbuf, outbuf, count, type, NULL,
-                                                         request_backend->event);
+                                                         &request_backend->event);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             int completed;

@@ -70,7 +70,6 @@ int yaksuri_cuda_init_hook(yaksur_gpudev_info_s ** info)
     (*info)->host_free = cuda_host_free;
     (*info)->device_malloc = cuda_device_malloc;
     (*info)->device_free = cuda_device_free;
-    (*info)->event_create = yaksuri_cudai_event_create;
     (*info)->event_destroy = yaksuri_cudai_event_destroy;
     (*info)->event_query = yaksuri_cudai_event_query;
     (*info)->event_synchronize = yaksuri_cudai_event_synchronize;

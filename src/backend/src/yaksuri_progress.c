@@ -245,9 +245,6 @@ static int alloc_subop(yaksuri_gpudev_id_e id, bool need_host_buf, bool need_dev
     (*subop)->host_tmpbuf =
         (void *) ((char *) yaksuri_global.gpudev[id].host.slab + host_tmpbuf_offset);
 
-    rc = yaksuri_global.gpudev[id].info->event_create(&(*subop)->event);
-    YAKSU_ERR_CHECK(rc, fn_fail);
-
     (*subop)->next = NULL;
 
     if (elem->pup.subop_tail == NULL) {
@@ -469,7 +466,7 @@ int yaksuri_progress_poke(void)
             char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->size;
 
             rc = yaksuri_global.gpudev[id].info->ipack(sbuf, dbuf, subop->count, elem->pup.type,
-                                                       subop->device_tmpbuf, subop->event);
+                                                       subop->device_tmpbuf, &subop->event);
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else if (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
                    elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
@@ -479,7 +476,7 @@ int yaksuri_progress_poke(void)
 
             rc = yaksuri_global.gpudev[id].info->ipack(sbuf, subop->host_tmpbuf, subop->count,
                                                        elem->pup.type, subop->device_tmpbuf,
-                                                       subop->event);
+                                                       &subop->event);
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else if ((elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
                     elem->pup.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
@@ -496,7 +493,7 @@ int yaksuri_progress_poke(void)
 
             rc = yaksuri_global.gpudev[id].info->ipack(subop->host_tmpbuf, dbuf,
                                                        subop->count * elem->pup.type->size,
-                                                       byte_type, NULL, subop->event);
+                                                       byte_type, NULL, &subop->event);
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else if (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
                    elem->pup.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
@@ -506,7 +503,7 @@ int yaksuri_progress_poke(void)
             char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->extent;
 
             rc = yaksuri_global.gpudev[id].info->iunpack(sbuf, dbuf, subop->count, elem->pup.type,
-                                                         subop->device_tmpbuf, subop->event);
+                                                         subop->device_tmpbuf, &subop->event);
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else if (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
                    elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
@@ -521,7 +518,7 @@ int yaksuri_progress_poke(void)
 
             rc = yaksuri_global.gpudev[id].info->iunpack(subop->host_tmpbuf, dbuf, subop->count,
                                                          elem->pup.type, subop->device_tmpbuf,
-                                                         subop->event);
+                                                         &subop->event);
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else if ((elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
                     elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
@@ -534,7 +531,7 @@ int yaksuri_progress_poke(void)
 
             rc = yaksuri_global.gpudev[id].info->iunpack(sbuf, subop->host_tmpbuf,
                                                          subop->count * elem->pup.type->size,
-                                                         byte_type, NULL, subop->event);
+                                                         byte_type, NULL, &subop->event);
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else {
             rc = YAKSA_ERR__INTERNAL;

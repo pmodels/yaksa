@@ -25,7 +25,7 @@ int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, bool * is_supported)
 }
 
 int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                        void *device_tmpbuf, void *event)
+                        void *device_tmpbuf, void **event)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
@@ -65,7 +65,10 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
         }
     }
 
-    cerr = cudaEventRecord((cudaEvent_t) event, yaksuri_cudai_global.stream);
+    cerr = cudaEventCreate((cudaEvent_t *) event);
+    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
+    cerr = cudaEventRecord((cudaEvent_t) * event, yaksuri_cudai_global.stream);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
   fn_exit:
@@ -75,7 +78,7 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
 }
 
 int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                          void *device_tmpbuf, void *event)
+                          void *device_tmpbuf, void **event)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
@@ -116,7 +119,10 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
         }
     }
 
-    cerr = cudaEventRecord((cudaEvent_t) event, yaksuri_cudai_global.stream);
+    cerr = cudaEventCreate((cudaEvent_t *) event);
+    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
+    cerr = cudaEventRecord((cudaEvent_t) * event, yaksuri_cudai_global.stream);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
   fn_exit:

@@ -91,7 +91,6 @@ int yaksuri_cudai_finalize_hook(void);
 int yaksuri_cudai_type_create_hook(yaksi_type_s * type);
 int yaksuri_cudai_type_free_hook(yaksi_type_s * type);
 
-int yaksuri_cudai_event_create(void **event);
 int yaksuri_cudai_event_destroy(void *event);
 int yaksuri_cudai_event_query(void *event, int *completed);
 int yaksuri_cudai_event_synchronize(void *event);
@@ -102,9 +101,9 @@ int yaksuri_cudai_md_alloc(yaksi_type_s * type);
 int yaksuri_cudai_populate_pupfns(yaksi_type_s * type);
 
 int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                        void *device_tmpbuf, void *event);
+                        void *device_tmpbuf, void **event);
 int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                          void *device_tmpbuf, void *event);
+                          void *device_tmpbuf, void **event);
 int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, bool * is_supported);
 
 /* *INDENT-OFF* */

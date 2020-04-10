@@ -32,12 +32,6 @@ static int yaksuri_cudai_type_free_hook(yaksi_type_s * type)
     return YAKSA_SUCCESS;
 }
 
-static int yaksuri_cudai_event_create(void **event) ATTRIBUTE((unused));
-static int yaksuri_cudai_event_create(void **event)
-{
-    return YAKSA_SUCCESS;
-}
-
 static int yaksuri_cudai_event_destroy(void *event) ATTRIBUTE((unused));
 static int yaksuri_cudai_event_destroy(void *event)
 {
