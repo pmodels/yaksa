@@ -10,6 +10,11 @@ import os
 
 ##### global settings
 counts = [ 17, 1075, 65536 ]
+iters = {
+    17: 32768,
+    1075: 128,
+    65536: 32,
+}
 types = [ "int", "short_int", "int:3,double:2" ]
 seed = 1
 
@@ -64,18 +69,12 @@ def gen_pack_iov_tests(fn, testlist, extra_args):
                               (fn, segment, ordering, overlap))
                 for count in counts:
                     for t in types:
-
-                        if (count <= 1024):
-                            iters = 32768
-                        else:
-                            iters = 128
-
                         outstr = os.path.join(prefix, fn) + " "
                         outstr += "-datatype %s " % t
                         outstr += "-count %d " % count
                         outstr += "-seed %d " % seed
                         seed = seed + 1
-                        outstr += "-iters %d " % iters
+                        outstr += "-iters %d " % iters[count]
                         outstr += "-segments %d " % segment
                         outstr += "-ordering %s " % ordering
                         outstr += "-overlap %s" % overlap
@@ -102,18 +101,12 @@ def gen_flatten_tests(testlist):
     sys.stdout.write("generating flatten tests ... ")
     for count in counts:
         for t in types:
-
-            if (count <= 1024):
-                iters = 32768
-            else:
-                iters = 128
-
             outstr = os.path.join(prefix, "flatten") + " "
             outstr += "-datatype %s " % t
             outstr += "-count %d " % count
             outstr += "-seed %d " % seed
             seed = seed + 1
-            outstr += "-iters %d" % iters
+            outstr += "-iters %d" % iters[count]
             outfile.write(outstr + "\n")
     outfile.write("\n")
     outfile.close()
