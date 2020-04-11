@@ -161,7 +161,7 @@ for b in builtin_types:
     OUTFILE.write("#include <string.h>\n")
     OUTFILE.write("#include <stdint.h>\n")
     OUTFILE.write("#include <wchar.h>\n")
-    OUTFILE.write("#include \"yaksuri_seqi_pup.h\"\n")
+    OUTFILE.write("#include \"yaksuri_seqi_populate_pupfns.h\"\n")
     OUTFILE.write("\n")
 
     for d1 in derived_types:
@@ -312,8 +312,8 @@ def switcher_builtin_element(typelist, pupstr, key, val):
                 display("default:\n")
             indentation += 1
             display("if (max_nesting_level >= %d) {\n" % nesting_level)
-            display("    *pack = yaksuri_seqi_%s_blklen_%s_%s;\n" % (pupstr, blklen, val))
-            display("    *unpack = yaksuri_seqi_un%s_blklen_%s_%s;\n" % (pupstr, blklen, val))
+            display("    seq->pack = yaksuri_seqi_%s_blklen_%s_%s;\n" % (pupstr, blklen, val))
+            display("    seq->unpack = yaksuri_seqi_un%s_blklen_%s_%s;\n" % (pupstr, blklen, val))
             display("}\n")
             display("break;\n")
             indentation -= 1
@@ -321,8 +321,8 @@ def switcher_builtin_element(typelist, pupstr, key, val):
         display("}\n")
     else:
         display("if (max_nesting_level >= %d) {\n" % nesting_level)
-        display("    *pack = yaksuri_seqi_%s_%s;\n" % (pupstr, val))
-        display("    *unpack = yaksuri_seqi_un%s_%s;\n" % (pupstr, val))
+        display("    seq->pack = yaksuri_seqi_%s_%s;\n" % (pupstr, val))
+        display("    seq->unpack = yaksuri_seqi_un%s_%s;\n" % (pupstr, val))
         display("}\n")
 
     if (t != ""):
@@ -375,7 +375,7 @@ def switcher(typelist, pupstr, nests):
     display("}\n")
 
 
-OUTFILE = open("src/backend/seq/pup/yaksuri_seqi_pup.c", "w")
+OUTFILE = open("src/backend/seq/pup/yaksuri_seqi_populate_pupfns.c", "w")
 OUTFILE.write("\
 /*\n\
  * Copyright (C) by Argonne National Laboratory\n\
@@ -390,14 +390,15 @@ OUTFILE.write("\
 #include \"yaksi.h\"\n\
 #include \"yaksu.h\"\n\
 #include \"yaksuri_seqi.h\"\n\
-#include \"yaksuri_seqi_pup.h\"\n\
+#include \"yaksuri_seqi_populate_pupfns.h\"\n\
 \n\
-int yaksuri_seqi_populate_pupfns(yaksi_type_s * type, yaksur_seq_pup_fn *pack, yaksur_seq_pup_fn *unpack)\n\
+int yaksuri_seqi_populate_pupfns(yaksi_type_s * type)\n\
 {\n\
     int rc = YAKSA_SUCCESS;\n\
+    yaksuri_seqi_type_s *seq = (yaksuri_seqi_type_s *) type->backend.seq.priv;\n\
 \n\
-    *pack = NULL;\n\
-    *unpack = NULL;\n\
+    seq->pack = NULL;\n\
+    seq->unpack = NULL;\n\
 \n\
     char *str = getenv(\"YAKSA_ENV_MAX_NESTING_LEVEL\");\n\
     int max_nesting_level;\n\
@@ -424,7 +425,7 @@ OUTFILE.close()
 ########################################################################################
 ##### Primary header file
 ########################################################################################
-OUTFILE = open("src/backend/seq/pup/yaksuri_seqi_pup.h", "w")
+OUTFILE = open("src/backend/seq/pup/yaksuri_seqi_populate_pupfns.h", "w")
 OUTFILE.write("/*\n")
 OUTFILE.write("* Copyright (C) by Argonne National Laboratory\n")
 OUTFILE.write("*     See COPYRIGHT in top-level directory\n")

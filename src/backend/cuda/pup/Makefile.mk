@@ -6,8 +6,9 @@
 AM_CPPFLAGS += -I$(top_srcdir)/src/backend/cuda/pup
 
 libyaksa_la_SOURCES += \
+	src/backend/cuda/pup/yaksuri_cudai_pup.c \
 	src/backend/cuda/pup/yaksuri_cudai_event.c \
-	src/backend/cuda/pup/yaksuri_cudai_get_memory_type.c \
+	src/backend/cuda/pup/yaksuri_cudai_get_ptr_attr.c \
 	src/backend/cuda/pup/yaksuri_cudai_pup_char.cu \
 	src/backend/cuda/pup/yaksuri_cudai_pup_double.cu \
 	src/backend/cuda/pup/yaksuri_cudai_pup_float.cu \
@@ -20,7 +21,7 @@ libyaksa_la_SOURCES += \
 	src/backend/cuda/pup/yaksuri_cudai_pup_long_long.cu \
 	src/backend/cuda/pup/yaksuri_cudai_pup_short.cu \
 	src/backend/cuda/pup/yaksuri_cudai_pup_wchar_t.cu \
-	src/backend/cuda/pup/yaksuri_cudai_pup.c
+	src/backend/cuda/pup/yaksuri_cudai_populate_pupfns.c
 
 noinst_HEADERS += \
-	src/backend/seq/pup/yaksuri_seqi_pup.h
+	src/backend/cuda/pup/yaksuri_cudai_populate_pupfns.h

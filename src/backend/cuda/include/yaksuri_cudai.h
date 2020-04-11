@@ -11,6 +11,10 @@
 #include <pthread.h>
 #include <cuda_runtime_api.h>
 
+#define CUDA_P2P_ENABLED  (1)
+#define CUDA_P2P_DISABLED (2)
+#define CUDA_P2P_CLIQUES  (3)
+
 #define YAKSURI_CUDAI_THREAD_BLOCK_SIZE  (256)
 
 /* *INDENT-OFF* */
@@ -36,7 +40,9 @@ extern "C" {
     } while (0)
 
 typedef struct {
-    cudaStream_t stream;
+    int ndevices;
+    cudaStream_t *stream;
+    bool **p2p;
 } yaksuri_cudai_global_s;
 extern yaksuri_cudai_global_s yaksuri_cudai_global;
 
@@ -78,26 +84,33 @@ typedef struct yaksuri_cudai_md_s {
 } yaksuri_cudai_md_s;
 
 typedef struct yaksuri_cudai_type_s {
+    void (*pack) (const void *inbuf, void *outbuf, uintptr_t count, yaksuri_cudai_md_s * md,
+                  int n_threads, int n_blocks, int device);
+    void (*unpack) (const void *inbuf, void *outbuf, uintptr_t count, yaksuri_cudai_md_s * md,
+                    int n_threads, int n_blocks, int device);
     yaksuri_cudai_md_s *md;
     pthread_mutex_t mdmutex;
     uintptr_t num_elements;
 } yaksuri_cudai_type_s;
 
 int yaksuri_cudai_finalize_hook(void);
-int yaksuri_cudai_type_create_hook(yaksi_type_s * type, yaksur_gpudev_pup_fn * pack,
-                                   yaksur_gpudev_pup_fn * unpack);
+int yaksuri_cudai_type_create_hook(yaksi_type_s * type);
 int yaksuri_cudai_type_free_hook(yaksi_type_s * type);
 
-int yaksuri_cudai_event_create(void **event);
 int yaksuri_cudai_event_destroy(void *event);
 int yaksuri_cudai_event_query(void *event, int *completed);
 int yaksuri_cudai_event_synchronize(void *event);
 
-int yaksuri_cudai_get_memory_type(const void *buf, yaksur_memory_type_e * memtype);
+int yaksuri_cudai_get_ptr_attr(const void *buf, yaksur_ptr_attr_s * ptrattr);
 
 int yaksuri_cudai_md_alloc(yaksi_type_s * type);
-int yaksuri_cudai_populate_pupfns(yaksi_type_s * type, yaksur_gpudev_pup_fn * pack,
-                                  yaksur_gpudev_pup_fn * unpack);
+int yaksuri_cudai_populate_pupfns(yaksi_type_s * type);
+
+int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
+                        void *device_tmpbuf, void *interm_event, void **event);
+int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
+                          void *device_tmpbuf, void *interm_event, void **event);
+int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, bool * is_supported);
 
 /* *INDENT-OFF* */
 #ifdef __cplusplus

@@ -8,7 +8,11 @@
 
 #include "yaksi.h"
 
-int yaksuri_seqi_populate_pupfns(yaksi_type_s * type, yaksur_seq_pup_fn * pack,
-                                 yaksur_seq_pup_fn * unpack);
+typedef struct yaksuri_seqi_type_s {
+    int (*pack) (const void *inbuf, void *outbuf, uintptr_t count, struct yaksi_type_s *);
+    int (*unpack) (const void *inbuf, void *outbuf, uintptr_t count, struct yaksi_type_s *);
+} yaksuri_seqi_type_s;
+
+int yaksuri_seqi_populate_pupfns(yaksi_type_s * type);
 
 #endif /* YAKSURI_SEQI_H_INCLUDED */

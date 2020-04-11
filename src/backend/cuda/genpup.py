@@ -128,8 +128,10 @@ for b in builtin_types:
     OUTFILE.write("#include <stdint.h>\n")
     OUTFILE.write("#include <wchar.h>\n")
     OUTFILE.write("#include <assert.h>\n")
+    OUTFILE.write("#include <cuda.h>\n")
+    OUTFILE.write("#include <cuda_runtime.h>\n")
     OUTFILE.write("#include \"yaksuri_cudai.h\"\n")
-    OUTFILE.write("#include \"yaksuri_cudai_pup.h\"\n")
+    OUTFILE.write("#include \"yaksuri_cudai_populate_pupfns.h\"\n")
     OUTFILE.write("\n")
 
     for d1 in derived_types:
@@ -158,9 +160,11 @@ for b in builtin_types:
 
                     ##### generate the CUDA kernel
                     if (len(darray)):
-                        display("__global__ void yaksuri_cudai_kernel_%s(const %s *__restrict__ sbuf, %s *__restrict__ dbuf, int count, const yaksuri_cudai_md_s *__restrict__ md)\n" % (funcprefix, b, b))
+                        display("__global__ void yaksuri_cudai_kernel_%s(const void *inbuf, void *outbuf, uintptr_t count, const yaksuri_cudai_md_s *__restrict__ md)\n" % funcprefix)
                         display("{\n")
                         indentation += 1
+                        display("const %s *__restrict__ sbuf = (const %s *) inbuf;\n" % (b, b));
+                        display("%s *__restrict__ dbuf = (%s *) outbuf;\n" % (b, b));
                         display("uintptr_t extent = md->extent / sizeof(%s);\n" % b)
                         display("uintptr_t idx = blockIdx.x * blockDim.x + threadIdx.x;\n")
                         display("uintptr_t res = idx;\n")
@@ -233,103 +237,14 @@ for b in builtin_types:
                         display("}\n\n")
 
 
-                    ##### generate the host function
-                    OUTFILE.write("int yaksuri_cudai_%s" % funcprefix),
-                    OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, void *device_tmpbuf, void *event)\n")
-                    OUTFILE.write("{\n")
-
-
-                    ##### variable declarations
-                    indentation += 1
-
-                    # generic variables
-                    display("int rc = YAKSA_SUCCESS;\n");
-                    display("cudaError_t cerr;\n");
-                    display("struct cudaPointerAttributes outbuf_attr, inbuf_attr;\n")
-                    display("enum host_dev { HOST, DEVICE };\n")
-                    OUTFILE.write("\n");
-                    if (func == "pack"):
-                        display("cerr = cudaPointerGetAttributes(&outbuf_attr, outbuf);\n")
-                        display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
-                        display("cerr = cudaPointerGetAttributes(&inbuf_attr, (char *) inbuf + type->true_lb);\n")
-                        display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
-                    else:
-                        display("cerr = cudaPointerGetAttributes(&outbuf_attr, (char *) outbuf + type->true_lb);\n")
-                        display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
-                        display("cerr = cudaPointerGetAttributes(&inbuf_attr, inbuf);\n")
-                        display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
-                    OUTFILE.write("\n");
-
-                    # shortcut for builtin datatypes
-                    if (len(darray) == 0):
-                        display("cerr = cudaMemcpyAsync(outbuf, inbuf, count * type->size, cudaMemcpyDefault, yaksuri_cudai_global.stream);\n")
-                        display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
-                    else:
-                        display("rc = yaksuri_cudai_md_alloc(type);\n")
-                        display("assert(rc == YAKSA_SUCCESS);\n");
-                        display("/* nvcc does not seem to like gotos */\n")
-                        display("/* YAKSU_ERR_CHECK(rc, fn_fail); */\n")
-                        OUTFILE.write("\n");
-                        display("yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;\n")
-                        OUTFILE.write("\n");
-
-                        display("int n_threads = YAKSURI_CUDAI_THREAD_BLOCK_SIZE;\n")
-                        display("int n_blocks = count * cuda_type->num_elements / YAKSURI_CUDAI_THREAD_BLOCK_SIZE;\n")
-                        display("n_blocks += !!(count * cuda_type->num_elements % YAKSURI_CUDAI_THREAD_BLOCK_SIZE);\n")
-                        OUTFILE.write("\n");
-
-                        display("void *args[4] = { &inbuf, &outbuf, &count, &cuda_type->md };\n")
-                        OUTFILE.write("\n");
-
-                        if (func == "unpack"):
-                            display("enum host_dev inbuf_type;\n")
-                            display("if (inbuf_attr.type == cudaMemoryTypeDevice || inbuf_attr.type == cudaMemoryTypeManaged)\n")
-                            display("    inbuf_type = DEVICE;\n")
-                            display("else\n")
-                            display("    inbuf_type = HOST;\n")
-                            OUTFILE.write("\n");
-
-                            display("if (inbuf_type == HOST) {\n")
-                            display("    cerr = cudaMemcpyAsync(device_tmpbuf, inbuf, count * type->size, cudaMemcpyDefault, yaksuri_cudai_global.stream);\n")
-                            display("    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
-                            display("    args[0] = &device_tmpbuf;\n")
-                            display("}\n")
-                            OUTFILE.write("\n");
-                        else:
-                            display("enum host_dev outbuf_type;\n")
-                            display("if (outbuf_attr.type == cudaMemoryTypeDevice || outbuf_attr.type == cudaMemoryTypeManaged)\n")
-                            display("    outbuf_type = DEVICE;\n")
-                            display("else\n")
-                            display("    outbuf_type = HOST;\n")
-                            OUTFILE.write("\n");
-                            display("if (outbuf_type == HOST) {\n")
-                            display("    args[1] = &device_tmpbuf;\n")
-                            display("}\n")
-                            OUTFILE.write("\n");
-
-                        display("cerr = cudaLaunchKernel((const void *) yaksuri_cudai_kernel_%s,\n" % funcprefix)
-                        display("                        n_blocks, n_threads, args, 0, yaksuri_cudai_global.stream);\n")
-                        display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
-
-                        if (func == "pack"):
-                            OUTFILE.write("\n");
-                            display("if (outbuf_type == HOST) {\n")
-                            display("    cerr = cudaMemcpyAsync(outbuf, device_tmpbuf, count * type->size, cudaMemcpyDefault, yaksuri_cudai_global.stream);\n")
-                            display("    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
-                            display("}\n")
-
-                    OUTFILE.write("\n");
-                    display("cerr = cudaEventRecord((cudaEvent_t) event, yaksuri_cudai_global.stream);\n")
-                    display("YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
-
-                    OUTFILE.write("\n");
-                    indentation -= 1
-                    # display("  fn_exit:\n")
-                    display("    return rc;\n")
-                    # display("  fn_fail:\n")
-                    # display("    goto fn_exit;\n")
-                    display("}\n\n")
-
+                        ##### generate the host function
+                        OUTFILE.write("void yaksuri_cudai_%s(const void *inbuf, void *outbuf, uintptr_t count, yaksuri_cudai_md_s *md, int n_threads, int n_blocks, int device)\n" % funcprefix)
+                        OUTFILE.write("{\n")
+                        OUTFILE.write("    void *args[] = { &inbuf, &outbuf, &count, &md };\n")
+                        OUTFILE.write("    cudaError_t cerr = cudaLaunchKernel((const void *) yaksuri_cudai_kernel_%s,\n" % funcprefix)
+                        OUTFILE.write("                dim3(n_blocks), dim3(n_threads), args, 0, yaksuri_cudai_global.stream[device]);\n")
+                        OUTFILE.write("    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
+                        OUTFILE.write("}\n\n")
 
 
 ########################################################################################
@@ -374,8 +289,8 @@ def switcher_builtin_element(typelist, pupstr, key, val):
         nesting_level = len(typelist) + 1
 
     display("if (max_nesting_level >= %d) {\n" % nesting_level)
-    display("    *pack = yaksuri_cudai_%s_%s;\n" % (pupstr, val))
-    display("    *unpack = yaksuri_cudai_un%s_%s;\n" % (pupstr, val))
+    display("    cuda->pack = yaksuri_cudai_%s_%s;\n" % (pupstr, val))
+    display("    cuda->unpack = yaksuri_cudai_un%s_%s;\n" % (pupstr, val))
     display("}\n")
 
     if (t != ""):
@@ -406,11 +321,12 @@ def switcher(typelist, pupstr, nests):
     for d in derived_types:
         indentation += 1
         if (d == ""):
-            display("case YAKSI_TYPE_KIND__BUILTIN:\n")
-            indentation += 1
-            switcher_builtin(typelist, pupstr)
-            display("break;\n")
-            indentation -= 1
+            if (len(typelist)):
+                display("case YAKSI_TYPE_KIND__BUILTIN:\n")
+                indentation += 1
+                switcher_builtin(typelist, pupstr)
+                display("break;\n")
+                indentation -= 1
         elif (nests > 1):
             display("case YAKSI_TYPE_KIND__%s:\n" % d.upper())
             indentation += 1
@@ -428,7 +344,7 @@ def switcher(typelist, pupstr, nests):
     display("}\n")
 
 
-OUTFILE = open("src/backend/cuda/pup/yaksuri_cudai_pup.c", "w")
+OUTFILE = open("src/backend/cuda/pup/yaksuri_cudai_populate_pupfns.c", "w")
 OUTFILE.write("\
 /*\n\
  * Copyright (C) by Argonne National Laboratory\n\
@@ -443,14 +359,15 @@ OUTFILE.write("\
 #include \"yaksi.h\"\n\
 #include \"yaksu.h\"\n\
 #include \"yaksuri_cudai.h\"\n\
-#include \"yaksuri_cudai_pup.h\"\n\
+#include \"yaksuri_cudai_populate_pupfns.h\"\n\
 \n\
-int yaksuri_cudai_populate_pupfns(yaksi_type_s * type, yaksur_gpudev_pup_fn *pack, yaksur_gpudev_pup_fn *unpack)\n\
+int yaksuri_cudai_populate_pupfns(yaksi_type_s * type)\n\
 {\n\
     int rc = YAKSA_SUCCESS;\n\
+    yaksuri_cudai_type_s *cuda = (yaksuri_cudai_type_s *) type->backend.cuda.priv;\n\
 \n\
-    *pack = NULL;\n\
-    *unpack = NULL;\n\
+    cuda->pack = NULL;\n\
+    cuda->unpack = NULL;\n\
 \n\
     char *str = getenv(\"YAKSA_ENV_MAX_NESTING_LEVEL\");\n\
     int max_nesting_level;\n\
@@ -477,7 +394,7 @@ OUTFILE.close()
 ########################################################################################
 ##### Primary header file
 ########################################################################################
-OUTFILE = open("src/backend/cuda/pup/yaksuri_cudai_pup.h", "w")
+OUTFILE = open("src/backend/cuda/pup/yaksuri_cudai_populate_pupfns.h", "w")
 OUTFILE.write("/*\n")
 OUTFILE.write("* Copyright (C) by Argonne National Laboratory\n")
 OUTFILE.write("*     See COPYRIGHT in top-level directory\n")
@@ -491,6 +408,7 @@ OUTFILE.write("\n")
 OUTFILE.write("#include <string.h>\n")
 OUTFILE.write("#include <stdint.h>\n")
 OUTFILE.write("#include \"yaksi.h\"\n")
+OUTFILE.write("#include \"yaksuri_cudai.h\"\n")
 OUTFILE.write("\n")
 OUTFILE.write("#ifdef __cplusplus\n")
 OUTFILE.write("extern \"C\"\n")
@@ -509,7 +427,7 @@ for b in builtin_types:
 
                 for func in "pack","unpack":
                     ##### figure out the function name to use
-                    s = "int yaksuri_cudai_%s_" % func
+                    s = "void yaksuri_cudai_%s_" % func
                     if (d1 != ""):
                         s = s + "%s_" % d1
                     if (d2 != ""):
@@ -517,8 +435,7 @@ for b in builtin_types:
                     if (d3 != ""):
                         s = s + "%s_" % d3
                     s = s + b.replace(" ", "_")
-                    OUTFILE.write("%s" % s),
-                    OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, void *device_tmpbuf, void *event);\n")
+                    OUTFILE.write("%s(const void *inbuf, void *outbuf, uintptr_t count, yaksuri_cudai_md_s *md, int n_threads, int n_blocks, int device);\n" % s)
 
 ## end of basic-type specific file
 OUTFILE.write("\n")

@@ -26,6 +26,28 @@ int yaksur_init_hook(void)
     rc = yaksuri_cuda_init_hook(&yaksuri_global.gpudev[id].info);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
+
+    /* final setup for all backends */
+    for (id = YAKSURI_GPUDEV_ID__UNSET + 1; id < YAKSURI_GPUDEV_ID__LAST; id++) {
+        if (yaksuri_global.gpudev[id].info) {
+            yaksuri_global.gpudev[id].host.slab = NULL;
+            yaksuri_global.gpudev[id].host.slab_head_offset = 0;
+            yaksuri_global.gpudev[id].host.slab_tail_offset = 0;
+
+            int ndevices;
+            rc = yaksuri_global.gpudev[id].info->get_num_devices(&ndevices);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+
+            yaksuri_global.gpudev[id].device = (yaksuri_slab_s *)
+                malloc(ndevices * sizeof(yaksuri_slab_s));
+            for (int i = 0; i < ndevices; i++) {
+                yaksuri_global.gpudev[id].device[i].slab = NULL;
+                yaksuri_global.gpudev[id].device[i].slab_head_offset = 0;
+                yaksuri_global.gpudev[id].device[i].slab_tail_offset = 0;
+            }
+        }
+    }
+
   fn_exit:
     return rc;
   fn_fail:
@@ -40,14 +62,23 @@ int yaksur_finalize_hook(void)
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     for (yaksuri_gpudev_id_e id = YAKSURI_GPUDEV_ID__UNSET + 1; id < YAKSURI_GPUDEV_ID__LAST; id++) {
-        if (yaksuri_global.gpudev[id].host.slab) {
-            yaksuri_global.gpudev[id].info->host_free(yaksuri_global.gpudev[id].host.slab);
-        }
-        if (yaksuri_global.gpudev[id].device.slab) {
-            yaksuri_global.gpudev[id].info->device_free(yaksuri_global.gpudev[id].device.slab);
-        }
-
         if (yaksuri_global.gpudev[id].info) {
+            if (yaksuri_global.gpudev[id].host.slab) {
+                yaksuri_global.gpudev[id].info->host_free(yaksuri_global.gpudev[id].host.slab);
+            }
+
+            int ndevices;
+            rc = yaksuri_global.gpudev[id].info->get_num_devices(&ndevices);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+
+            for (int i = 0; i < ndevices; i++) {
+                if (yaksuri_global.gpudev[id].device[i].slab) {
+                    yaksuri_global.gpudev[id].info->device_free(yaksuri_global.gpudev[id].
+                                                                device[i].slab);
+                }
+            }
+            free(yaksuri_global.gpudev[id].device);
+
             rc = yaksuri_global.gpudev[id].info->finalize();
             YAKSU_ERR_CHECK(rc, fn_fail);
             free(yaksuri_global.gpudev[id].info);
@@ -64,16 +95,12 @@ int yaksur_type_create_hook(yaksi_type_s * type)
 {
     int rc = YAKSA_SUCCESS;
 
-    type->backend.priv = malloc(sizeof(yaksuri_type_s));
-    yaksuri_type_s *backend = (yaksuri_type_s *) type->backend.priv;
-
-    rc = yaksuri_seq_type_create_hook(type, &backend->seq.pack, &backend->seq.unpack);
+    rc = yaksuri_seq_type_create_hook(type);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     for (yaksuri_gpudev_id_e id = YAKSURI_GPUDEV_ID__UNSET + 1; id < YAKSURI_GPUDEV_ID__LAST; id++) {
         if (yaksuri_global.gpudev[id].info) {
-            rc = yaksuri_global.gpudev[id].info->type_create(type, &backend->gpudev[id].pack,
-                                                             &backend->gpudev[id].unpack);
+            rc = yaksuri_global.gpudev[id].info->type_create(type);
             YAKSU_ERR_CHECK(rc, fn_fail);
         }
     }
@@ -97,8 +124,6 @@ int yaksur_type_free_hook(yaksi_type_s * type)
             YAKSU_ERR_CHECK(rc, fn_fail);
         }
     }
-
-    free(type->backend.priv);
 
   fn_exit:
     return rc;

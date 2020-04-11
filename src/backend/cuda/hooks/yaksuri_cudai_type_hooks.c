@@ -46,8 +46,7 @@ static uintptr_t get_num_elements(yaksi_type_s * type)
     }
 }
 
-int yaksuri_cudai_type_create_hook(yaksi_type_s * type, yaksur_gpudev_pup_fn * pack,
-                                   yaksur_gpudev_pup_fn * unpack)
+int yaksuri_cudai_type_create_hook(yaksi_type_s * type)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -58,7 +57,7 @@ int yaksuri_cudai_type_create_hook(yaksi_type_s * type, yaksur_gpudev_pup_fn * p
     cuda->md = NULL;
     pthread_mutex_init(&cuda->mdmutex, NULL);
 
-    rc = yaksuri_cudai_populate_pupfns(type, pack, unpack);
+    rc = yaksuri_cudai_populate_pupfns(type);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
