@@ -38,6 +38,7 @@ extern "C" {
 typedef struct {
     int ndevices;
     cudaStream_t *stream;
+    bool **p2p;
 } yaksuri_cudai_global_s;
 extern yaksuri_cudai_global_s yaksuri_cudai_global;
 
@@ -102,9 +103,9 @@ int yaksuri_cudai_md_alloc(yaksi_type_s * type);
 int yaksuri_cudai_populate_pupfns(yaksi_type_s * type);
 
 int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                        void *device_tmpbuf, void **event);
+                        void *device_tmpbuf, void *interm_event, void **event);
 int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                          void *device_tmpbuf, void **event);
+                          void *device_tmpbuf, void *interm_event, void **event);
 int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, bool * is_supported);
 
 /* *INDENT-OFF* */

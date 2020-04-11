@@ -36,8 +36,9 @@ typedef struct {
 } yaksur_request_s;
 
 typedef int (*yaksur_get_num_devices_fn) (int *);
+typedef int (*yaksur_check_p2p_comm_fn) (int, int, bool *);
 typedef int (*yaksur_pup_fn) (const void *, void *, uintptr_t, struct yaksi_type_s *,
-                              void *, void **);
+                              void *, void *, void **);
 typedef int (*yaksur_pup_is_supported_fn) (struct yaksi_type_s *, bool *);
 typedef int (*yaksur_event_destroy_fn) (void *);
 typedef int (*yaksur_event_query_fn) (void *, int *);
@@ -49,6 +50,7 @@ typedef int (*yaksur_get_ptr_attr) (const void *, yaksur_ptr_attr_s *);
 
 typedef struct yaksur_gpudev_info_s {
     yaksur_get_num_devices_fn get_num_devices;
+    yaksur_check_p2p_comm_fn check_p2p_comm;
     yaksur_pup_fn ipack;
     yaksur_pup_fn iunpack;
     yaksur_pup_is_supported_fn pup_is_supported;
