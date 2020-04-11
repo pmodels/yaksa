@@ -83,7 +83,16 @@ static int get_num_devices(int *ndevices)
 
 static int check_p2p_comm(int sdev, int ddev, bool * is_enabled)
 {
+#if CUDA_P2P == CUDA_P2P_ENABLED
     *is_enabled = yaksuri_cudai_global.p2p[sdev][ddev];
+#elif CUDA_P2P == CUDA_P2P_CLIQUES
+    if ((sdev + ddev) % 2)
+        *is_enabled = 0;
+    else
+        *is_enabled = yaksuri_cudai_global.p2p[sdev][ddev];
+#else
+    *is_enabled = 0;
+#endif
 
     return YAKSA_SUCCESS;
 }

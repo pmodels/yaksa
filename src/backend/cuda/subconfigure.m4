@@ -30,3 +30,14 @@ CUDA backend specific options:
 fi
 AM_CONDITIONAL([BUILD_CUDA_BACKEND], [test x${have_cuda} = xyes])
 AM_CONDITIONAL([BUILD_CUDA_TESTS], [test x${have_cuda} = xyes])
+
+# --with-cuda-p2p
+AC_ARG_ENABLE([cuda-p2p],AS_HELP_STRING([--enable-cuda-p2p={yes|no|cliques}],[controls CUDA P2P capability]),,
+              [enable_cuda_p2p=yes])
+if test "${enable_cuda_p2p}" = "yes" ; then
+    AC_DEFINE([CUDA_P2P],[CUDA_P2P_ENABLED],[Define if CUDA P2P is enabled])
+elif test "${enable_cuda_p2p}" = "cliques" ; then
+    AC_DEFINE([CUDA_P2P],[CUDA_P2P_CLIQUES],[Define if CUDA P2P is enabled in clique mode])
+else
+    AC_DEFINE([CUDA_P2P],[CUDA_P2P_DISABLED],[Define if CUDA P2P is disabled])
+fi
