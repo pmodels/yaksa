@@ -58,6 +58,19 @@ typedef enum {
     MEM_TYPE__DEVICE,
 } mem_type_e;
 
+static int ndevices = -1;
+static int device_id = 0;
+static int device_stride = 0;
+
+static void init_devices(void)
+{
+#ifdef HAVE_CUDA
+    cudaGetDeviceCount(&ndevices);
+    assert(ndevices != -1);
+    cudaSetDevice(device_id);
+#endif
+}
+
 static void alloc_mem(size_t size, mem_type_e type, void **hostbuf, void **devicebuf)
 {
     if (type == MEM_TYPE__UNREGISTERED_HOST) {
@@ -70,9 +83,12 @@ static void alloc_mem(size_t size, mem_type_e type, void **hostbuf, void **devic
         if (hostbuf)
             *hostbuf = *devicebuf;
     } else if (type == MEM_TYPE__DEVICE) {
+        cudaSetDevice(device_id);
         cudaMalloc(devicebuf, size);
         if (hostbuf)
             cudaMallocHost(hostbuf, size);
+        device_id += device_stride;
+        device_id %= ndevices;
 #endif
     } else {
         fprintf(stderr, "ERROR: unsupported memory type\n");
@@ -207,6 +223,14 @@ int main(int argc, char **argv)
                 fprintf(stderr, "unknown buffer type %s\n", *argv);
                 exit(1);
             }
+        } else if (!strcmp(*argv, "-device-start-id")) {
+            --argc;
+            ++argv;
+            device_id = atoi(*argv);
+        } else if (!strcmp(*argv, "-device-stride")) {
+            --argc;
+            ++argv;
+            device_stride = atoi(*argv);
         } else if (!strcmp(*argv, "-verbose")) {
             verbose = 1;
         } else {
@@ -227,11 +251,14 @@ int main(int argc, char **argv)
         fprintf(stderr, "   -sbuf-memtype memory type (unreg-host, reg-host, device)\n");
         fprintf(stderr, "   -dbuf-memtype memory type (unreg-host, reg-host, device)\n");
         fprintf(stderr, "   -tbuf-memtype memory type (unreg-host, reg-host, device)\n");
+        fprintf(stderr, "   -device-start-id  ID of the device for the first allocation\n");
+        fprintf(stderr, "   -device-stride    difference between consecutive device allocations\n");
         fprintf(stderr, "   -verbose     verbose output\n");
         exit(1);
     }
 
     yaksa_init();
+    init_devices();
 
     rc = DTP_pool_create(typestr, basecount, seed, &dtp);
     assert(rc == DTP_SUCCESS);

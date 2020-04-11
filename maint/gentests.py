@@ -129,6 +129,12 @@ if __name__ == '__main__':
                        " -sbuf-memtype reg-host -tbuf-memtype device -dbuf-memtype reg-host")
     gen_pack_iov_tests("pack", "test/pack/testlist.cuda.urh-d-urh.gen", \
                        " -sbuf-memtype unreg-host -tbuf-memtype device -dbuf-memtype unreg-host")
+    gen_pack_iov_tests("pack", "test/pack/testlist.cuda.md.d-d-d.gen", \
+        " -sbuf-memtype device -tbuf-memtype device -dbuf-memtype device -device-start-id 1 -device-stride 0")
+    gen_pack_iov_tests("pack", "test/pack/testlist.cuda.md.urh-d-urh.gen", \
+    " -sbuf-memtype unreg-host -tbuf-memtype device -dbuf-memtype unreg-host -device-start-id 1 -device-stride 0")
+    gen_pack_iov_tests("pack", "test/pack/testlist.cuda.md-stride.d-d-d.gen", \
+        " -sbuf-memtype device -tbuf-memtype device -dbuf-memtype device -device-start-id 1 -device-stride 1")
 
     gen_pack_iov_tests("iov", "test/iov/testlist.gen", "")
     gen_flatten_tests("test/flatten/testlist.gen")
