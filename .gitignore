@@ -74,7 +74,11 @@ missing
 /test/yaksa_test_config.h
 /test/flatten/testlist.gen
 /test/iov/testlist.gen
-/test/pack/testlist.cuda.gen
+/test/pack/testlist.cuda.d-d-d.gen
+/test/pack/testlist.cuda.d-rh-d.gen
+/test/pack/testlist.cuda.d-urh-d.gen
+/test/pack/testlist.cuda.rh-d-rh.gen
+/test/pack/testlist.cuda.urh-d-urh.gen
 /test/pack/testlist.gen
 /test/simple/testlist.gen
 /README
