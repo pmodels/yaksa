@@ -14,7 +14,7 @@ int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, bool * is_supported)
     int rc = YAKSA_SUCCESS;
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
 
-    if ((type->kind == YAKSI_TYPE_KIND__BUILTIN && type->is_contig) || cuda_type->pack)
+    if (type->is_contig || cuda_type->pack)
         *is_supported = true;
     else
         *is_supported = false;
@@ -46,8 +46,8 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
 
     int target = -1;
 
-    /* shortcut for builtin types */
-    if (type->kind == YAKSI_TYPE_KIND__BUILTIN) {
+    /* shortcut for contiguous types */
+    if (type->is_contig) {
         /* cuda performance is optimized when we synchronize on the
          * source buffer's GPU */
         target = inattr.device;
@@ -162,8 +162,8 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
 
     int target = -1;
 
-    /* shortcut for builtin types */
-    if (type->kind == YAKSI_TYPE_KIND__BUILTIN) {
+    /* shortcut for contiguous types */
+    if (type->is_contig) {
         /* cuda performance is optimized when we synchronize on the
          * source buffer's GPU */
         target = inattr.device;

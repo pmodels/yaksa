@@ -171,6 +171,9 @@ for b in builtin_types:
             for d3 in derived_types:
                 if (d3 == "" and d2 != ""):
                     continue
+                if (d1 == "" and d2 == "" and d3 == ""):
+                    continue
+
                 for blklen in blklens:
 
                     # individual blocklength optimization is only for
@@ -223,16 +226,6 @@ for b in builtin_types:
                         if (d3 != ""):
                             derived_decl_maps[d3](3, s, b)
                             OUTFILE.write("\n")
-
-
-                        ##### shortcut for builtin functions
-                        if (d1 == "" and d2 == "" and d3 == ""):
-                            display("memcpy(dbuf, sbuf, count * sizeof(%s));\n" % b)
-                            OUTFILE.write("\n");
-                            display("return rc;\n")
-                            indentation -= 1
-                            OUTFILE.write("}\n\n")
-                            continue
 
 
                         ##### non-hvector and non-blkhindx
@@ -353,11 +346,12 @@ def switcher(typelist, pupstr, nests):
     for d in derived_types:
         indentation += 1
         if (d == ""):
-            display("case YAKSI_TYPE_KIND__BUILTIN:\n")
-            indentation += 1
-            switcher_builtin(typelist, pupstr)
-            display("break;\n")
-            indentation -= 1
+            if (len(typelist)):
+                display("case YAKSI_TYPE_KIND__BUILTIN:\n")
+                indentation += 1
+                switcher_builtin(typelist, pupstr)
+                display("break;\n")
+                indentation -= 1
         elif (nests > 1):
             display("case YAKSI_TYPE_KIND__%s:\n" % d.upper())
             indentation += 1
