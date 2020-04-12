@@ -113,128 +113,6 @@ derived_maps = {
     "resized": resized,
 }
 
-
-########################################################################################
-##### Basic type specific functions
-########################################################################################
-for b in builtin_types:
-    filename = "src/backend/cuda/pup/yaksuri_cudai_pup_%s.cu" % b.replace(" ","_")
-    yutils.copyright(filename)
-    OUTFILE = open(filename, "a")
-    OUTFILE.write("#include <string.h>\n")
-    OUTFILE.write("#include <stdint.h>\n")
-    OUTFILE.write("#include <wchar.h>\n")
-    OUTFILE.write("#include <assert.h>\n")
-    OUTFILE.write("#include <cuda.h>\n")
-    OUTFILE.write("#include <cuda_runtime.h>\n")
-    OUTFILE.write("#include \"yaksuri_cudai.h\"\n")
-    OUTFILE.write("#include \"yaksuri_cudai_populate_pupfns.h\"\n")
-    OUTFILE.write("\n")
-
-    darraylist = [ ]
-    yutils.generate_darrays(derived_types, darraylist, 3)
-
-    for darray in darraylist:
-        for func in "pack","unpack":
-
-            ##### figure out the function name to use
-            funcprefix = "%s_" % func
-            for d in darray:
-                funcprefix = funcprefix + "%s_" % d
-            funcprefix = funcprefix + b.replace(" ", "_")
-
-            ##### generate the CUDA kernel
-            if (len(darray)):
-                display("__global__ void yaksuri_cudai_kernel_%s(const void *inbuf, void *outbuf, uintptr_t count, const yaksuri_cudai_md_s *__restrict__ md)\n" % funcprefix)
-                display("{\n")
-                indentation += 1
-                display("const %s *__restrict__ sbuf = (const %s *) inbuf;\n" % (b, b));
-                display("%s *__restrict__ dbuf = (%s *) outbuf;\n" % (b, b));
-                display("uintptr_t extent = md->extent / sizeof(%s);\n" % b)
-                display("uintptr_t idx = blockIdx.x * blockDim.x + threadIdx.x;\n")
-                display("uintptr_t res = idx;\n")
-                display("uintptr_t inner_elements = md->num_elements;\n")
-                OUTFILE.write("\n")
-
-                display("if (idx >= (count * inner_elements))\n")
-                display("    return;\n")
-                OUTFILE.write("\n")
-
-                # copy loop
-                idx = 0
-                md = "md"
-                for d in darray:
-                    if (d == "hvector" or d == "blkhindx" or d == "hindexed" or \
-                        d == "contig"):
-                        display("uintptr_t x%d = res / inner_elements;\n" % idx)
-                        idx = idx + 1
-                        display("res %= inner_elements;\n")
-                        display("inner_elements /= %s->u.%s.count;\n" % (md, d))
-                        OUTFILE.write("\n")
-
-                    if (d == "hvector" or d == "blkhindx"):
-                        display("uintptr_t x%d = res / inner_elements;\n" % idx)
-                        idx = idx + 1
-                        display("res %= inner_elements;\n")
-                        display("inner_elements /= %s->u.%s.blocklength;\n" % (md, d))
-                    elif (d == "hindexed"):
-                        display("uintptr_t x%d;\n" % idx)
-                        display("for (int i = 0; i < %s->u.%s.count; i++) {\n" % (md, d))
-                        display("    uintptr_t in_elems = %s->u.%s.array_of_blocklengths[i] *\n" % (md, d))
-                        display("                         %s->u.%s.child->num_elements;\n" % (md, d))
-                        display("    if (res < in_elems) {\n")
-                        display("        x%d = i;\n" % idx)
-                        display("        res %= in_elems;\n")
-                        display("        inner_elements = %s->u.%s.child->num_elements;\n" % (md, d))
-                        display("        break;\n")
-                        display("    } else {\n")
-                        display("        res -= in_elems;\n")
-                        display("    }\n")
-                        display("}\n")
-                        idx = idx + 1
-                        OUTFILE.write("\n")
-
-                    md = "%s->u.%s.child" % (md, d)
-
-                display("uintptr_t x%d = res;\n" % idx)
-                OUTFILE.write("\n")
-
-                dtp = "md"
-                s = "x0 * extent"
-                idx = 1
-                x = 1
-                need_extent = False
-                for d in darray:
-                    if (x == len(darray)):
-                        last = 1
-                    else:
-                        last = 0
-                    derived_maps[d](x, dtp, b, last)
-                    x = x + 1
-                    dtp = dtp + "->u.%s.child" % d
-
-                if (func == "pack"):
-                    display("dbuf[idx] = sbuf[%s];\n" % s)
-                else:
-                    display("dbuf[%s] = sbuf[idx];\n" % s)
-
-                indentation -= 1
-                display("}\n\n")
-
-
-                ##### generate the host function
-                OUTFILE.write("void yaksuri_cudai_%s(const void *inbuf, void *outbuf, uintptr_t count, yaksuri_cudai_md_s *md, int n_threads, int n_blocks, int device)\n" % funcprefix)
-                OUTFILE.write("{\n")
-                OUTFILE.write("    void *args[] = { &inbuf, &outbuf, &count, &md };\n")
-                OUTFILE.write("    cudaError_t cerr = cudaLaunchKernel((const void *) yaksuri_cudai_kernel_%s,\n" % funcprefix)
-                OUTFILE.write("                dim3(n_blocks), dim3(n_threads), args, 0, yaksuri_cudai_global.stream[device]);\n")
-                OUTFILE.write("    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
-                OUTFILE.write("}\n\n")
-
-
-########################################################################################
-##### Primary C file
-########################################################################################
 builtin_maps = {
     "YAKSA_TYPE__UNSIGNED_CHAR": "char",
     "YAKSA_TYPE__UNSIGNED": "int",
@@ -252,6 +130,114 @@ builtin_maps = {
     "YAKSA_TYPE__BYTE": "int8_t"
 }
 
+
+########################################################################################
+##### Core kernels
+########################################################################################
+def generate_kernels(b, darray):
+    global indentation
+    global need_extent
+    global s
+    global idx
+
+    for func in "pack","unpack":
+        ##### figure out the function name to use
+        funcprefix = "%s_" % func
+        for d in darray:
+            funcprefix = funcprefix + "%s_" % d
+        funcprefix = funcprefix + b.replace(" ", "_")
+
+        ##### generate the CUDA kernel
+        if (len(darray)):
+            display("__global__ void yaksuri_cudai_kernel_%s(const void *inbuf, void *outbuf, uintptr_t count, const yaksuri_cudai_md_s *__restrict__ md)\n" % funcprefix)
+            display("{\n")
+            indentation += 1
+            display("const %s *__restrict__ sbuf = (const %s *) inbuf;\n" % (b, b));
+            display("%s *__restrict__ dbuf = (%s *) outbuf;\n" % (b, b));
+            display("uintptr_t extent = md->extent / sizeof(%s);\n" % b)
+            display("uintptr_t idx = blockIdx.x * blockDim.x + threadIdx.x;\n")
+            display("uintptr_t res = idx;\n")
+            display("uintptr_t inner_elements = md->num_elements;\n")
+            OUTFILE.write("\n")
+
+            display("if (idx >= (count * inner_elements))\n")
+            display("    return;\n")
+            OUTFILE.write("\n")
+
+            # copy loop
+            idx = 0
+            md = "md"
+            for d in darray:
+                if (d == "hvector" or d == "blkhindx" or d == "hindexed" or \
+                    d == "contig"):
+                    display("uintptr_t x%d = res / inner_elements;\n" % idx)
+                    idx = idx + 1
+                    display("res %= inner_elements;\n")
+                    display("inner_elements /= %s->u.%s.count;\n" % (md, d))
+                    OUTFILE.write("\n")
+
+                if (d == "hvector" or d == "blkhindx"):
+                    display("uintptr_t x%d = res / inner_elements;\n" % idx)
+                    idx = idx + 1
+                    display("res %= inner_elements;\n")
+                    display("inner_elements /= %s->u.%s.blocklength;\n" % (md, d))
+                elif (d == "hindexed"):
+                    display("uintptr_t x%d;\n" % idx)
+                    display("for (int i = 0; i < %s->u.%s.count; i++) {\n" % (md, d))
+                    display("    uintptr_t in_elems = %s->u.%s.array_of_blocklengths[i] *\n" % (md, d))
+                    display("                         %s->u.%s.child->num_elements;\n" % (md, d))
+                    display("    if (res < in_elems) {\n")
+                    display("        x%d = i;\n" % idx)
+                    display("        res %= in_elems;\n")
+                    display("        inner_elements = %s->u.%s.child->num_elements;\n" % (md, d))
+                    display("        break;\n")
+                    display("    } else {\n")
+                    display("        res -= in_elems;\n")
+                    display("    }\n")
+                    display("}\n")
+                    idx = idx + 1
+                    OUTFILE.write("\n")
+
+                md = "%s->u.%s.child" % (md, d)
+
+            display("uintptr_t x%d = res;\n" % idx)
+            OUTFILE.write("\n")
+
+            dtp = "md"
+            s = "x0 * extent"
+            idx = 1
+            x = 1
+            need_extent = False
+            for d in darray:
+                if (x == len(darray)):
+                    last = 1
+                else:
+                    last = 0
+                derived_maps[d](x, dtp, b, last)
+                x = x + 1
+                dtp = dtp + "->u.%s.child" % d
+
+            if (func == "pack"):
+                display("dbuf[idx] = sbuf[%s];\n" % s)
+            else:
+                display("dbuf[%s] = sbuf[idx];\n" % s)
+
+            indentation -= 1
+            display("}\n\n")
+
+            # generate the host function
+            OUTFILE.write("void yaksuri_cudai_%s(const void *inbuf, void *outbuf, uintptr_t count, yaksuri_cudai_md_s *md, int n_threads, int n_blocks, int device)\n" % funcprefix)
+            OUTFILE.write("{\n")
+            OUTFILE.write("    void *args[] = { &inbuf, &outbuf, &count, &md };\n")
+            OUTFILE.write("    cudaError_t cerr = cudaLaunchKernel((const void *) yaksuri_cudai_kernel_%s,\n" % funcprefix)
+            OUTFILE.write("                dim3(n_blocks), dim3(n_threads), args, 0, yaksuri_cudai_global.stream[device]);\n")
+            OUTFILE.write("    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
+            OUTFILE.write("}\n\n")
+
+
+########################################################################################
+##### Switch statement generation for pup function selection
+########################################################################################
 def child_type_str(typelist):
     s = "type"
     for x in typelist:
@@ -330,84 +316,113 @@ def switcher(typelist, pupstr, nests):
     display("}\n")
 
 
-filename = "src/backend/cuda/pup/yaksuri_cudai_populate_pupfns.c"
-yutils.copyright(filename)
-OUTFILE = open(filename, "a")
-OUTFILE.write("#include <stdio.h>\n\
-#include <stdlib.h>\n\
-#include <wchar.h>\n\
-#include \"yaksi.h\"\n\
-#include \"yaksu.h\"\n\
-#include \"yaksuri_cudai.h\"\n\
-#include \"yaksuri_cudai_populate_pupfns.h\"\n\
-\n\
-int yaksuri_cudai_populate_pupfns(yaksi_type_s * type)\n\
-{\n\
-    int rc = YAKSA_SUCCESS;\n\
-    yaksuri_cudai_type_s *cuda = (yaksuri_cudai_type_s *) type->backend.cuda.priv;\n\
-\n\
-    cuda->pack = NULL;\n\
-    cuda->unpack = NULL;\n\
-\n\
-    char *str = getenv(\"YAKSA_ENV_MAX_NESTING_LEVEL\");\n\
-    int max_nesting_level;\n\
-    if (str) {\n\
-        max_nesting_level = atoi(str);\n\
-    } else {\n\
-        max_nesting_level = YAKSI_ENV_DEFAULT_NESTING_LEVEL;\n\
-    }\n\
-\n\
-");
-
-indentation += 1
-pupstr = "pack"
-typelist = [ ]
-switcher(typelist, pupstr, 4)
-OUTFILE.write("\n")
-display("return rc;\n")
-indentation -= 1
-display("}\n")
-
-OUTFILE.close()
-
-
 ########################################################################################
-##### Primary header file
+##### main function
 ########################################################################################
-filename = "src/backend/cuda/pup/yaksuri_cudai_populate_pupfns.h"
-yutils.copyright(filename)
-OUTFILE = open(filename, "a")
-OUTFILE.write("#ifndef YAKSURI_CUDAI_PUP_H_INCLUDED\n")
-OUTFILE.write("#define YAKSURI_CUDAI_PUP_H_INCLUDED\n")
-OUTFILE.write("\n")
-OUTFILE.write("#include <string.h>\n")
-OUTFILE.write("#include <stdint.h>\n")
-OUTFILE.write("#include \"yaksi.h\"\n")
-OUTFILE.write("#include \"yaksuri_cudai.h\"\n")
-OUTFILE.write("\n")
-OUTFILE.write("#ifdef __cplusplus\n")
-OUTFILE.write("extern \"C\"\n")
-OUTFILE.write("{\n")
-OUTFILE.write("#endif\n")
-OUTFILE.write("\n")
+if __name__ == '__main__':
+    #### generate the core pack/unpack kernels
+    for b in builtin_types:
+        filename = "src/backend/cuda/pup/yaksuri_cudai_pup_%s.cu" % b.replace(" ","_")
+        yutils.copyright(filename)
+        OUTFILE = open(filename, "a")
+        OUTFILE.write("#include <string.h>\n")
+        OUTFILE.write("#include <stdint.h>\n")
+        OUTFILE.write("#include <wchar.h>\n")
+        OUTFILE.write("#include <assert.h>\n")
+        OUTFILE.write("#include <cuda.h>\n")
+        OUTFILE.write("#include <cuda_runtime.h>\n")
+        OUTFILE.write("#include \"yaksuri_cudai.h\"\n")
+        OUTFILE.write("#include \"yaksuri_cudai_populate_pupfns.h\"\n")
+        OUTFILE.write("\n")
 
-for b in builtin_types:
-    darraylist = [ ]
-    yutils.generate_darrays(derived_types, darraylist, 3)
-    for darray in darraylist:
-        for func in "pack","unpack":
-            ##### figure out the function name to use
-            s = "void yaksuri_cudai_%s_" % func
-            for d in darray:
-                s = s + "%s_" % d
-            s = s + b.replace(" ", "_")
-            OUTFILE.write("%s(const void *inbuf, void *outbuf, uintptr_t count, yaksuri_cudai_md_s *md, int n_threads, int n_blocks, int device);\n" % s)
+        darraylist = [ ]
+        yutils.generate_darrays(derived_types, darraylist, 3)
+        for darray in darraylist:
+            generate_kernels(b, darray)
 
-## end of basic-type specific file
-OUTFILE.write("\n")
-OUTFILE.write("#ifdef __cplusplus\n")
-OUTFILE.write("}\n")
-OUTFILE.write("#endif\n")
-OUTFILE.write("\n")
-OUTFILE.write("#endif  /* YAKSURI_CUDAI_PUP_H_INCLUDED */\n")
-OUTFILE.close()
+        OUTFILE.close()
+
+    ##### generate the switching logic to select pup functions
+    filename = "src/backend/cuda/pup/yaksuri_cudai_populate_pupfns.c"
+    yutils.copyright(filename)
+    OUTFILE = open(filename, "a")
+    OUTFILE.write("#include <stdio.h>\n")
+    OUTFILE.write("#include <stdlib.h>\n")
+    OUTFILE.write("#include <wchar.h>\n")
+    OUTFILE.write("#include \"yaksi.h\"\n")
+    OUTFILE.write("#include \"yaksu.h\"\n")
+    OUTFILE.write("#include \"yaksuri_cudai.h\"\n")
+    OUTFILE.write("#include \"yaksuri_cudai_populate_pupfns.h\"\n")
+    OUTFILE.write("\n")
+    OUTFILE.write("int yaksuri_cudai_populate_pupfns(yaksi_type_s * type)\n")
+    OUTFILE.write("{\n")
+    OUTFILE.write("    int rc = YAKSA_SUCCESS;\n")
+    OUTFILE.write("    yaksuri_cudai_type_s *cuda = (yaksuri_cudai_type_s *) type->backend.cuda.priv;\n")
+    OUTFILE.write("\n")
+    OUTFILE.write("    cuda->pack = NULL;\n")
+    OUTFILE.write("    cuda->unpack = NULL;\n")
+    OUTFILE.write("\n")
+    OUTFILE.write("    char *str = getenv(\"YAKSA_ENV_MAX_NESTING_LEVEL\");\n")
+    OUTFILE.write("    int max_nesting_level;\n")
+    OUTFILE.write("    if (str) {\n")
+    OUTFILE.write("        max_nesting_level = atoi(str);\n")
+    OUTFILE.write("    } else {\n")
+    OUTFILE.write("        max_nesting_level = YAKSI_ENV_DEFAULT_NESTING_LEVEL;\n")
+    OUTFILE.write("    }\n")
+    OUTFILE.write("\n")
+
+    indentation += 1
+    pupstr = "pack"
+    typelist = [ ]
+    switcher(typelist, pupstr, 4)
+    OUTFILE.write("\n")
+    display("return rc;\n")
+    indentation -= 1
+    display("}\n")
+
+    OUTFILE.close()
+
+    ##### generate the header file declarations
+    filename = "src/backend/cuda/pup/yaksuri_cudai_populate_pupfns.h"
+    yutils.copyright(filename)
+    OUTFILE = open(filename, "a")
+    OUTFILE.write("#ifndef YAKSURI_CUDAI_PUP_H_INCLUDED\n")
+    OUTFILE.write("#define YAKSURI_CUDAI_PUP_H_INCLUDED\n")
+    OUTFILE.write("\n")
+    OUTFILE.write("#include <string.h>\n")
+    OUTFILE.write("#include <stdint.h>\n")
+    OUTFILE.write("#include \"yaksi.h\"\n")
+    OUTFILE.write("#include \"yaksuri_cudai.h\"\n")
+    OUTFILE.write("\n")
+    OUTFILE.write("#ifdef __cplusplus\n")
+    OUTFILE.write("extern \"C\"\n")
+    OUTFILE.write("{\n")
+    OUTFILE.write("#endif\n")
+    OUTFILE.write("\n")
+
+    for b in builtin_types:
+        darraylist = [ ]
+        yutils.generate_darrays(derived_types, darraylist, 3)
+        for darray in darraylist:
+            for func in "pack","unpack":
+                ##### figure out the function name to use
+                s = "void yaksuri_cudai_%s_" % func
+                for d in darray:
+                    s = s + "%s_" % d
+                s = s + b.replace(" ", "_")
+                OUTFILE.write("%s" % s)
+                OUTFILE.write("(const void *inbuf, ")
+                OUTFILE.write("void *outbuf, ")
+                OUTFILE.write("uintptr_t count, ")
+                OUTFILE.write("yaksuri_cudai_md_s *md, ")
+                OUTFILE.write("int n_threads, ")
+                OUTFILE.write("int n_blocks, ")
+                OUTFILE.write("int device);\n")
+
+    OUTFILE.write("\n")
+    OUTFILE.write("#ifdef __cplusplus\n")
+    OUTFILE.write("}\n")
+    OUTFILE.write("#endif\n")
+    OUTFILE.write("\n")
+    OUTFILE.write("#endif  /* YAKSURI_CUDAI_PUP_H_INCLUDED */\n")
+    OUTFILE.close()

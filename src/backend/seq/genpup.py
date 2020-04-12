@@ -147,94 +147,6 @@ derived_decl_maps = {
 }
 blklens = [ "1", "2", "3", "4", "5", "6", "7", "8", "generic" ]
 
-
-########################################################################################
-##### Basic type specific functions
-########################################################################################
-for b in builtin_types:
-    filename = "src/backend/seq/pup/yaksuri_seqi_pup_%s.c" % b.replace(" ","_")
-    yutils.copyright(filename)
-    OUTFILE = open(filename, "a")
-    OUTFILE.write("#include <string.h>\n")
-    OUTFILE.write("#include <stdint.h>\n")
-    OUTFILE.write("#include <wchar.h>\n")
-    OUTFILE.write("#include \"yaksuri_seqi_populate_pupfns.h\"\n")
-    OUTFILE.write("\n")
-
-    darraylist = [ ]
-    yutils.generate_darrays(derived_types, darraylist, 3)
-
-    for darray in darraylist:
-        for blklen in blklens:
-            # individual blocklength optimization is only for
-            # hvector and blkhindx
-            if (darray[-1] != "hvector" and darray[-1] != "blkhindx" and blklen != "generic"):
-                continue
-
-            for func in "pack","unpack":
-
-                ##### figure out the function name to use
-                s = "int yaksuri_seqi_%s_" % func
-                for d in darray:
-                    s = s + "%s_" % d
-                # hvector and hindexed get blklen-specific function names
-                if (darray[-1] != "hvector" and darray[-1] != "blkhindx"):
-                    s = s + b.replace(" ", "_")
-                else:
-                    s = s + "blklen_%s_" % blklen + b.replace(" ", "_")
-                OUTFILE.write("%s" % s),
-                OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type)\n")
-                OUTFILE.write("{\n")
-
-
-                ##### variable declarations
-                indentation += 1
-
-                # generic variables
-                display("int rc = YAKSA_SUCCESS;\n");
-                display("const %s *restrict sbuf = (const %s *) inbuf;\n" % (b, b));
-                display("%s *restrict dbuf = (%s *) outbuf;\n" % (b, b));
-                display("uintptr_t extent ATTRIBUTE((unused)) = type->extent / sizeof(%s);\n" % b)
-                OUTFILE.write("\n");
-
-                # variables specific to each nesting level
-                s = "type"
-                for x in range(len(darray)):
-                    derived_decl_maps[darray[x]](x + 1, s, b)
-                    OUTFILE.write("\n")
-                    s = s + "->u.%s.child" % darray[x]
-
-
-                ##### non-hvector and non-blkhindx
-                display("uintptr_t idx = 0;\n")
-                display("for (int i = 0; i < count; i++) {\n")
-                num_paren_open += 1
-                indentation += 1
-                s = "i * extent"
-                for x in range(len(darray)):
-                    if (x != len(darray) - 1):
-                        derived_maps[darray[x]](x + 1, b, "generic", 0)
-                    else:
-                        derived_maps[darray[x]](x + 1, b, blklen, 1)
-
-                if (func == "pack"):
-                    display("dbuf[idx++] = sbuf[%s];\n" % s)
-                else:
-                    display("dbuf[%s] = sbuf[idx++];\n" % s)
-                for x in range(num_paren_open):
-                    indentation -= 1
-                    display("}\n")
-                num_paren_open = 0
-                OUTFILE.write("\n");
-                display("return rc;\n")
-                indentation -= 1
-                OUTFILE.write("}\n\n")
-
-
-
-########################################################################################
-##### Primary C file
-########################################################################################
 builtin_maps = {
     "YAKSA_TYPE__UNSIGNED_CHAR": "char",
     "YAKSA_TYPE__UNSIGNED": "int",
@@ -251,6 +163,82 @@ builtin_maps = {
     "YAKSA_TYPE__BYTE": "int8_t"
 }
 
+
+########################################################################################
+##### Core kernels
+########################################################################################
+def generate_kernels(b, darray, blklen):
+    global indentation
+    global num_paren_open
+    global s
+
+    # individual blocklength optimization is only for
+    # hvector and blkhindx
+    if (darray[-1] != "hvector" and darray[-1] != "blkhindx" and blklen != "generic"):
+        return
+
+    for func in "pack","unpack":
+        ##### figure out the function name to use
+        s = "int yaksuri_seqi_%s_" % func
+        for d in darray:
+            s = s + "%s_" % d
+        # hvector and hindexed get blklen-specific function names
+        if (darray[-1] != "hvector" and darray[-1] != "blkhindx"):
+            s = s + b.replace(" ", "_")
+        else:
+            s = s + "blklen_%s_" % blklen + b.replace(" ", "_")
+        OUTFILE.write("%s" % s),
+        OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type)\n")
+        OUTFILE.write("{\n")
+
+
+        ##### variable declarations
+        indentation += 1
+
+        # generic variables
+        display("int rc = YAKSA_SUCCESS;\n");
+        display("const %s *restrict sbuf = (const %s *) inbuf;\n" % (b, b));
+        display("%s *restrict dbuf = (%s *) outbuf;\n" % (b, b));
+        display("uintptr_t extent ATTRIBUTE((unused)) = type->extent / sizeof(%s);\n" % b)
+        OUTFILE.write("\n");
+
+        # variables specific to each nesting level
+        s = "type"
+        for x in range(len(darray)):
+            derived_decl_maps[darray[x]](x + 1, s, b)
+            OUTFILE.write("\n")
+            s = s + "->u.%s.child" % darray[x]
+
+
+        ##### non-hvector and non-blkhindx
+        display("uintptr_t idx = 0;\n")
+        display("for (int i = 0; i < count; i++) {\n")
+        num_paren_open += 1
+        indentation += 1
+        s = "i * extent"
+        for x in range(len(darray)):
+            if (x != len(darray) - 1):
+                derived_maps[darray[x]](x + 1, b, "generic", 0)
+            else:
+                derived_maps[darray[x]](x + 1, b, blklen, 1)
+
+        if (func == "pack"):
+            display("dbuf[idx++] = sbuf[%s];\n" % s)
+        else:
+            display("dbuf[%s] = sbuf[idx++];\n" % s)
+        for x in range(num_paren_open):
+            indentation -= 1
+            display("}\n")
+        num_paren_open = 0
+        OUTFILE.write("\n");
+        display("return rc;\n")
+        indentation -= 1
+        OUTFILE.write("}\n\n")
+
+
+########################################################################################
+##### Switch statement generation for pup function selection
+########################################################################################
 def child_type_str(typelist):
     s = "type"
     for x in typelist:
@@ -334,11 +322,12 @@ def switcher(typelist, pupstr, nests):
         indentation -= 1
 
     if (len(typelist)):
+        indentation += 1
         display("case YAKSI_TYPE_KIND__BUILTIN:\n")
         indentation += 1
         switcher_builtin(typelist, pupstr)
         display("break;\n")
-        indentation -= 1
+        indentation -= 2
 
     indentation += 1
     display("default:\n")
@@ -347,85 +336,105 @@ def switcher(typelist, pupstr, nests):
     display("}\n")
 
 
-filename = "src/backend/seq/pup/yaksuri_seqi_populate_pupfns.c"
-yutils.copyright(filename)
-OUTFILE = open(filename, "a")
-OUTFILE.write("#include <stdio.h>\n\
-#include <stdlib.h>\n\
-#include <wchar.h>\n\
-#include \"yaksi.h\"\n\
-#include \"yaksu.h\"\n\
-#include \"yaksuri_seqi.h\"\n\
-#include \"yaksuri_seqi_populate_pupfns.h\"\n\
-\n\
-int yaksuri_seqi_populate_pupfns(yaksi_type_s * type)\n\
-{\n\
-    int rc = YAKSA_SUCCESS;\n\
-    yaksuri_seqi_type_s *seq = (yaksuri_seqi_type_s *) type->backend.seq.priv;\n\
-\n\
-    seq->pack = NULL;\n\
-    seq->unpack = NULL;\n\
-\n\
-    char *str = getenv(\"YAKSA_ENV_MAX_NESTING_LEVEL\");\n\
-    int max_nesting_level;\n\
-    if (str) {\n\
-        max_nesting_level = atoi(str);\n\
-    } else {\n\
-        max_nesting_level = YAKSI_ENV_DEFAULT_NESTING_LEVEL;\n\
-    }\n\
-\n\
-");
-
-indentation += 1
-pupstr = "pack"
-typelist = [ ]
-switcher(typelist, pupstr, 4)
-OUTFILE.write("\n")
-display("return rc;\n")
-indentation -= 1
-display("}\n")
-
-OUTFILE.close()
-
-
 ########################################################################################
-##### Primary header file
+##### main function
 ########################################################################################
-filename = "src/backend/seq/pup/yaksuri_seqi_populate_pupfns.h"
-yutils.copyright(filename)
-OUTFILE = open(filename, "a")
-OUTFILE.write("#ifndef YAKSURI_SEQI_PUP_H_INCLUDED\n")
-OUTFILE.write("#define YAKSURI_SEQI_PUP_H_INCLUDED\n")
-OUTFILE.write("\n")
-OUTFILE.write("#include <string.h>\n")
-OUTFILE.write("#include <stdint.h>\n")
-OUTFILE.write("#include \"yaksi.h\"\n")
-OUTFILE.write("\n")
+if __name__ == '__main__':
+    #### generate the core pack/unpack kernels
+    for b in builtin_types:
+        filename = "src/backend/seq/pup/yaksuri_seqi_pup_%s.c" % b.replace(" ","_")
+        yutils.copyright(filename)
+        OUTFILE = open(filename, "a")
+        OUTFILE.write("#include <string.h>\n")
+        OUTFILE.write("#include <stdint.h>\n")
+        OUTFILE.write("#include <wchar.h>\n")
+        OUTFILE.write("#include \"yaksuri_seqi_populate_pupfns.h\"\n")
+        OUTFILE.write("\n")
 
-for b in builtin_types:
-    darraylist = [ ]
-    yutils.generate_darrays(derived_types, darraylist, 3)
+        darraylist = [ ]
+        yutils.generate_darrays(derived_types, darraylist, 3)
+        for darray in darraylist:
+            for blklen in blklens:
+                generate_kernels(b, darray, blklen)
 
-    for darray in darraylist:
-        for blklen in blklens:
-            # individual blocklength optimization is only for
-            # hvector and blkhindx
-            if (darray[-1] != "hvector" and darray[-1] != "blkhindx" and blklen != "generic"):
-                continue
+        OUTFILE.close()
 
-            for func in "pack","unpack":
-                ##### figure out the function name to use
-                s = "int yaksuri_seqi_%s_" % func
-                for d in darray:
-                    s = s + "%s_" % d
-                # hvector and hindexed get blklen-specific function names
-                if (darray[-1] != "hvector" and darray[-1] != "blkhindx"):
-                    s = s + b.replace(" ", "_")
-                else:
-                    s = s + "blklen_%s_" % blklen + b.replace(" ", "_")
-                OUTFILE.write("%s" % s),
-                OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type);\n")
+    ##### generate the switching logic to select pup functions
+    filename = "src/backend/seq/pup/yaksuri_seqi_populate_pupfns.c"
+    yutils.copyright(filename)
+    OUTFILE = open(filename, "a")
+    OUTFILE.write("#include <stdio.h>\n")
+    OUTFILE.write("#include <stdlib.h>\n")
+    OUTFILE.write("#include <wchar.h>\n")
+    OUTFILE.write("#include \"yaksi.h\"\n")
+    OUTFILE.write("#include \"yaksu.h\"\n")
+    OUTFILE.write("#include \"yaksuri_seqi.h\"\n")
+    OUTFILE.write("#include \"yaksuri_seqi_populate_pupfns.h\"\n")
+    OUTFILE.write("\n")
+    OUTFILE.write("int yaksuri_seqi_populate_pupfns(yaksi_type_s * type)\n")
+    OUTFILE.write("{\n")
+    OUTFILE.write("    int rc = YAKSA_SUCCESS;\n")
+    OUTFILE.write("    yaksuri_seqi_type_s *seq = (yaksuri_seqi_type_s *) type->backend.seq.priv;\n")
+    OUTFILE.write("\n")
+    OUTFILE.write("    seq->pack = NULL;\n")
+    OUTFILE.write("    seq->unpack = NULL;\n")
+    OUTFILE.write("\n")
+    OUTFILE.write("    char *str = getenv(\"YAKSA_ENV_MAX_NESTING_LEVEL\");\n")
+    OUTFILE.write("    int max_nesting_level;\n")
+    OUTFILE.write("    if (str) {\n")
+    OUTFILE.write("        max_nesting_level = atoi(str);\n")
+    OUTFILE.write("    } else {\n")
+    OUTFILE.write("        max_nesting_level = YAKSI_ENV_DEFAULT_NESTING_LEVEL;\n")
+    OUTFILE.write("    }\n")
+    OUTFILE.write("\n")
 
-## end of basic-type specific file
-OUTFILE.write("#endif  /* YAKSURI_SEQI_PUP_H_INCLUDED */\n")
-OUTFILE.close()
+    indentation += 1
+    pupstr = "pack"
+    typelist = [ ]
+    switcher(typelist, pupstr, 4)
+    OUTFILE.write("\n")
+    display("return rc;\n")
+    indentation -= 1
+    display("}\n")
+    OUTFILE.close()
+
+
+    ##### generate the header file declarations
+    filename = "src/backend/seq/pup/yaksuri_seqi_populate_pupfns.h"
+    yutils.copyright(filename)
+    OUTFILE = open(filename, "a")
+    OUTFILE.write("#ifndef YAKSURI_SEQI_PUP_H_INCLUDED\n")
+    OUTFILE.write("#define YAKSURI_SEQI_PUP_H_INCLUDED\n")
+    OUTFILE.write("\n")
+    OUTFILE.write("#include <string.h>\n")
+    OUTFILE.write("#include <stdint.h>\n")
+    OUTFILE.write("#include \"yaksi.h\"\n")
+    OUTFILE.write("\n")
+
+    for b in builtin_types:
+        darraylist = [ ]
+        yutils.generate_darrays(derived_types, darraylist, 3)
+
+        for darray in darraylist:
+            for blklen in blklens:
+                # individual blocklength optimization is only for
+                # hvector and blkhindx
+                if (darray[-1] != "hvector" and darray[-1] != "blkhindx" and blklen != "generic"):
+                    continue
+
+                for func in "pack","unpack":
+                    ##### figure out the function name to use
+                    s = "int yaksuri_seqi_%s_" % func
+                    for d in darray:
+                        s = s + "%s_" % d
+                    # hvector and hindexed get blklen-specific function names
+                    if (darray[-1] != "hvector" and darray[-1] != "blkhindx"):
+                        s = s + b.replace(" ", "_")
+                    else:
+                        s = s + "blklen_%s_" % blklen + b.replace(" ", "_")
+                    OUTFILE.write("%s" % s),
+                    OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type);\n")
+
+    ## end of basic-type specific file
+    OUTFILE.write("#endif  /* YAKSURI_SEQI_PUP_H_INCLUDED */\n")
+    OUTFILE.close()

@@ -12,11 +12,11 @@ import sys
 def copyright(outfile):
     OUTFILE = open(outfile, "w")
     OUTFILE.write("/*\n")
-    OUTFILE.write("* Copyright (C) by Argonne National Laboratory\n")
-    OUTFILE.write("*     See COPYRIGHT in top-level directory\n")
-    OUTFILE.write("*\n")
-    OUTFILE.write("* DO NOT EDIT: AUTOMATICALLY GENERATED FILE !!\n")
-    OUTFILE.write("*/\n")
+    OUTFILE.write(" * Copyright (C) by Argonne National Laboratory\n")
+    OUTFILE.write(" *     See COPYRIGHT in top-level directory\n")
+    OUTFILE.write(" *\n")
+    OUTFILE.write(" * DO NOT EDIT: AUTOMATICALLY GENERATED FILE !!\n")
+    OUTFILE.write(" */\n")
     OUTFILE.write("\n")
     OUTFILE.close()
 
