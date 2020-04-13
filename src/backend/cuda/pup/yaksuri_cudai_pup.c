@@ -86,7 +86,7 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
                 YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
             }
 
-            cuda_type->pack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks, target);
+            cuda_type->pack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks, 1, 1, target);
         } else if (inattr.type == cudaMemoryTypeManaged && outattr.type == cudaMemoryTypeDevice) {
             target = outattr.device;
             cerr = cudaSetDevice(target);
@@ -98,7 +98,7 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
                 YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
             }
 
-            cuda_type->pack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks, target);
+            cuda_type->pack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks, 1, 1, target);
         } else if ((outattr.type == cudaMemoryTypeDevice && inattr.device != outattr.device) ||
                    (outattr.type == cudaMemoryTypeHost)) {
             assert(inattr.type == cudaMemoryTypeDevice);
@@ -113,7 +113,7 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
                 YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
             }
 
-            cuda_type->pack(inbuf, device_tmpbuf, count, cuda_type->md, n_threads, n_blocks,
+            cuda_type->pack(inbuf, device_tmpbuf, count, cuda_type->md, n_threads, n_blocks, 1, 1,
                             target);
             cerr = cudaMemcpyAsync(outbuf, device_tmpbuf, count * type->size, cudaMemcpyDefault,
                                    yaksuri_cudai_global.stream[target]);
@@ -202,7 +202,8 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
                 YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
             }
 
-            cuda_type->unpack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks, target);
+            cuda_type->unpack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks, 1, 1,
+                              target);
         } else if (inattr.type == cudaMemoryTypeDevice && outattr.type == cudaMemoryTypeManaged) {
             target = inattr.device;
             cerr = cudaSetDevice(target);
@@ -214,7 +215,8 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
                 YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
             }
 
-            cuda_type->unpack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks, target);
+            cuda_type->unpack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks, 1, 1,
+                              target);
         } else if ((inattr.type == cudaMemoryTypeDevice && inattr.device != outattr.device) ||
                    (inattr.type == cudaMemoryTypeHost)) {
             assert(outattr.type == cudaMemoryTypeDevice);
@@ -233,8 +235,8 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
                                    yaksuri_cudai_global.stream[target]);
             YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-            cuda_type->unpack(device_tmpbuf, outbuf, count, cuda_type->md, n_threads, n_blocks,
-                              target);
+            cuda_type->unpack(device_tmpbuf, outbuf, count, cuda_type->md, n_threads, n_blocks, 1,
+                              1, target);
         } else {
             rc = YAKSA_ERR__INTERNAL;
             goto fn_fail;

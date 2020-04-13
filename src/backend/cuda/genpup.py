@@ -227,11 +227,11 @@ def generate_kernels(b, darray):
             display("}\n\n")
 
             # generate the host function
-            OUTFILE.write("void yaksuri_cudai_%s(const void *inbuf, void *outbuf, uintptr_t count, yaksuri_cudai_md_s *md, int n_threads, int n_blocks, int device)\n" % funcprefix)
+            OUTFILE.write("void yaksuri_cudai_%s(const void *inbuf, void *outbuf, uintptr_t count, yaksuri_cudai_md_s *md, int n_threads, int n_blocks_x, int n_blocks_y, int n_blocks_z, int device)\n" % funcprefix)
             OUTFILE.write("{\n")
             OUTFILE.write("    void *args[] = { &inbuf, &outbuf, &count, &md };\n")
             OUTFILE.write("    cudaError_t cerr = cudaLaunchKernel((const void *) yaksuri_cudai_kernel_%s,\n" % funcprefix)
-            OUTFILE.write("                dim3(n_blocks), dim3(n_threads), args, 0, yaksuri_cudai_global.stream[device]);\n")
+            OUTFILE.write("                dim3(n_blocks_x, n_blocks_y, n_blocks_z), dim3(n_threads), args, 0, yaksuri_cudai_global.stream[device]);\n")
             OUTFILE.write("    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
             OUTFILE.write("}\n\n")
 
@@ -427,7 +427,9 @@ if __name__ == '__main__':
                 OUTFILE.write("uintptr_t count, ")
                 OUTFILE.write("yaksuri_cudai_md_s *md, ")
                 OUTFILE.write("int n_threads, ")
-                OUTFILE.write("int n_blocks, ")
+                OUTFILE.write("int n_blocks_x, ")
+                OUTFILE.write("int n_blocks_y, ")
+                OUTFILE.write("int n_blocks_z, ")
                 OUTFILE.write("int device);\n")
 
     OUTFILE.write("\n")
