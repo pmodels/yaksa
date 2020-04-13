@@ -320,6 +320,10 @@ def switcher(typelist, pupstr, nests):
 ##### main function
 ########################################################################################
 if __name__ == '__main__':
+    ##### generate the list of derived datatype arrays
+    darraylist = [ ]
+    yutils.generate_darrays(derived_types, darraylist, 3)
+
     ##### generate the core pack/unpack kernels
     for b in builtin_types:
         filename = "src/backend/cuda/pup/yaksuri_cudai_pup_%s.cu" % b.replace(" ","_")
@@ -335,8 +339,6 @@ if __name__ == '__main__':
         OUTFILE.write("#include \"yaksuri_cudai_populate_pupfns.h\"\n")
         OUTFILE.write("\n")
 
-        darraylist = [ ]
-        yutils.generate_darrays(derived_types, darraylist, 3)
         for darray in darraylist:
             generate_kernels(b, darray)
 
@@ -401,8 +403,6 @@ if __name__ == '__main__':
     OUTFILE.write("\n")
 
     for b in builtin_types:
-        darraylist = [ ]
-        yutils.generate_darrays(derived_types, darraylist, 3)
         for darray in darraylist:
             for func in "pack","unpack":
                 ##### figure out the function name to use

@@ -340,6 +340,10 @@ def switcher(typelist, pupstr, nests):
 ##### main function
 ########################################################################################
 if __name__ == '__main__':
+    ##### generate the list of derived datatype arrays
+    darraylist = [ ]
+    yutils.generate_darrays(derived_types, darraylist, 3)
+
     ##### generate the core pack/unpack kernels
     for b in builtin_types:
         filename = "src/backend/seq/pup/yaksuri_seqi_pup_%s.c" % b.replace(" ","_")
@@ -351,8 +355,6 @@ if __name__ == '__main__':
         OUTFILE.write("#include \"yaksuri_seqi_populate_pupfns.h\"\n")
         OUTFILE.write("\n")
 
-        darraylist = [ ]
-        yutils.generate_darrays(derived_types, darraylist, 3)
         for darray in darraylist:
             for blklen in blklens:
                 generate_kernels(b, darray, blklen)
@@ -412,9 +414,6 @@ if __name__ == '__main__':
     OUTFILE.write("\n")
 
     for b in builtin_types:
-        darraylist = [ ]
-        yutils.generate_darrays(derived_types, darraylist, 3)
-
         for darray in darraylist:
             for blklen in blklens:
                 # individual blocklength optimization is only for
