@@ -4,6 +4,10 @@
 ##     See COPYRIGHT in top-level directory
 ##
 
+########################################################################
+## Utility functions
+########################################################################
+
 echo_n() {
     # "echo -n" isn't portable, must portably implement with printf
     printf "%s" "$*"
@@ -14,6 +18,10 @@ error() {
 }
 
 
+########################################################################
+## Autotools
+########################################################################
+
 # generate configure files
 echo
 echo "=== generating configure files in main directory ==="
@@ -21,6 +29,10 @@ autoreconf -vif
 echo "=== done === "
 echo
 
+
+########################################################################
+## Generating required files
+########################################################################
 
 # backend pup functions
 for x in seq cuda ; do
