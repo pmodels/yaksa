@@ -15,7 +15,26 @@ echo_n() {
 
 error() {
     echo "===> ERROR:   $@"
+    exit
 }
+
+
+########################################################################
+## Parse user arguments
+########################################################################
+
+genpup_args=
+for arg in "$@" ; do
+    case $arg in
+        -pup-max-nesting=*|--pup-max-nesting=*)
+            genpup_args="$genpup_args $arg"
+            ;;
+
+        *)
+            error "unknown argument $arg"
+            ;;
+    esac
+done
 
 
 ########################################################################
@@ -37,7 +56,7 @@ echo
 # backend pup functions
 for x in seq cuda ; do
     echo_n "generating backend pup functions for ${x}... "
-    ./src/backend/${x}/genpup.py
+    ./src/backend/${x}/genpup.py ${genpup_args}
     echo "done"
 done
 

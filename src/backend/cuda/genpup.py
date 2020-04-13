@@ -5,6 +5,7 @@
 ##
 
 import sys
+import argparse
 sys.path.append('maint/')
 import yutils
 
@@ -320,9 +321,19 @@ def switcher(typelist, pupstr, nests):
 ##### main function
 ########################################################################################
 if __name__ == '__main__':
+    ##### parse user arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--pup-max-nesting', type=int, default=3, help='maximum nesting levels to generate')
+    args = parser.parse_args()
+    if (args.pup_max_nesting < 0):
+        parser.print_help()
+        print
+        print("===> ERROR: pup-max-nesting must be positive")
+        sys.exit(1)
+
     ##### generate the list of derived datatype arrays
     darraylist = [ ]
-    yutils.generate_darrays(derived_types, darraylist, 3)
+    yutils.generate_darrays(derived_types, darraylist, args.pup_max_nesting)
 
     ##### generate the core pack/unpack kernels
     for b in builtin_types:
@@ -376,7 +387,7 @@ if __name__ == '__main__':
     indentation += 1
     pupstr = "pack"
     typelist = [ ]
-    switcher(typelist, pupstr, 4)
+    switcher(typelist, pupstr, args.pup_max_nesting + 1)
     OUTFILE.write("\n")
     display("return rc;\n")
     indentation -= 1
