@@ -3,7 +3,7 @@
 ##     See COPYRIGHT in top-level directory
 ##
 
-EXTRA_DIST += runtests.py
+EXTRA_DIST += $(top_srcdir)/test/runtests.py
 
 LDADD = test/dtpools/libdtpools.la libyaksa.la
 test_cppflags = -I$(build_dir)/src/frontend/include -I$(srcdir)/test/dtpools/src
