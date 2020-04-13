@@ -3,6 +3,8 @@
 ##     See COPYRIGHT in top-level directory
 ##
 
+EXTRA_DIST += $(top_srcdir)/src/backend/cuda/cudalt.sh
+
 if BUILD_CUDA_BACKEND
 include $(top_srcdir)/src/backend/cuda/include/Makefile.mk
 include $(top_srcdir)/src/backend/cuda/hooks/Makefile.mk
@@ -14,8 +16,9 @@ endif !BUILD_CUDA_BACKEND
 
 .cu.lo:
 	@if $(AM_V_P) ; then \
-		$(top_srcdir)/cudalt.sh --verbose $@ $(NVCC) $(AM_CPPFLAGS) $(CUDA_GENCODE) -c $< ; \
+		$(top_srcdir)/src/backend/cuda/cudalt.sh --verbose $@ \
+			$(NVCC) $(AM_CPPFLAGS) $(CUDA_GENCODE) -c $< ; \
 	else \
 		echo "  NVCC     $@" ; \
-		$(top_srcdir)/cudalt.sh $@ $(NVCC) $(AM_CPPFLAGS) $(CUDA_GENCODE) -c $< ; \
+		$(top_srcdir)/src/backend/cuda/cudalt.sh $@ $(NVCC) $(AM_CPPFLAGS) $(CUDA_GENCODE) -c $< ; \
 	fi
