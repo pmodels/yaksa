@@ -12,11 +12,10 @@ else
 include $(top_srcdir)/src/backend/cuda/stub/Makefile.mk
 endif !BUILD_CUDA_BACKEND
 
-GENCODE_FLAGS = -gencode arch=compute_$(CUDA_SM),code=sm_$(CUDA_SM)
 .cu.lo:
 	@if $(AM_V_P) ; then \
-		$(top_srcdir)/cudalt.sh --verbose $@ $(NVCC) $(AM_CPPFLAGS) $(GENCODE_FLAGS) -c $< ; \
+		$(top_srcdir)/cudalt.sh --verbose $@ $(NVCC) $(AM_CPPFLAGS) $(CUDA_GENCODE) -c $< ; \
 	else \
 		echo "  NVCC     $@" ; \
-		$(top_srcdir)/cudalt.sh $@ $(NVCC) $(AM_CPPFLAGS) $(GENCODE_FLAGS) -c $< ; \
+		$(top_srcdir)/cudalt.sh $@ $(NVCC) $(AM_CPPFLAGS) $(CUDA_GENCODE) -c $< ; \
 	fi
