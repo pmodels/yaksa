@@ -9,6 +9,42 @@
 #include "yaksi.h"
 #include "yaksuri_cudai.h"
 
+#define THREAD_BLOCK_SIZE  (256)
+#define MAX_GRIDSZ_X       ((1ULL << 31) - 1)
+#define MAX_GRIDSZ_Y       (65535)
+#define MAX_GRIDSZ_Z       (65535)
+
+static int get_thread_block_dims(uint64_t count, yaksi_type_s * type, int *n_threads,
+                                 int *n_blocks_x, int *n_blocks_y, int *n_blocks_z)
+{
+    int rc = YAKSA_SUCCESS;
+    yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
+
+    *n_threads = THREAD_BLOCK_SIZE;
+    uint64_t n_blocks = count * cuda_type->num_elements / THREAD_BLOCK_SIZE;
+    n_blocks += ! !(count * cuda_type->num_elements % THREAD_BLOCK_SIZE);
+
+    if (n_blocks <= MAX_GRIDSZ_X) {
+        *n_blocks_x = (int) n_blocks;
+        *n_blocks_y = 1;
+        *n_blocks_z = 1;
+    } else if (n_blocks <= MAX_GRIDSZ_X * MAX_GRIDSZ_Y) {
+        *n_blocks_x = YAKSU_CEIL(n_blocks, MAX_GRIDSZ_Y);
+        *n_blocks_y = YAKSU_CEIL(n_blocks, (*n_blocks_x));
+        *n_blocks_z = 1;
+    } else {
+        int n_blocks_xy = YAKSU_CEIL(n_blocks, MAX_GRIDSZ_Z);
+        *n_blocks_x = YAKSU_CEIL(n_blocks_xy, MAX_GRIDSZ_Y);
+        *n_blocks_y = YAKSU_CEIL(n_blocks_xy, (*n_blocks_x));
+        *n_blocks_z = YAKSU_CEIL(n_blocks, (uintptr_t) (*n_blocks_x) * (*n_blocks_y));
+    }
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
 int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, bool * is_supported)
 {
     int rc = YAKSA_SUCCESS;
@@ -68,9 +104,10 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
         rc = yaksuri_cudai_md_alloc(type);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
-        int n_threads = YAKSURI_CUDAI_THREAD_BLOCK_SIZE;
-        int n_blocks = count * cuda_type->num_elements / YAKSURI_CUDAI_THREAD_BLOCK_SIZE;
-        n_blocks += ! !(count * cuda_type->num_elements % YAKSURI_CUDAI_THREAD_BLOCK_SIZE);
+        int n_threads;
+        int n_blocks_x, n_blocks_y, n_blocks_z;
+        rc = get_thread_block_dims(count, type, &n_threads, &n_blocks_x, &n_blocks_y, &n_blocks_z);
+        YAKSU_ERR_CHECK(rc, fn_fail);
 
         if ((inattr.type == cudaMemoryTypeManaged && outattr.type == cudaMemoryTypeManaged) ||
             (inattr.type == cudaMemoryTypeDevice && outattr.type == cudaMemoryTypeManaged) ||
@@ -86,7 +123,8 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
                 YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
             }
 
-            cuda_type->pack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks, target);
+            cuda_type->pack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks_x, n_blocks_y,
+                            n_blocks_z, target);
         } else if (inattr.type == cudaMemoryTypeManaged && outattr.type == cudaMemoryTypeDevice) {
             target = outattr.device;
             cerr = cudaSetDevice(target);
@@ -98,7 +136,8 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
                 YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
             }
 
-            cuda_type->pack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks, target);
+            cuda_type->pack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks_x, n_blocks_y,
+                            n_blocks_z, target);
         } else if ((outattr.type == cudaMemoryTypeDevice && inattr.device != outattr.device) ||
                    (outattr.type == cudaMemoryTypeHost)) {
             assert(inattr.type == cudaMemoryTypeDevice);
@@ -113,8 +152,8 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
                 YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
             }
 
-            cuda_type->pack(inbuf, device_tmpbuf, count, cuda_type->md, n_threads, n_blocks,
-                            target);
+            cuda_type->pack(inbuf, device_tmpbuf, count, cuda_type->md, n_threads, n_blocks_x,
+                            n_blocks_y, n_blocks_z, target);
             cerr = cudaMemcpyAsync(outbuf, device_tmpbuf, count * type->size, cudaMemcpyDefault,
                                    yaksuri_cudai_global.stream[target]);
             YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
@@ -184,9 +223,10 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
         rc = yaksuri_cudai_md_alloc(type);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
-        int n_threads = YAKSURI_CUDAI_THREAD_BLOCK_SIZE;
-        int n_blocks = count * cuda_type->num_elements / YAKSURI_CUDAI_THREAD_BLOCK_SIZE;
-        n_blocks += ! !(count * cuda_type->num_elements % YAKSURI_CUDAI_THREAD_BLOCK_SIZE);
+        int n_threads;
+        int n_blocks_x, n_blocks_y, n_blocks_z;
+        rc = get_thread_block_dims(count, type, &n_threads, &n_blocks_x, &n_blocks_y, &n_blocks_z);
+        YAKSU_ERR_CHECK(rc, fn_fail);
 
         if ((inattr.type == cudaMemoryTypeManaged && outattr.type == cudaMemoryTypeManaged) ||
             (inattr.type == cudaMemoryTypeManaged && outattr.type == cudaMemoryTypeDevice) ||
@@ -202,7 +242,8 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
                 YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
             }
 
-            cuda_type->unpack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks, target);
+            cuda_type->unpack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks_x,
+                              n_blocks_y, n_blocks_z, target);
         } else if (inattr.type == cudaMemoryTypeDevice && outattr.type == cudaMemoryTypeManaged) {
             target = inattr.device;
             cerr = cudaSetDevice(target);
@@ -214,7 +255,8 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
                 YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
             }
 
-            cuda_type->unpack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks, target);
+            cuda_type->unpack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks_x,
+                              n_blocks_y, n_blocks_z, target);
         } else if ((inattr.type == cudaMemoryTypeDevice && inattr.device != outattr.device) ||
                    (inattr.type == cudaMemoryTypeHost)) {
             assert(outattr.type == cudaMemoryTypeDevice);
@@ -233,8 +275,8 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
                                    yaksuri_cudai_global.stream[target]);
             YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-            cuda_type->unpack(device_tmpbuf, outbuf, count, cuda_type->md, n_threads, n_blocks,
-                              target);
+            cuda_type->unpack(device_tmpbuf, outbuf, count, cuda_type->md, n_threads, n_blocks_x,
+                              n_blocks_y, n_blocks_z, target);
         } else {
             rc = YAKSA_ERR__INTERNAL;
             goto fn_fail;

@@ -15,8 +15,6 @@
 #define CUDA_P2P_DISABLED (2)
 #define CUDA_P2P_CLIQUES  (3)
 
-#define YAKSURI_CUDAI_THREAD_BLOCK_SIZE  (256)
-
 /* *INDENT-OFF* */
 #ifdef __cplusplus
 extern "C" {
@@ -85,9 +83,9 @@ typedef struct yaksuri_cudai_md_s {
 
 typedef struct yaksuri_cudai_type_s {
     void (*pack) (const void *inbuf, void *outbuf, uintptr_t count, yaksuri_cudai_md_s * md,
-                  int n_threads, int n_blocks, int device);
+                  int n_threads, int n_blocks_x, int n_blocks_y, int n_blocks_z, int device);
     void (*unpack) (const void *inbuf, void *outbuf, uintptr_t count, yaksuri_cudai_md_s * md,
-                    int n_threads, int n_blocks, int device);
+                    int n_threads, int n_blocks_x, int n_blocks_y, int n_blocks_z, int device);
     yaksuri_cudai_md_s *md;
     pthread_mutex_t mdmutex;
     uintptr_t num_elements;
