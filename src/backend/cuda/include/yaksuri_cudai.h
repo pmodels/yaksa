@@ -15,8 +15,6 @@
 #define CUDA_P2P_DISABLED (2)
 #define CUDA_P2P_CLIQUES  (3)
 
-#define YAKSURI_CUDAI_THREAD_BLOCK_SIZE  (256)
-
 /* *INDENT-OFF* */
 #ifdef __cplusplus
 extern "C" {

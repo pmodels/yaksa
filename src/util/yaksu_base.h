@@ -8,6 +8,7 @@
 
 #define YAKSU_MAX(x, y)  ((x) > (y) ? (x) : (y))
 #define YAKSU_MIN(x, y)  ((x) < (y) ? (x) : (y))
+#define YAKSU_CEIL(x, y) (((x) / (y)) + !!((x) % (y)))
 
 #define YAKSU_ERR_CHKANDJUMP(check, rc, errcode, label) \
     do {                                                \
