@@ -340,7 +340,7 @@ def switcher(typelist, pupstr, nests):
 ##### main function
 ########################################################################################
 if __name__ == '__main__':
-    #### generate the core pack/unpack kernels
+    ##### generate the core pack/unpack kernels
     for b in builtin_types:
         filename = "src/backend/seq/pup/yaksuri_seqi_pup_%s.c" % b.replace(" ","_")
         yutils.copyright(filename)

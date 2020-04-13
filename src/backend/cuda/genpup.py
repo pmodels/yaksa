@@ -320,7 +320,7 @@ def switcher(typelist, pupstr, nests):
 ##### main function
 ########################################################################################
 if __name__ == '__main__':
-    #### generate the core pack/unpack kernels
+    ##### generate the core pack/unpack kernels
     for b in builtin_types:
         filename = "src/backend/cuda/pup/yaksuri_cudai_pup_%s.cu" % b.replace(" ","_")
         yutils.copyright(filename)
