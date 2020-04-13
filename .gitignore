@@ -69,6 +69,7 @@ missing
 /src/backend/cuda/pup/yaksuri_cudai_populate_pupfns.h
 /maint/Version
 /maint/yaksa.pc
+/maint/yutils.pyc
 /test/m4
 /test/yaksa_test_config.h.in
 /test/yaksa_test_config.h
