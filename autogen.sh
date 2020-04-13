@@ -4,6 +4,10 @@
 ##     See COPYRIGHT in top-level directory
 ##
 
+########################################################################
+## Utility functions
+########################################################################
+
 echo_n() {
     # "echo -n" isn't portable, must portably implement with printf
     printf "%s" "$*"
@@ -11,8 +15,31 @@ echo_n() {
 
 error() {
     echo "===> ERROR:   $@"
+    exit
 }
 
+
+########################################################################
+## Parse user arguments
+########################################################################
+
+genpup_args=
+for arg in "$@" ; do
+    case $arg in
+        -pup-max-nesting=*|--pup-max-nesting=*)
+            genpup_args="$genpup_args $arg"
+            ;;
+
+        *)
+            error "unknown argument $arg"
+            ;;
+    esac
+done
+
+
+########################################################################
+## Autotools
+########################################################################
 
 # generate configure files
 echo
@@ -22,10 +49,14 @@ echo "=== done === "
 echo
 
 
+########################################################################
+## Generating required files
+########################################################################
+
 # backend pup functions
 for x in seq cuda ; do
     echo_n "generating backend pup functions for ${x}... "
-    ./src/backend/${x}/genpup.py
+    ./src/backend/${x}/genpup.py ${genpup_args}
     echo "done"
 done
 

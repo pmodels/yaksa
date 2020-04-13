@@ -5,6 +5,7 @@
 ##
 
 import sys
+import argparse
 sys.path.append('maint/')
 import yutils
 
@@ -340,7 +341,21 @@ def switcher(typelist, pupstr, nests):
 ##### main function
 ########################################################################################
 if __name__ == '__main__':
-    #### generate the core pack/unpack kernels
+    ##### parse user arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--pup-max-nesting', type=int, default=3, help='maximum nesting levels to generate')
+    args = parser.parse_args()
+    if (args.pup_max_nesting < 0):
+        parser.print_help()
+        print
+        print("===> ERROR: pup-max-nesting must be positive")
+        sys.exit(1)
+
+    ##### generate the list of derived datatype arrays
+    darraylist = [ ]
+    yutils.generate_darrays(derived_types, darraylist, args.pup_max_nesting)
+
+    ##### generate the core pack/unpack kernels
     for b in builtin_types:
         filename = "src/backend/seq/pup/yaksuri_seqi_pup_%s.c" % b.replace(" ","_")
         yutils.copyright(filename)
@@ -351,8 +366,6 @@ if __name__ == '__main__':
         OUTFILE.write("#include \"yaksuri_seqi_populate_pupfns.h\"\n")
         OUTFILE.write("\n")
 
-        darraylist = [ ]
-        yutils.generate_darrays(derived_types, darraylist, 3)
         for darray in darraylist:
             for blklen in blklens:
                 generate_kernels(b, darray, blklen)
@@ -391,7 +404,7 @@ if __name__ == '__main__':
     indentation += 1
     pupstr = "pack"
     typelist = [ ]
-    switcher(typelist, pupstr, 4)
+    switcher(typelist, pupstr, args.pup_max_nesting + 1)
     OUTFILE.write("\n")
     display("return rc;\n")
     indentation -= 1
@@ -412,9 +425,6 @@ if __name__ == '__main__':
     OUTFILE.write("\n")
 
     for b in builtin_types:
-        darraylist = [ ]
-        yutils.generate_darrays(derived_types, darraylist, 3)
-
         for darray in darraylist:
             for blklen in blklens:
                 # individual blocklength optimization is only for
