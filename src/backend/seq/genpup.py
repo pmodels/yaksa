@@ -416,8 +416,8 @@ if __name__ == '__main__':
     filename = "src/backend/seq/pup/yaksuri_seqi_populate_pupfns.h"
     yutils.copyright(filename)
     OUTFILE = open(filename, "a")
-    OUTFILE.write("#ifndef YAKSURI_SEQI_PUP_H_INCLUDED\n")
-    OUTFILE.write("#define YAKSURI_SEQI_PUP_H_INCLUDED\n")
+    OUTFILE.write("#ifndef YAKSURI_SEQI_POPULATE_PUPFNS_H_INCLUDED\n")
+    OUTFILE.write("#define YAKSURI_SEQI_POPULATE_PUPFNS_H_INCLUDED\n")
     OUTFILE.write("\n")
     OUTFILE.write("#include <string.h>\n")
     OUTFILE.write("#include <stdint.h>\n")
@@ -446,5 +446,5 @@ if __name__ == '__main__':
                     OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type);\n")
 
     ## end of basic-type specific file
-    OUTFILE.write("#endif  /* YAKSURI_SEQI_PUP_H_INCLUDED */\n")
+    OUTFILE.write("#endif  /* YAKSURI_SEQI_POPULATE_PUPFNS_H_INCLUDED */\n")
     OUTFILE.close()

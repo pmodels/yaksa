@@ -399,8 +399,8 @@ if __name__ == '__main__':
     filename = "src/backend/cuda/pup/yaksuri_cudai_populate_pupfns.h"
     yutils.copyright(filename)
     OUTFILE = open(filename, "a")
-    OUTFILE.write("#ifndef YAKSURI_CUDAI_PUP_H_INCLUDED\n")
-    OUTFILE.write("#define YAKSURI_CUDAI_PUP_H_INCLUDED\n")
+    OUTFILE.write("#ifndef YAKSURI_CUDAI_POPULATE_PUPFNS_H_INCLUDED\n")
+    OUTFILE.write("#define YAKSURI_CUDAI_POPULATE_PUPFNS_H_INCLUDED\n")
     OUTFILE.write("\n")
     OUTFILE.write("#include <string.h>\n")
     OUTFILE.write("#include <stdint.h>\n")
@@ -437,5 +437,5 @@ if __name__ == '__main__':
     OUTFILE.write("}\n")
     OUTFILE.write("#endif\n")
     OUTFILE.write("\n")
-    OUTFILE.write("#endif  /* YAKSURI_CUDAI_PUP_H_INCLUDED */\n")
+    OUTFILE.write("#endif  /* YAKSURI_CUDAI_POPULATE_PUPFNS_H_INCLUDED */\n")
     OUTFILE.close()
