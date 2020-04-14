@@ -6,6 +6,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
 EXTRA_DIST = autogen.sh
+EXTRA_PROGRAMS =
 
 .PHONY: doxygen
 
@@ -27,6 +28,9 @@ include $(top_srcdir)/src/Makefile.mk
 
 testlists=
 include $(top_srcdir)/test/Makefile.mk
+include $(top_srcdir)/examples/Makefile.mk
+
+examples: $(example_list)
 
 doxygen:
 	mkdir -p doc
