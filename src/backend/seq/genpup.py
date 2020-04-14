@@ -111,22 +111,6 @@ def resized(suffix, b, blklen, last):
 builtin_types = [ "char", "wchar_t", "int", "short", "long", "long long", "int8_t", "int16_t", \
                   "int32_t", "int64_t", "float", "double", "long double" ]
 derived_types = [ "hvector", "blkhindx", "hindexed", "dup", "contig", "resized" ]
-derived_maps = {
-    "hvector": hvector,
-    "blkhindx": blkhindx,
-    "hindexed": hindexed,
-    "dup": dup,
-    "contig": contig,
-    "resized": resized,
-}
-derived_decl_maps = {
-    "hvector": hvector_decl,
-    "blkhindx": blkhindx_decl,
-    "hindexed": hindexed_decl,
-    "dup": dup_decl,
-    "contig": contig_decl,
-    "resized": resized_decl,
-}
 blklens = [ "1", "2", "3", "4", "5", "6", "7", "8", "generic" ]
 
 builtin_maps = {
@@ -187,7 +171,7 @@ def generate_kernels(b, darray, blklen):
         # variables specific to each nesting level
         s = "type"
         for x in range(len(darray)):
-            derived_decl_maps[darray[x]](x + 1, s, b)
+            getattr(sys.modules[__name__], "%s_decl" % darray[x])(x + 1, s, b)
             yutils.display(OUTFILE, "\n")
             s = s + "->u.%s.child" % darray[x]
 
@@ -199,9 +183,9 @@ def generate_kernels(b, darray, blklen):
         s = "i * extent"
         for x in range(len(darray)):
             if (x != len(darray) - 1):
-                derived_maps[darray[x]](x + 1, b, "generic", 0)
+                getattr(sys.modules[__name__], darray[x])(x + 1, b, "generic", 0)
             else:
-                derived_maps[darray[x]](x + 1, b, blklen, 1)
+                getattr(sys.modules[__name__], darray[x])(x + 1, b, blklen, 1)
 
         if (func == "pack"):
             yutils.display(OUTFILE, "dbuf[idx++] = sbuf[%s];\n" % s)

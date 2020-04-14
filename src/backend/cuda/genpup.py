@@ -98,15 +98,6 @@ def resized(suffix, dtp, b, last):
 builtin_types = [ "char", "wchar_t", "int", "short", "long", "long long", "int8_t", "int16_t", \
                   "int32_t", "int64_t", "float", "double" ]
 derived_types = [ "hvector", "blkhindx", "hindexed", "dup", "contig", "resized" ]
-derived_maps = {
-    "hvector": hvector,
-    "blkhindx": blkhindx,
-    "hindexed": hindexed,
-    "dup": dup,
-    "contig": contig,
-    "resized": resized,
-}
-
 builtin_maps = {
     "YAKSA_TYPE__UNSIGNED_CHAR": "char",
     "YAKSA_TYPE__UNSIGNED": "int",
@@ -205,7 +196,7 @@ def generate_kernels(b, darray):
                     last = 1
                 else:
                     last = 0
-                derived_maps[d](x, dtp, b, last)
+                getattr(sys.modules[__name__], d)(x, dtp, b, last)
                 x = x + 1
                 dtp = dtp + "->u.%s.child" % d
 
