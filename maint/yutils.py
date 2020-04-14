@@ -7,6 +7,22 @@
 import sys
 
 ########################################################################################
+##### printing utilities
+########################################################################################
+def display(OUTFILE, *argv):
+    for arg in argv:
+        if (arg.find('}') != -1):
+            display.indent -= 1
+    for x in range(display.indent):
+        OUTFILE.write("    ")
+    for arg in argv:
+        OUTFILE.write(arg)
+        if (arg.find('{') != -1):
+            display.indent += 1
+display.indent = 0
+
+
+########################################################################################
 ##### add the copyright header to the top of the file
 ########################################################################################
 def copyright_c(outfile):

@@ -9,15 +9,7 @@ import argparse
 sys.path.append('maint/')
 import yutils
 
-indentation = 0
 num_paren_open = 0
-
-def display(*argv):
-    for x in range(indentation):
-        OUTFILE.write("    ")
-    for arg in argv:
-        OUTFILE.write(arg)
-
 
 ########################################################################################
 ##### Type-specific functions
@@ -25,22 +17,19 @@ def display(*argv):
 
 ## hvector routines
 def hvector_decl(nesting, dtp, b):
-    display("int count%d = %s->u.hvector.count;\n" % (nesting, dtp))
-    display("int blocklength%d ATTRIBUTE((unused)) = %s->u.hvector.blocklength;\n" % (nesting, dtp))
-    display("intptr_t stride%d = %s->u.hvector.stride / sizeof(%s);\n" % (nesting, dtp, b))
-    display("uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent / sizeof(%s);\n" % (nesting, dtp, b))
+    yutils.display(OUTFILE, "int count%d = %s->u.hvector.count;\n" % (nesting, dtp))
+    yutils.display(OUTFILE, "int blocklength%d ATTRIBUTE((unused)) = %s->u.hvector.blocklength;\n" % (nesting, dtp))
+    yutils.display(OUTFILE, "intptr_t stride%d = %s->u.hvector.stride / sizeof(%s);\n" % (nesting, dtp, b))
+    yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent / sizeof(%s);\n" % (nesting, dtp, b))
 
 def hvector(suffix, b, blklen, last):
-    global indentation
     global num_paren_open
     num_paren_open += 2
-    display("for (int j%d = 0; j%d < count%d; j%d++) {\n" % (suffix, suffix, suffix, suffix))
-    indentation += 1
+    yutils.display(OUTFILE, "for (int j%d = 0; j%d < count%d; j%d++) {\n" % (suffix, suffix, suffix, suffix))
     if (blklen == "generic"):
-        display("for (int k%d = 0; k%d < blocklength%d; k%d++) {\n" % (suffix, suffix, suffix, suffix))
+        yutils.display(OUTFILE, "for (int k%d = 0; k%d < blocklength%d; k%d++) {\n" % (suffix, suffix, suffix, suffix))
     else:
-        display("for (int k%d = 0; k%d < %s; k%d++) {\n" % (suffix, suffix, blklen, suffix))
-    indentation += 1
+        yutils.display(OUTFILE, "for (int k%d = 0; k%d < %s; k%d++) {\n" % (suffix, suffix, blklen, suffix))
     global s
     if (last != 1):
         s += " + j%d * stride%d + k%d * extent%d" % (suffix, suffix, suffix, suffix + 1)
@@ -49,22 +38,19 @@ def hvector(suffix, b, blklen, last):
 
 ## blkhindx routines
 def blkhindx_decl(nesting, dtp, b):
-    display("int count%d = %s->u.blkhindx.count;\n" % (nesting, dtp))
-    display("int blocklength%d ATTRIBUTE((unused)) = %s->u.blkhindx.blocklength;\n" % (nesting, dtp))
-    display("intptr_t *restrict array_of_displs%d = %s->u.blkhindx.array_of_displs;\n" % (nesting, dtp))
-    display("uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent / sizeof(%s);\n" % (nesting, dtp, b))
+    yutils.display(OUTFILE, "int count%d = %s->u.blkhindx.count;\n" % (nesting, dtp))
+    yutils.display(OUTFILE, "int blocklength%d ATTRIBUTE((unused)) = %s->u.blkhindx.blocklength;\n" % (nesting, dtp))
+    yutils.display(OUTFILE, "intptr_t *restrict array_of_displs%d = %s->u.blkhindx.array_of_displs;\n" % (nesting, dtp))
+    yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent / sizeof(%s);\n" % (nesting, dtp, b))
 
 def blkhindx(suffix, b, blklen, last):
-    global indentation
     global num_paren_open
     num_paren_open += 2
-    display("for (int j%d = 0; j%d < count%d; j%d++) {\n" % (suffix, suffix, suffix, suffix))
-    indentation += 1
+    yutils.display(OUTFILE, "for (int j%d = 0; j%d < count%d; j%d++) {\n" % (suffix, suffix, suffix, suffix))
     if (blklen == "generic"):
-        display("for (int k%d = 0; k%d < blocklength%d; k%d++) {\n" % (suffix, suffix, suffix, suffix))
+        yutils.display(OUTFILE, "for (int k%d = 0; k%d < blocklength%d; k%d++) {\n" % (suffix, suffix, suffix, suffix))
     else:
-        display("for (int k%d = 0; k%d < %s; k%d++) {\n" % (suffix, suffix, blklen, suffix))
-    indentation += 1
+        yutils.display(OUTFILE, "for (int k%d = 0; k%d < %s; k%d++) {\n" % (suffix, suffix, blklen, suffix))
     global s
     if (last != 1):
         s += " + array_of_displs%d[j%d] / sizeof(%s) + k%d * extent%d" % \
@@ -74,20 +60,17 @@ def blkhindx(suffix, b, blklen, last):
 
 ## hindexed routines
 def hindexed_decl(nesting, dtp, b):
-    display("int count%d = %s->u.hindexed.count;\n" % (nesting, dtp))
-    display("int *restrict array_of_blocklengths%d = %s->u.hindexed.array_of_blocklengths;\n" % (nesting, dtp))
-    display("intptr_t *restrict array_of_displs%d = %s->u.hindexed.array_of_displs;\n" % (nesting, dtp))
-    display("uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent / sizeof(%s);\n" % (nesting, dtp, b))
+    yutils.display(OUTFILE, "int count%d = %s->u.hindexed.count;\n" % (nesting, dtp))
+    yutils.display(OUTFILE, "int *restrict array_of_blocklengths%d = %s->u.hindexed.array_of_blocklengths;\n" % (nesting, dtp))
+    yutils.display(OUTFILE, "intptr_t *restrict array_of_displs%d = %s->u.hindexed.array_of_displs;\n" % (nesting, dtp))
+    yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent / sizeof(%s);\n" % (nesting, dtp, b))
 
 def hindexed(suffix, b, blklen, last):
-    global indentation
     global num_paren_open
     num_paren_open += 2
-    display("for (int j%d = 0; j%d < count%d; j%d++) {\n" % (suffix, suffix, suffix, suffix))
-    indentation += 1
-    display("for (int k%d = 0; k%d < array_of_blocklengths%d[j%d]; k%d++) {\n" % \
+    yutils.display(OUTFILE, "for (int j%d = 0; j%d < count%d; j%d++) {\n" % (suffix, suffix, suffix, suffix))
+    yutils.display(OUTFILE, "for (int k%d = 0; k%d < array_of_blocklengths%d[j%d]; k%d++) {\n" % \
             (suffix, suffix, suffix, suffix, suffix))
-    indentation += 1
     global s
     if (last != 1):
         s += " + array_of_displs%d[j%d] / sizeof(%s) + k%d * extent%d" % \
@@ -97,29 +80,27 @@ def hindexed(suffix, b, blklen, last):
 
 ## dup routines
 def dup_decl(nesting, dtp, b):
-    display("uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent / sizeof(%s);\n" % (nesting, dtp, b))
+    yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent / sizeof(%s);\n" % (nesting, dtp, b))
 
 def dup(suffix, b, blklen, last):
     pass
 
 ## contig routines
 def contig_decl(nesting, dtp, b):
-    display("int count%d = %s->u.contig.count;\n" % (nesting, dtp))
-    display("intptr_t stride%d = %s->u.contig.child->extent / sizeof(%s);\n" % (nesting, dtp, b))
-    display("uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent / sizeof(%s);\n" % (nesting, dtp, b))
+    yutils.display(OUTFILE, "int count%d = %s->u.contig.count;\n" % (nesting, dtp))
+    yutils.display(OUTFILE, "intptr_t stride%d = %s->u.contig.child->extent / sizeof(%s);\n" % (nesting, dtp, b))
+    yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent / sizeof(%s);\n" % (nesting, dtp, b))
 
 def contig(suffix, b, blklen, last):
-    global indentation
     global num_paren_open
     num_paren_open += 1
-    display("for (int j%d = 0; j%d < count%d; j%d++) {\n" % (suffix, suffix, suffix, suffix))
-    indentation += 1
+    yutils.display(OUTFILE, "for (int j%d = 0; j%d < count%d; j%d++) {\n" % (suffix, suffix, suffix, suffix))
     global s
     s += " + j%d * stride%d" % (suffix, suffix)
 
 # resized routines
 def resized_decl(nesting, dtp, b):
-    display("uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent / sizeof(%s);\n" % (nesting, dtp, b))
+    yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent / sizeof(%s);\n" % (nesting, dtp, b))
 
 def resized(suffix, b, blklen, last):
     pass
@@ -169,7 +150,6 @@ builtin_maps = {
 ##### Core kernels
 ########################################################################################
 def generate_kernels(b, darray, blklen):
-    global indentation
     global num_paren_open
     global s
 
@@ -192,34 +172,30 @@ def generate_kernels(b, darray, blklen):
             s = s + b.replace(" ", "_")
         else:
             s = s + "blklen_%s_" % blklen + b.replace(" ", "_")
-        OUTFILE.write("%s" % s),
-        OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type)\n")
-        OUTFILE.write("{\n")
+        yutils.display(OUTFILE, "%s(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type)\n" % s),
+        yutils.display(OUTFILE, "{\n")
 
 
         ##### variable declarations
-        indentation += 1
-
         # generic variables
-        display("int rc = YAKSA_SUCCESS;\n");
-        display("const %s *restrict sbuf = (const %s *) inbuf;\n" % (b, b));
-        display("%s *restrict dbuf = (%s *) outbuf;\n" % (b, b));
-        display("uintptr_t extent ATTRIBUTE((unused)) = type->extent / sizeof(%s);\n" % b)
-        OUTFILE.write("\n");
+        yutils.display(OUTFILE, "int rc = YAKSA_SUCCESS;\n");
+        yutils.display(OUTFILE, "const %s *restrict sbuf = (const %s *) inbuf;\n" % (b, b));
+        yutils.display(OUTFILE, "%s *restrict dbuf = (%s *) outbuf;\n" % (b, b));
+        yutils.display(OUTFILE, "uintptr_t extent ATTRIBUTE((unused)) = type->extent / sizeof(%s);\n" % b)
+        yutils.display(OUTFILE, "\n");
 
         # variables specific to each nesting level
         s = "type"
         for x in range(len(darray)):
             derived_decl_maps[darray[x]](x + 1, s, b)
-            OUTFILE.write("\n")
+            yutils.display(OUTFILE, "\n")
             s = s + "->u.%s.child" % darray[x]
 
 
         ##### non-hvector and non-blkhindx
-        display("uintptr_t idx = 0;\n")
-        display("for (int i = 0; i < count; i++) {\n")
+        yutils.display(OUTFILE, "uintptr_t idx = 0;\n")
+        yutils.display(OUTFILE, "for (int i = 0; i < count; i++) {\n")
         num_paren_open += 1
-        indentation += 1
         s = "i * extent"
         for x in range(len(darray)):
             if (x != len(darray) - 1):
@@ -228,17 +204,15 @@ def generate_kernels(b, darray, blklen):
                 derived_maps[darray[x]](x + 1, b, blklen, 1)
 
         if (func == "pack"):
-            display("dbuf[idx++] = sbuf[%s];\n" % s)
+            yutils.display(OUTFILE, "dbuf[idx++] = sbuf[%s];\n" % s)
         else:
-            display("dbuf[%s] = sbuf[idx++];\n" % s)
+            yutils.display(OUTFILE, "dbuf[%s] = sbuf[idx++];\n" % s)
         for x in range(num_paren_open):
-            indentation -= 1
-            display("}\n")
+            yutils.display(OUTFILE, "}\n")
         num_paren_open = 0
-        OUTFILE.write("\n");
-        display("return rc;\n")
-        indentation -= 1
-        OUTFILE.write("}\n\n")
+        yutils.display(OUTFILE, "\n");
+        yutils.display(OUTFILE, "return rc;\n")
+        yutils.display(OUTFILE, "}\n\n")
 
 
 ########################################################################################
@@ -251,9 +225,7 @@ def child_type_str(typelist):
     return s
 
 def switcher_builtin_element(typelist, pupstr, key, val):
-    global indentation
-    display("case %s:\n" % key.upper())
-    indentation += 1
+    yutils.display(OUTFILE, "case %s:\n" % key.upper())
 
     if (len(typelist) == 0):
         t = ""
@@ -266,79 +238,60 @@ def switcher_builtin_element(typelist, pupstr, key, val):
         nesting_level = len(typelist) + 1
 
     if (t == "hvector" or t == "blkhindx"):
-        display("switch (%s->u.%s.blocklength) {\n" % (child_type_str(typelist), t))
-        indentation += 1
+        yutils.display(OUTFILE, "switch (%s->u.%s.blocklength) {\n" % (child_type_str(typelist), t))
         for blklen in blklens:
             if (blklen != "generic"):
-                display("case %s:\n" % blklen)
+                yutils.display(OUTFILE, "case %s:\n" % blklen)
             else:
-                display("default:\n")
-            indentation += 1
-            display("if (max_nesting_level >= %d) {\n" % nesting_level)
-            display("    seq->pack = yaksuri_seqi_%s_blklen_%s_%s;\n" % (pupstr, blklen, val))
-            display("    seq->unpack = yaksuri_seqi_un%s_blklen_%s_%s;\n" % (pupstr, blklen, val))
-            display("}\n")
-            display("break;\n")
-            indentation -= 1
-        indentation -= 1
-        display("}\n")
+                yutils.display(OUTFILE, "default:\n")
+            yutils.display(OUTFILE, "if (max_nesting_level >= %d) {\n" % nesting_level)
+            yutils.display(OUTFILE, "    seq->pack = yaksuri_seqi_%s_blklen_%s_%s;\n" % (pupstr, blklen, val))
+            yutils.display(OUTFILE, "    seq->unpack = yaksuri_seqi_un%s_blklen_%s_%s;\n" % (pupstr, blklen, val))
+            yutils.display(OUTFILE, "}\n")
+            yutils.display(OUTFILE, "break;\n")
+        yutils.display(OUTFILE, "}\n")
     else:
-        display("if (max_nesting_level >= %d) {\n" % nesting_level)
-        display("    seq->pack = yaksuri_seqi_%s_%s;\n" % (pupstr, val))
-        display("    seq->unpack = yaksuri_seqi_un%s_%s;\n" % (pupstr, val))
-        display("}\n")
+        yutils.display(OUTFILE, "if (max_nesting_level >= %d) {\n" % nesting_level)
+        yutils.display(OUTFILE, "    seq->pack = yaksuri_seqi_%s_%s;\n" % (pupstr, val))
+        yutils.display(OUTFILE, "    seq->unpack = yaksuri_seqi_un%s_%s;\n" % (pupstr, val))
+        yutils.display(OUTFILE, "}\n")
 
     if (t != ""):
         typelist.append(t)
-    display("break;\n")
-    indentation -= 1
+    yutils.display(OUTFILE, "break;\n")
 
 def switcher_builtin(typelist, pupstr):
-    global indentation
-    display("switch (%s->id) {\n" % child_type_str(typelist))
-    indentation += 1
+    yutils.display(OUTFILE, "switch (%s->id) {\n" % child_type_str(typelist))
 
     for b in builtin_types:
         switcher_builtin_element(typelist, pupstr, "YAKSA_TYPE__%s" % b.replace(" ", "_"), b.replace(" ", "_"))
     for key in builtin_maps:
         switcher_builtin_element(typelist, pupstr, key, builtin_maps[key])
 
-    display("default:\n")
-    display("    break;\n")
-    indentation -= 1
-    display("}\n")
+    yutils.display(OUTFILE, "default:\n")
+    yutils.display(OUTFILE, "    break;\n")
+    yutils.display(OUTFILE, "}\n")
 
 def switcher(typelist, pupstr, nests):
-    global indentation
-
-    display("switch (%s->kind) {\n" % child_type_str(typelist))
+    yutils.display(OUTFILE, "switch (%s->kind) {\n" % child_type_str(typelist))
 
     for x in range(len(derived_types)):
-        indentation += 1
         d = derived_types[x]
         if (nests > 1):
-            display("case YAKSI_TYPE_KIND__%s:\n" % d.upper())
-            indentation += 1
+            yutils.display(OUTFILE, "case YAKSI_TYPE_KIND__%s:\n" % d.upper())
             typelist.append(d)
             switcher(typelist, pupstr + "_%s" % d, nests - 1)
             typelist.pop()
-            display("break;\n")
-            indentation -= 1
-        indentation -= 1
+            yutils.display(OUTFILE, "break;\n")
 
     if (len(typelist)):
-        indentation += 1
-        display("case YAKSI_TYPE_KIND__BUILTIN:\n")
-        indentation += 1
+        yutils.display(OUTFILE, "case YAKSI_TYPE_KIND__BUILTIN:\n")
         switcher_builtin(typelist, pupstr)
-        display("break;\n")
-        indentation -= 2
+        yutils.display(OUTFILE, "break;\n")
 
-    indentation += 1
-    display("default:\n")
-    display("    break;\n")
-    indentation -= 1
-    display("}\n")
+    yutils.display(OUTFILE, "default:\n")
+    yutils.display(OUTFILE, "    break;\n")
+    yutils.display(OUTFILE, "}\n")
 
 
 ########################################################################################
@@ -364,11 +317,11 @@ if __name__ == '__main__':
         filename = "src/backend/seq/pup/yaksuri_seqi_pup_%s.c" % b.replace(" ","_")
         yutils.copyright_c(filename)
         OUTFILE = open(filename, "a")
-        OUTFILE.write("#include <string.h>\n")
-        OUTFILE.write("#include <stdint.h>\n")
-        OUTFILE.write("#include <wchar.h>\n")
-        OUTFILE.write("#include \"yaksuri_seqi_populate_pupfns.h\"\n")
-        OUTFILE.write("\n")
+        yutils.display(OUTFILE, "#include <string.h>\n")
+        yutils.display(OUTFILE, "#include <stdint.h>\n")
+        yutils.display(OUTFILE, "#include <wchar.h>\n")
+        yutils.display(OUTFILE, "#include \"yaksuri_seqi_populate_pupfns.h\"\n")
+        yutils.display(OUTFILE, "\n")
 
         for darray in darraylist:
             for blklen in blklens:
@@ -380,39 +333,37 @@ if __name__ == '__main__':
     filename = "src/backend/seq/pup/yaksuri_seqi_populate_pupfns.c"
     yutils.copyright_c(filename)
     OUTFILE = open(filename, "a")
-    OUTFILE.write("#include <stdio.h>\n")
-    OUTFILE.write("#include <stdlib.h>\n")
-    OUTFILE.write("#include <wchar.h>\n")
-    OUTFILE.write("#include \"yaksi.h\"\n")
-    OUTFILE.write("#include \"yaksu.h\"\n")
-    OUTFILE.write("#include \"yaksuri_seqi.h\"\n")
-    OUTFILE.write("#include \"yaksuri_seqi_populate_pupfns.h\"\n")
-    OUTFILE.write("\n")
-    OUTFILE.write("int yaksuri_seqi_populate_pupfns(yaksi_type_s * type)\n")
-    OUTFILE.write("{\n")
-    OUTFILE.write("    int rc = YAKSA_SUCCESS;\n")
-    OUTFILE.write("    yaksuri_seqi_type_s *seq = (yaksuri_seqi_type_s *) type->backend.seq.priv;\n")
-    OUTFILE.write("\n")
-    OUTFILE.write("    seq->pack = NULL;\n")
-    OUTFILE.write("    seq->unpack = NULL;\n")
-    OUTFILE.write("\n")
-    OUTFILE.write("    char *str = getenv(\"YAKSA_ENV_MAX_NESTING_LEVEL\");\n")
-    OUTFILE.write("    int max_nesting_level;\n")
-    OUTFILE.write("    if (str) {\n")
-    OUTFILE.write("        max_nesting_level = atoi(str);\n")
-    OUTFILE.write("    } else {\n")
-    OUTFILE.write("        max_nesting_level = YAKSI_ENV_DEFAULT_NESTING_LEVEL;\n")
-    OUTFILE.write("    }\n")
-    OUTFILE.write("\n")
+    yutils.display(OUTFILE, "#include <stdio.h>\n")
+    yutils.display(OUTFILE, "#include <stdlib.h>\n")
+    yutils.display(OUTFILE, "#include <wchar.h>\n")
+    yutils.display(OUTFILE, "#include \"yaksi.h\"\n")
+    yutils.display(OUTFILE, "#include \"yaksu.h\"\n")
+    yutils.display(OUTFILE, "#include \"yaksuri_seqi.h\"\n")
+    yutils.display(OUTFILE, "#include \"yaksuri_seqi_populate_pupfns.h\"\n")
+    yutils.display(OUTFILE, "\n")
+    yutils.display(OUTFILE, "int yaksuri_seqi_populate_pupfns(yaksi_type_s * type)\n")
+    yutils.display(OUTFILE, "{\n")
+    yutils.display(OUTFILE, "int rc = YAKSA_SUCCESS;\n")
+    yutils.display(OUTFILE, "yaksuri_seqi_type_s *seq = (yaksuri_seqi_type_s *) type->backend.seq.priv;\n")
+    yutils.display(OUTFILE, "\n")
+    yutils.display(OUTFILE, "seq->pack = NULL;\n")
+    yutils.display(OUTFILE, "seq->unpack = NULL;\n")
+    yutils.display(OUTFILE, "\n")
+    yutils.display(OUTFILE, "char *str = getenv(\"YAKSA_ENV_MAX_NESTING_LEVEL\");\n")
+    yutils.display(OUTFILE, "int max_nesting_level;\n")
+    yutils.display(OUTFILE, "if (str) {\n")
+    yutils.display(OUTFILE, "max_nesting_level = atoi(str);\n")
+    yutils.display(OUTFILE, "} else {\n")
+    yutils.display(OUTFILE, "max_nesting_level = YAKSI_ENV_DEFAULT_NESTING_LEVEL;\n")
+    yutils.display(OUTFILE, "}\n")
+    yutils.display(OUTFILE, "\n")
 
-    indentation += 1
     pupstr = "pack"
     typelist = [ ]
     switcher(typelist, pupstr, args.pup_max_nesting + 1)
-    OUTFILE.write("\n")
-    display("return rc;\n")
-    indentation -= 1
-    display("}\n")
+    yutils.display(OUTFILE, "\n")
+    yutils.display(OUTFILE, "return rc;\n")
+    yutils.display(OUTFILE, "}\n")
     OUTFILE.close()
 
 
@@ -420,13 +371,13 @@ if __name__ == '__main__':
     filename = "src/backend/seq/pup/yaksuri_seqi_populate_pupfns.h"
     yutils.copyright_c(filename)
     OUTFILE = open(filename, "a")
-    OUTFILE.write("#ifndef YAKSURI_SEQI_POPULATE_PUPFNS_H_INCLUDED\n")
-    OUTFILE.write("#define YAKSURI_SEQI_POPULATE_PUPFNS_H_INCLUDED\n")
-    OUTFILE.write("\n")
-    OUTFILE.write("#include <string.h>\n")
-    OUTFILE.write("#include <stdint.h>\n")
-    OUTFILE.write("#include \"yaksi.h\"\n")
-    OUTFILE.write("\n")
+    yutils.display(OUTFILE, "#ifndef YAKSURI_SEQI_POPULATE_PUPFNS_H_INCLUDED\n")
+    yutils.display(OUTFILE, "#define YAKSURI_SEQI_POPULATE_PUPFNS_H_INCLUDED\n")
+    yutils.display(OUTFILE, "\n")
+    yutils.display(OUTFILE, "#include <string.h>\n")
+    yutils.display(OUTFILE, "#include <stdint.h>\n")
+    yutils.display(OUTFILE, "#include \"yaksi.h\"\n")
+    yutils.display(OUTFILE, "\n")
 
     for b in builtin_types:
         for darray in darraylist:
@@ -447,9 +398,8 @@ if __name__ == '__main__':
                         s = s + b.replace(" ", "_")
                     else:
                         s = s + "blklen_%s_" % blklen + b.replace(" ", "_")
-                    OUTFILE.write("%s" % s),
-                    OUTFILE.write("(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type);\n")
+                    yutils.display(OUTFILE, "%s(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type);\n" % s),
 
     ## end of basic-type specific file
-    OUTFILE.write("#endif  /* YAKSURI_SEQI_POPULATE_PUPFNS_H_INCLUDED */\n")
+    yutils.display(OUTFILE, "#endif  /* YAKSURI_SEQI_POPULATE_PUPFNS_H_INCLUDED */\n")
     OUTFILE.close()
