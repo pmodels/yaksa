@@ -25,6 +25,7 @@ def copyright(outfile):
 ##### generate an array of datatype arrays
 ########################################################################################
 def generate_darrays(derived_types, darraylist, maxlevels):
+    darraylist.append([])
     for level in range(maxlevels, 0, -1):
         index = [ ]
         for x in range(level):

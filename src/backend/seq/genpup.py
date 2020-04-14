@@ -173,6 +173,10 @@ def generate_kernels(b, darray, blklen):
     global num_paren_open
     global s
 
+    # we don't need pup kernels for basic types
+    if (len(darray) == 0):
+        return
+
     # individual blocklength optimization is only for
     # hvector and blkhindx
     if (darray[-1] != "hvector" and darray[-1] != "blkhindx" and blklen != "generic"):
@@ -429,7 +433,8 @@ if __name__ == '__main__':
             for blklen in blklens:
                 # individual blocklength optimization is only for
                 # hvector and blkhindx
-                if (darray[-1] != "hvector" and darray[-1] != "blkhindx" and blklen != "generic"):
+                if (len(darray) and darray[-1] != "hvector" and darray[-1] != "blkhindx" \
+                    and blklen != "generic"):
                     continue
 
                 for func in "pack","unpack":
@@ -438,7 +443,7 @@ if __name__ == '__main__':
                     for d in darray:
                         s = s + "%s_" % d
                     # hvector and hindexed get blklen-specific function names
-                    if (darray[-1] != "hvector" and darray[-1] != "blkhindx"):
+                    if (len(darray) and darray[-1] != "hvector" and darray[-1] != "blkhindx"):
                         s = s + b.replace(" ", "_")
                     else:
                         s = s + "blklen_%s_" % blklen + b.replace(" ", "_")
