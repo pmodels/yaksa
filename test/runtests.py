@@ -42,7 +42,33 @@ def init_colors():
         colors.END = ''
 
 
-def printout(line, ret, elapsed_time, output):
+def printout_make(line, ret, elapsed_time, output):
+    global num_tests
+    global num_failures
+
+    sys.stdout.write(colors.PREFIX + ">>>> " + colors.END)
+    sys.stdout.write("return status: ")
+    if (ret == 0):
+        sys.stdout.write(colors.SUCCESS + "SUCCESS\n" + colors.END)
+    else:
+        sys.stdout.write(colors.FAILURE + "FAILURE\n" + colors.END)
+    sys.stdout.write(colors.PREFIX + ">>>> " + colors.END)
+    sys.stdout.write("elapsed time: %f sec\n" % elapsed_time)
+    if (ret != 0):
+        num_tests = num_tests + 1
+        num_failures = num_failures + 1
+        if (output != ""):
+            execname = line.split(' ', 1)[0].rstrip()
+            print(colors.FAILURE + "\n==== \"make %s\" failed ====" % execname + colors.END)
+            print(output)
+            print(colors.FAILURE + "==== make output complete ====\n" + colors.END)
+        testnames.append(line)
+        testtimes.append(elapsed_time)
+        testretvals.append(ret)
+        testoutputs.append(output)
+
+
+def printout_exec(line, ret, elapsed_time, output):
     global num_tests
     global num_failures
 
@@ -172,15 +198,15 @@ def run_testlist(testlist):
         execname = line.split(' ', 1)[0].rstrip()
         if opts['verbose']:
             print("make " + execname)
+        start = time.time()
         p = subprocess.Popen(['make', execname], stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
         ret = wait_with_signal(p)
         out = p.communicate()
+        end = time.time()
         if opts['verbose']:
             print(out[0].decode().strip())
+        printout_make(line, ret, end - start, out[0].decode().strip())
         if (ret != 0):
-            print(colors.FAILURE + "\n==== \"make %s\" output ====" % execname + colors.END)
-            print(out[0].decode().strip())
-            print(colors.FAILURE + "==== make output complete ====\n" + colors.END)
             continue  # skip over to the next line
 
 
@@ -195,7 +221,7 @@ def run_testlist(testlist):
         ret = wait_with_signal(p)
         out = p.communicate()
         end = time.time()
-        printout(line, ret, end - start, out[0].decode().strip())
+        printout_exec(line, ret, end - start, out[0].decode().strip())
 
     fh.close()
     print(colors.INFO + "==== done executing testlist %s ====" % testlist + colors.END)
