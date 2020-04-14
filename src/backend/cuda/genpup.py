@@ -338,7 +338,7 @@ if __name__ == '__main__':
     ##### generate the core pack/unpack kernels
     for b in builtin_types:
         filename = "src/backend/cuda/pup/yaksuri_cudai_pup_%s.cu" % b.replace(" ","_")
-        yutils.copyright(filename)
+        yutils.copyright_c(filename)
         OUTFILE = open(filename, "a")
         OUTFILE.write("#include <string.h>\n")
         OUTFILE.write("#include <stdint.h>\n")
@@ -357,7 +357,7 @@ if __name__ == '__main__':
 
     ##### generate the switching logic to select pup functions
     filename = "src/backend/cuda/pup/yaksuri_cudai_populate_pupfns.c"
-    yutils.copyright(filename)
+    yutils.copyright_c(filename)
     OUTFILE = open(filename, "a")
     OUTFILE.write("#include <stdio.h>\n")
     OUTFILE.write("#include <stdlib.h>\n")
@@ -397,7 +397,7 @@ if __name__ == '__main__':
 
     ##### generate the header file declarations
     filename = "src/backend/cuda/pup/yaksuri_cudai_populate_pupfns.h"
-    yutils.copyright(filename)
+    yutils.copyright_c(filename)
     OUTFILE = open(filename, "a")
     OUTFILE.write("#ifndef YAKSURI_CUDAI_POPULATE_PUPFNS_H_INCLUDED\n")
     OUTFILE.write("#define YAKSURI_CUDAI_POPULATE_PUPFNS_H_INCLUDED\n")

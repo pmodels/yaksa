@@ -9,7 +9,7 @@ import sys
 ########################################################################################
 ##### add the copyright header to the top of the file
 ########################################################################################
-def copyright(outfile):
+def copyright_c(outfile):
     OUTFILE = open(outfile, "w")
     OUTFILE.write("/*\n")
     OUTFILE.write(" * Copyright (C) by Argonne National Laboratory\n")
@@ -17,6 +17,17 @@ def copyright(outfile):
     OUTFILE.write(" *\n")
     OUTFILE.write(" * DO NOT EDIT: AUTOMATICALLY GENERATED FILE !!\n")
     OUTFILE.write(" */\n")
+    OUTFILE.write("\n")
+    OUTFILE.close()
+
+def copyright_makefile(outfile):
+    OUTFILE = open(outfile, "w")
+    OUTFILE.write("##\n")
+    OUTFILE.write("## Copyright (C) by Argonne National Laboratory\n")
+    OUTFILE.write("##     See COPYRIGHT in top-level directory\n")
+    OUTFILE.write("##\n")
+    OUTFILE.write("## DO NOT EDIT: AUTOMATICALLY GENERATED FILE !!\n")
+    OUTFILE.write("##\n")
     OUTFILE.write("\n")
     OUTFILE.close()
 
