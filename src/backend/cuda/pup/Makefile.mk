@@ -20,8 +20,6 @@ libyaksa_la_SOURCES += \
 	src/backend/cuda/pup/yaksuri_cudai_pup_long.cu \
 	src/backend/cuda/pup/yaksuri_cudai_pup_long_long.cu \
 	src/backend/cuda/pup/yaksuri_cudai_pup_short.cu \
-	src/backend/cuda/pup/yaksuri_cudai_pup_wchar_t.cu \
-	src/backend/cuda/pup/yaksuri_cudai_populate_pupfns.c
+	src/backend/cuda/pup/yaksuri_cudai_pup_wchar_t.cu
 
-noinst_HEADERS += \
-	src/backend/cuda/pup/yaksuri_cudai_populate_pupfns.h
+include src/backend/cuda/pup/Makefile.pup.mk

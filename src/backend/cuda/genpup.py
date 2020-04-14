@@ -6,8 +6,12 @@
 
 import sys
 import argparse
+
 sys.path.append('maint/')
 import yutils
+
+sys.path.append('src/backend/')
+import gencomm
 
 
 ########################################################################################
@@ -15,9 +19,9 @@ import yutils
 ########################################################################################
 
 num_paren_open = 0
+blklens = [ "generic" ]
 builtin_types = [ "char", "wchar_t", "int", "short", "long", "long long", "int8_t", "int16_t", \
                   "int32_t", "int64_t", "float", "double" ]
-derived_types = [ "hvector", "blkhindx", "hindexed", "dup", "contig", "resized" ]
 builtin_maps = {
     "YAKSA_TYPE__UNSIGNED_CHAR": "char",
     "YAKSA_TYPE__UNSIGNED": "int",
@@ -219,70 +223,6 @@ def generate_kernels(b, darray):
 
 
 ########################################################################################
-##### Switch statement generation for pup function selection
-########################################################################################
-def child_type_str(typelist):
-    s = "type"
-    for x in typelist:
-        s = s + "->u.%s.child" % x
-    return s
-
-def switcher_builtin_element(typelist, pupstr, key, val):
-    yutils.display(OUTFILE, "case %s:\n" % key.upper())
-
-    if (len(typelist) == 0):
-        t = ""
-    else:
-        t = typelist.pop()
-
-    if (t == ""):
-        nesting_level = 0
-    else:
-        nesting_level = len(typelist) + 1
-
-    yutils.display(OUTFILE, "if (max_nesting_level >= %d) {\n" % nesting_level)
-    yutils.display(OUTFILE, "    cuda->pack = yaksuri_cudai_%s_%s;\n" % (pupstr, val))
-    yutils.display(OUTFILE, "    cuda->unpack = yaksuri_cudai_un%s_%s;\n" % (pupstr, val))
-    yutils.display(OUTFILE, "}\n")
-
-    if (t != ""):
-        typelist.append(t)
-    yutils.display(OUTFILE, "break;\n")
-
-def switcher_builtin(typelist, pupstr):
-    yutils.display(OUTFILE, "switch (%s->id) {\n" % child_type_str(typelist))
-
-    for b in builtin_types:
-        switcher_builtin_element(typelist, pupstr, "YAKSA_TYPE__%s" % b.replace(" ", "_"), b.replace(" ", "_"))
-    for key in builtin_maps:
-        switcher_builtin_element(typelist, pupstr, key, builtin_maps[key])
-
-    yutils.display(OUTFILE, "default:\n")
-    yutils.display(OUTFILE, "    break;\n")
-    yutils.display(OUTFILE, "}\n")
-
-def switcher(typelist, pupstr, nests):
-    yutils.display(OUTFILE, "switch (%s->kind) {\n" % child_type_str(typelist))
-
-    for d in derived_types:
-        if (nests > 1):
-            yutils.display(OUTFILE, "case YAKSI_TYPE_KIND__%s:\n" % d.upper())
-            typelist.append(d)
-            switcher(typelist, pupstr + "_%s" % d, nests - 1)
-            typelist.pop()
-            yutils.display(OUTFILE, "break;\n")
-
-    if (len(typelist)):
-        yutils.display(OUTFILE, "case YAKSI_TYPE_KIND__BUILTIN:\n")
-        switcher_builtin(typelist, pupstr)
-        yutils.display(OUTFILE, "break;\n")
-
-    yutils.display(OUTFILE, "default:\n")
-    yutils.display(OUTFILE, "    break;\n")
-    yutils.display(OUTFILE, "}\n")
-
-
-########################################################################################
 ##### main function
 ########################################################################################
 if __name__ == '__main__':
@@ -298,7 +238,7 @@ if __name__ == '__main__':
 
     ##### generate the list of derived datatype arrays
     darraylist = [ ]
-    yutils.generate_darrays(derived_types, darraylist, args.pup_max_nesting)
+    yutils.generate_darrays(gencomm.derived_types, darraylist, args.pup_max_nesting)
 
     ##### generate the core pack/unpack kernels
     for b in builtin_types:
@@ -312,7 +252,7 @@ if __name__ == '__main__':
         yutils.display(OUTFILE, "#include <cuda.h>\n")
         yutils.display(OUTFILE, "#include <cuda_runtime.h>\n")
         yutils.display(OUTFILE, "#include \"yaksuri_cudai.h\"\n")
-        yutils.display(OUTFILE, "#include \"yaksuri_cudai_populate_pupfns.h\"\n")
+        yutils.display(OUTFILE, "#include \"yaksuri_cudai_pup.h\"\n")
         yutils.display(OUTFILE, "\n")
 
         for darray in darraylist:
@@ -320,55 +260,16 @@ if __name__ == '__main__':
 
         OUTFILE.close()
 
-    ##### generate the switching logic to select pup functions
-    filename = "src/backend/cuda/pup/yaksuri_cudai_populate_pupfns.c"
+    ##### generate the core pack/unpack kernel declarations
+    filename = "src/backend/cuda/pup/yaksuri_cudai_pup.h"
     yutils.copyright_c(filename)
     OUTFILE = open(filename, "a")
-    yutils.display(OUTFILE, "#include <stdio.h>\n")
-    yutils.display(OUTFILE, "#include <stdlib.h>\n")
-    yutils.display(OUTFILE, "#include <wchar.h>\n")
-    yutils.display(OUTFILE, "#include \"yaksi.h\"\n")
-    yutils.display(OUTFILE, "#include \"yaksu.h\"\n")
-    yutils.display(OUTFILE, "#include \"yaksuri_cudai.h\"\n")
-    yutils.display(OUTFILE, "#include \"yaksuri_cudai_populate_pupfns.h\"\n")
-    yutils.display(OUTFILE, "\n")
-    yutils.display(OUTFILE, "int yaksuri_cudai_populate_pupfns(yaksi_type_s * type)\n")
-    yutils.display(OUTFILE, "{\n")
-    yutils.display(OUTFILE, "int rc = YAKSA_SUCCESS;\n")
-    yutils.display(OUTFILE, "yaksuri_cudai_type_s *cuda = (yaksuri_cudai_type_s *) type->backend.cuda.priv;\n")
-    yutils.display(OUTFILE, "\n")
-    yutils.display(OUTFILE, "cuda->pack = NULL;\n")
-    yutils.display(OUTFILE, "cuda->unpack = NULL;\n")
-    yutils.display(OUTFILE, "\n")
-    yutils.display(OUTFILE, "char *str = getenv(\"YAKSA_ENV_MAX_NESTING_LEVEL\");\n")
-    yutils.display(OUTFILE, "int max_nesting_level;\n")
-    yutils.display(OUTFILE, "if (str) {\n")
-    yutils.display(OUTFILE, "max_nesting_level = atoi(str);\n")
-    yutils.display(OUTFILE, "} else {\n")
-    yutils.display(OUTFILE, "max_nesting_level = YAKSI_ENV_DEFAULT_NESTING_LEVEL;\n")
-    yutils.display(OUTFILE, "}\n")
-    yutils.display(OUTFILE, "\n")
-
-    pupstr = "pack"
-    typelist = [ ]
-    switcher(typelist, pupstr, args.pup_max_nesting + 1)
-    yutils.display(OUTFILE, "\n")
-    yutils.display(OUTFILE, "return rc;\n")
-    yutils.display(OUTFILE, "}\n")
-
-    OUTFILE.close()
-
-    ##### generate the header file declarations
-    filename = "src/backend/cuda/pup/yaksuri_cudai_populate_pupfns.h"
-    yutils.copyright_c(filename)
-    OUTFILE = open(filename, "a")
-    yutils.display(OUTFILE, "#ifndef YAKSURI_CUDAI_POPULATE_PUPFNS_H_INCLUDED\n")
-    yutils.display(OUTFILE, "#define YAKSURI_CUDAI_POPULATE_PUPFNS_H_INCLUDED\n")
+    yutils.display(OUTFILE, "#ifndef YAKSURI_CUDAI_PUP_H_INCLUDED\n")
+    yutils.display(OUTFILE, "#define YAKSURI_CUDAI_PUP_H_INCLUDED\n")
     yutils.display(OUTFILE, "\n")
     yutils.display(OUTFILE, "#include <string.h>\n")
     yutils.display(OUTFILE, "#include <stdint.h>\n")
     yutils.display(OUTFILE, "#include \"yaksi.h\"\n")
-    yutils.display(OUTFILE, "#include \"yaksuri_cudai.h\"\n")
     yutils.display(OUTFILE, "\n")
     yutils.display(OUTFILE, "#ifdef __cplusplus\n")
     yutils.display(OUTFILE, "extern \"C\"\n")
@@ -400,5 +301,8 @@ if __name__ == '__main__':
     yutils.display(OUTFILE, "}\n")
     yutils.display(OUTFILE, "#endif\n")
     yutils.display(OUTFILE, "\n")
-    yutils.display(OUTFILE, "#endif  /* YAKSURI_CUDAI_POPULATE_PUPFNS_H_INCLUDED */\n")
+    yutils.display(OUTFILE, "#endif  /* YAKSURI_CUDAI_PUP_H_INCLUDED */\n")
     OUTFILE.close()
+
+    ##### generate the switching logic to select pup functions
+    gencomm.populate_pupfns(args.pup_max_nesting, "cuda", blklens, builtin_types, builtin_maps)
