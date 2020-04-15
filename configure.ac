@@ -105,7 +105,7 @@ dnl ----------------------------------------------------------------------------
 PAC_ARG_STRICT
 
 # --enable-debug
-AC_ARG_ENABLE([debug],AS_HELP_STRING([--enable-debug],[adds -g to CFLAGS]))
+AC_ARG_ENABLE([debug],AS_HELP_STRING([--enable-debug],[adds -g to CFLAGS]),,[enable_debug=no])
 if test "${enable_debug}" = "yes" ; then
     PAC_APPEND_FLAG([-g],[CFLAGS])
 fi
