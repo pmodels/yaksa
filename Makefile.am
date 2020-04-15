@@ -22,7 +22,12 @@ dist_noinst_SCRIPTS = autogen.sh
 lib_LTLIBRARIES = libyaksa.la
 libyaksa_la_SOURCES =
 AM_CPPFLAGS =
+
+if EMBEDDED_BUILD
+libyaksa_la_LDFLAGS =
+else
 libyaksa_la_LDFLAGS = -version-info @libyaksa_so_version@
+endif !EMBEDDED_BUILD
 
 include $(top_srcdir)/src/Makefile.mk
 
