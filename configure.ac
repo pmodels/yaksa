@@ -104,8 +104,12 @@ dnl ----------------------------------------------------------------------------
 # strict
 PAC_ARG_STRICT
 
+# embedded builds
+AC_ARG_ENABLE([embedded],AS_HELP_STRING([--enable-embedded],[enables embedded builds]),,[enable_embedded=no])
+AM_CONDITIONAL([EMBEDDED_BUILD], [test x${enable_embedded} = xyes])
+
 # --enable-debug
-AC_ARG_ENABLE([debug],AS_HELP_STRING([--enable-debug],[adds -g to CFLAGS]))
+AC_ARG_ENABLE([debug],AS_HELP_STRING([--enable-debug],[adds -g to CFLAGS]),,[enable_debug=no])
 if test "${enable_debug}" = "yes" ; then
     PAC_APPEND_FLAG([-g],[CFLAGS])
 fi
