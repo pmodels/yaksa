@@ -9,7 +9,31 @@ import argparse
 sys.path.append('maint/')
 import yutils
 
+
+########################################################################################
+##### Global variables
+########################################################################################
+
 num_paren_open = 0
+builtin_types = [ "char", "wchar_t", "int", "short", "long", "long long", "int8_t", "int16_t", \
+                  "int32_t", "int64_t", "float", "double" ]
+derived_types = [ "hvector", "blkhindx", "hindexed", "dup", "contig", "resized" ]
+builtin_maps = {
+    "YAKSA_TYPE__UNSIGNED_CHAR": "char",
+    "YAKSA_TYPE__UNSIGNED": "int",
+    "YAKSA_TYPE__UNSIGNED_SHORT": "short",
+    "YAKSA_TYPE__UNSIGNED_LONG": "long",
+    "YAKSA_TYPE__LONG_DOUBLE": "double",
+    "YAKSA_TYPE__UNSIGNED_LONG_LONG": "long_long",
+    "YAKSA_TYPE__UINT8_T": "int8_t",
+    "YAKSA_TYPE__UINT16_T": "int16_t",
+    "YAKSA_TYPE__UINT32_T": "int32_t",
+    "YAKSA_TYPE__UINT64_T": "int64_t",
+    "YAKSA_TYPE__C_COMPLEX": "float",
+    "YAKSA_TYPE__C_DOUBLE_COMPLEX": "double",
+    "YAKSA_TYPE__C_LONG_DOUBLE_COMPLEX": "double",
+    "YAKSA_TYPE__BYTE": "int8_t"
+}
 
 
 ########################################################################################
@@ -91,29 +115,6 @@ def resized(suffix, dtp, b, last):
     if (need_extent == True):
         yutils.display(OUTFILE, "uintptr_t extent%d = %s->extent / sizeof(%s);\n" % (suffix, dtp, b))
     need_extent = False
-
-
-## loop through the derived and basic types to generate individual
-## pack functions
-builtin_types = [ "char", "wchar_t", "int", "short", "long", "long long", "int8_t", "int16_t", \
-                  "int32_t", "int64_t", "float", "double" ]
-derived_types = [ "hvector", "blkhindx", "hindexed", "dup", "contig", "resized" ]
-builtin_maps = {
-    "YAKSA_TYPE__UNSIGNED_CHAR": "char",
-    "YAKSA_TYPE__UNSIGNED": "int",
-    "YAKSA_TYPE__UNSIGNED_SHORT": "short",
-    "YAKSA_TYPE__UNSIGNED_LONG": "long",
-    "YAKSA_TYPE__LONG_DOUBLE": "double",
-    "YAKSA_TYPE__UNSIGNED_LONG_LONG": "long_long",
-    "YAKSA_TYPE__UINT8_T": "int8_t",
-    "YAKSA_TYPE__UINT16_T": "int16_t",
-    "YAKSA_TYPE__UINT32_T": "int32_t",
-    "YAKSA_TYPE__UINT64_T": "int64_t",
-    "YAKSA_TYPE__C_COMPLEX": "float",
-    "YAKSA_TYPE__C_DOUBLE_COMPLEX": "double",
-    "YAKSA_TYPE__C_LONG_DOUBLE_COMPLEX": "double",
-    "YAKSA_TYPE__BYTE": "int8_t"
-}
 
 
 ########################################################################################
