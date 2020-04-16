@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <limits.h>
 #include "yaksa.h"
 #include "yaksi.h"
 #include "yaksu.h"
@@ -139,7 +140,7 @@ static int alloc_subop(progress_subop_s ** subop)
     yaksuri_request_s *request_backend = (yaksuri_request_s *) elem->request->backend.priv;
     yaksuri_gpudev_id_e id = request_backend->gpudev_id;
     bool need_device_tmpbuf = false, need_host_tmpbuf = false;
-    int devid;
+    int devid = INT_MIN;
 
     if ((elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
          elem->pup.inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
