@@ -35,6 +35,7 @@ typedef struct {
     void *priv;
 } yaksur_request_s;
 
+typedef void *(*yaksur_device_malloc_fn) (uintptr_t, int);
 typedef int (*yaksur_get_num_devices_fn) (int *);
 typedef int (*yaksur_check_p2p_comm_fn) (int, int, bool *);
 typedef int (*yaksur_pup_fn) (const void *, void *, uintptr_t, struct yaksi_type_s *,
@@ -56,7 +57,7 @@ typedef struct yaksur_gpudev_info_s {
     yaksur_pup_is_supported_fn pup_is_supported;
     yaksu_malloc_fn host_malloc;
     yaksu_free_fn host_free;
-    yaksu_malloc_fn device_malloc;
+    yaksur_device_malloc_fn device_malloc;
     yaksu_free_fn device_free;
     yaksur_event_destroy_fn event_destroy;
     yaksur_event_query_fn event_query;

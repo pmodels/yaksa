@@ -20,14 +20,28 @@ static void *cuda_host_malloc(uintptr_t size)
     return ptr;
 }
 
-static void *cuda_device_malloc(uintptr_t size)
+static void *cuda_device_malloc(uintptr_t size, int device)
 {
     void *ptr = NULL;
+    cudaError_t cerr;
 
-    cudaError_t cerr = cudaMalloc(&ptr, size);
+    int cur_device;
+    cerr = cudaGetDevice(&cur_device);
     YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
 
+    cerr = cudaSetDevice(device);
+    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
+
+    cerr = cudaMalloc(&ptr, size);
+    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
+
+    cerr = cudaSetDevice(cur_device);
+    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
+
+  fn_exit:
     return ptr;
+  fn_fail:
+    return NULL;
 }
 
 static void cuda_host_free(void *ptr)

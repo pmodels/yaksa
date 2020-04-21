@@ -278,7 +278,7 @@ static int alloc_subop(progress_subop_s ** subop)
     if (need_device_tmpbuf) {
         if (yaksuri_global.gpudev[id].device[devid].slab == NULL) {
             yaksuri_global.gpudev[id].device[devid].slab =
-                yaksuri_global.gpudev[id].info->device_malloc(TMPBUF_SLAB_SIZE);
+                yaksuri_global.gpudev[id].info->device_malloc(TMPBUF_SLAB_SIZE, id);
         }
         yaksuri_global.gpudev[id].device[devid].slab_tail_offset =
             device_tmpbuf_offset + nelems * elem->pup.type->size;
