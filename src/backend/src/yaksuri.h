@@ -8,11 +8,11 @@
 
 #include "yaksi.h"
 
-typedef enum yaksuri_gpudev_id_e {
-    YAKSURI_GPUDEV_ID__UNSET = -1,
-    YAKSURI_GPUDEV_ID__CUDA = 0,
-    YAKSURI_GPUDEV_ID__LAST,
-} yaksuri_gpudev_id_e;
+typedef enum yaksuri_gpudriver_id_e {
+    YAKSURI_GPUDRIVER_ID__UNSET = -1,
+    YAKSURI_GPUDRIVER_ID__CUDA = 0,
+    YAKSURI_GPUDRIVER_ID__LAST,
+} yaksuri_gpudriver_id_e;
 
 typedef enum yaksuri_pup_e {
     YAKSURI_PUPTYPE__PACK,
@@ -29,13 +29,13 @@ typedef struct {
     struct {
         yaksuri_slab_s host;
         yaksuri_slab_s *device;
-        yaksur_gpudev_info_s *info;
-    } gpudev[YAKSURI_GPUDEV_ID__LAST];
+        yaksur_gpudriver_info_s *info;
+    } gpudriver[YAKSURI_GPUDRIVER_ID__LAST];
 } yaksuri_global_s;
 extern yaksuri_global_s yaksuri_global;
 
 typedef struct {
-    yaksuri_gpudev_id_e gpudev_id;
+    yaksuri_gpudriver_id_e gpudriver_id;
     void *event;
 
     enum {

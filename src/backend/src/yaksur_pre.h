@@ -18,7 +18,7 @@ typedef struct {
     enum {
         YAKSUR_PTR_TYPE__UNREGISTERED_HOST,
         YAKSUR_PTR_TYPE__REGISTERED_HOST,
-        YAKSUR_PTR_TYPE__DEVICE,
+        YAKSUR_PTR_TYPE__GPU,
     } type;
     int device;
 } yaksur_ptr_attr_s;
@@ -35,7 +35,7 @@ typedef struct {
     void *priv;
 } yaksur_request_s;
 
-typedef struct yaksur_gpudev_info_s {
+typedef struct yaksur_gpudriver_info_s {
     /* miscellaneous */
     int (*get_num_devices) (int *ndevices);
     int (*check_p2p_comm) (int sdev, int ddev, bool * is_enabled);
@@ -52,8 +52,8 @@ typedef struct yaksur_gpudev_info_s {
     /* memory management */
     void *(*host_malloc) (uintptr_t size);
     void (*host_free) (void *ptr);
-    void *(*device_malloc) (uintptr_t size, int device);
-    void (*device_free) (void *ptr);
+    void *(*gpu_malloc) (uintptr_t size, int device);
+    void (*gpu_free) (void *ptr);
     int (*get_ptr_attr) (const void *buf, yaksur_ptr_attr_s * ptrattr);
 
     /* events */
@@ -64,6 +64,6 @@ typedef struct yaksur_gpudev_info_s {
     /* types */
     int (*type_create) (struct yaksi_type_s * type);
     int (*type_free) (struct yaksi_type_s * type);
-} yaksur_gpudev_info_s;
+} yaksur_gpudriver_info_s;
 
 #endif /* YAKSUR_PRE_H_INCLUDED */

@@ -62,7 +62,7 @@ int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, bool * is_supported)
 }
 
 int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                        void *device_tmpbuf, void *interm_event, void **event)
+                        void *gpu_tmpbuf, void *interm_event, void **event)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
@@ -152,9 +152,9 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
                 YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
             }
 
-            cuda_type->pack(inbuf, device_tmpbuf, count, cuda_type->md, n_threads, n_blocks_x,
+            cuda_type->pack(inbuf, gpu_tmpbuf, count, cuda_type->md, n_threads, n_blocks_x,
                             n_blocks_y, n_blocks_z, target);
-            cerr = cudaMemcpyAsync(outbuf, device_tmpbuf, count * type->size, cudaMemcpyDefault,
+            cerr = cudaMemcpyAsync(outbuf, gpu_tmpbuf, count * type->size, cudaMemcpyDefault,
                                    yaksuri_cudai_global.stream[target]);
             YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
         } else {
@@ -181,7 +181,7 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
 }
 
 int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                          void *device_tmpbuf, void *interm_event, void **event)
+                          void *gpu_tmpbuf, void *interm_event, void **event)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
@@ -271,11 +271,11 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
                 YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
             }
 
-            cerr = cudaMemcpyAsync(device_tmpbuf, inbuf, count * type->size, cudaMemcpyDefault,
+            cerr = cudaMemcpyAsync(gpu_tmpbuf, inbuf, count * type->size, cudaMemcpyDefault,
                                    yaksuri_cudai_global.stream[target]);
             YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-            cuda_type->unpack(device_tmpbuf, outbuf, count, cuda_type->md, n_threads, n_blocks_x,
+            cuda_type->unpack(gpu_tmpbuf, outbuf, count, cuda_type->md, n_threads, n_blocks_x,
                               n_blocks_y, n_blocks_z, target);
         } else {
             rc = YAKSA_ERR__INTERNAL;
