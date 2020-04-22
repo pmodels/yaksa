@@ -105,9 +105,9 @@ int yaksuri_cudai_md_alloc(yaksi_type_s * type);
 int yaksuri_cudai_populate_pupfns(yaksi_type_s * type);
 
 int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                        void *gpu_tmpbuf, void *interm_event, void **event);
+                        void *gpu_tmpbuf, int device, void *interm_event, void **event);
 int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                          void *gpu_tmpbuf, void *interm_event, void **event);
+                          void *gpu_tmpbuf, int device, void *interm_event, void **event);
 int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, bool * is_supported);
 
 /* *INDENT-OFF* */

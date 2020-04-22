@@ -112,7 +112,7 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
         /* gpu-to-gpu copies do not need temporary buffers */
         bool first_event = !request_backend->event;
         rc = yaksuri_global.gpudriver[id].info->ipack(inbuf, outbuf, count, type, NULL,
-                                                      NULL, &request_backend->event);
+                                                      inattr.device, NULL, &request_backend->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (first_event) {
@@ -124,17 +124,34 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
         if (request_backend->kind == YAKSURI_REQUEST_KIND__UNSET) {
             request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
         }
-    } else if (type->is_contig &&
-               ((inattr.type == YAKSUR_PTR_TYPE__GPU &&
-                 outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
-                (inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
-                 outattr.type == YAKSUR_PTR_TYPE__GPU))) {
+    } else if (type->is_contig && inattr.type == YAKSUR_PTR_TYPE__GPU &&
+               outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
         /* gpu-to-host or host-to-gpu copies do not need
          * temporary buffers either, if the host buffer is registered
          * and the type is contiguous */
         bool first_event = !request_backend->event;
         rc = yaksuri_global.gpudriver[id].info->ipack(inbuf, outbuf, count, type, NULL,
-                                                      NULL, &request_backend->event);
+                                                      inattr.device, NULL, &request_backend->event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        if (first_event) {
+            yaksu_atomic_incr(&request->cc);
+        }
+
+        /* if the request kind was already set to STAGED, do not
+         * override it, as a part of the request could be staged */
+        if (request_backend->kind == YAKSURI_REQUEST_KIND__UNSET) {
+            request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
+        }
+    } else if (type->is_contig && inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
+               outattr.type == YAKSUR_PTR_TYPE__GPU) {
+        /* gpu-to-host or host-to-gpu copies do not need
+         * temporary buffers either, if the host buffer is registered
+         * and the type is contiguous */
+        bool first_event = !request_backend->event;
+        rc = yaksuri_global.gpudriver[id].info->ipack(inbuf, outbuf, count, type, NULL,
+                                                      outattr.device, NULL,
+                                                      &request_backend->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (first_event) {
@@ -228,7 +245,8 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
         /* gpu-to-gpu copies do not need temporary buffers */
         bool first_event = !request_backend->event;
         rc = yaksuri_global.gpudriver[id].info->iunpack(inbuf, outbuf, count, type, NULL,
-                                                        NULL, &request_backend->event);
+                                                        inattr.device, NULL,
+                                                        &request_backend->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (first_event) {
@@ -240,17 +258,35 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
         if (request_backend->kind == YAKSURI_REQUEST_KIND__UNSET) {
             request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
         }
-    } else if (type->is_contig &&
-               ((inattr.type == YAKSUR_PTR_TYPE__GPU &&
-                 outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
-                (inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
-                 outattr.type == YAKSUR_PTR_TYPE__GPU))) {
+    } else if (type->is_contig && inattr.type == YAKSUR_PTR_TYPE__GPU &&
+               outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
         /* gpu-to-host or host-to-gpu copies do not need
          * temporary buffers either, if the host buffer is registered
          * and the type is contiguous */
         bool first_event = !request_backend->event;
         rc = yaksuri_global.gpudriver[id].info->iunpack(inbuf, outbuf, count, type, NULL,
-                                                        NULL, &request_backend->event);
+                                                        inattr.device, NULL,
+                                                        &request_backend->event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        if (first_event) {
+            yaksu_atomic_incr(&request->cc);
+        }
+
+        /* if the request kind was already set to STAGED, do not
+         * override it, as a part of the request could be staged */
+        if (request_backend->kind == YAKSURI_REQUEST_KIND__UNSET) {
+            request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
+        }
+    } else if (type->is_contig && inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
+               outattr.type == YAKSUR_PTR_TYPE__GPU) {
+        /* gpu-to-host or host-to-gpu copies do not need
+         * temporary buffers either, if the host buffer is registered
+         * and the type is contiguous */
+        bool first_event = !request_backend->event;
+        rc = yaksuri_global.gpudriver[id].info->iunpack(inbuf, outbuf, count, type, NULL,
+                                                        outattr.device, NULL,
+                                                        &request_backend->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (first_event) {
