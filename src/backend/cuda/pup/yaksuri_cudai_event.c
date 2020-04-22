@@ -62,3 +62,27 @@ int yaksuri_cudai_event_synchronize(void *event)
   fn_fail:
     goto fn_exit;
 }
+
+int yaksuri_cudai_event_add_dependency(void *event, int device)
+{
+    int rc = YAKSA_SUCCESS;
+    cudaError_t cerr;
+
+    int cur_device;
+    cerr = cudaGetDevice(&cur_device);
+    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
+    cerr = cudaSetDevice(device);
+    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
+    cerr = cudaStreamWaitEvent(yaksuri_cudai_global.stream[device], (cudaEvent_t) event, 0);
+    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
+    cerr = cudaSetDevice(cur_device);
+    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}

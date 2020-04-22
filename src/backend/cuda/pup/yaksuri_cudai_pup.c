@@ -62,7 +62,7 @@ int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, bool * is_supported)
 }
 
 int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                        void *gpu_tmpbuf, int target, void *interm_event, void **event)
+                        void *gpu_tmpbuf, int target, void **event)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
@@ -82,12 +82,6 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
 
     cerr = cudaSetDevice(target);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-
-    if (interm_event) {
-        cerr = cudaStreamWaitEvent(yaksuri_cudai_global.stream[target],
-                                   (cudaEvent_t) interm_event, 0);
-        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-    }
 
     if (*event == NULL) {
         cerr = cudaEventCreate((cudaEvent_t *) event);
@@ -146,7 +140,7 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
 }
 
 int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                          void *gpu_tmpbuf, int target, void *interm_event, void **event)
+                          void *gpu_tmpbuf, int target, void **event)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
@@ -166,12 +160,6 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
 
     cerr = cudaSetDevice(target);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-
-    if (interm_event) {
-        cerr = cudaStreamWaitEvent(yaksuri_cudai_global.stream[target],
-                                   (cudaEvent_t) interm_event, 0);
-        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-    }
 
     if (*event == NULL) {
         cerr = cudaEventCreate((cudaEvent_t *) event);

@@ -43,10 +43,9 @@ typedef struct yaksur_gpudriver_info_s {
 
     /* pup functions */
     int (*ipack) (const void *inbuf, void *outbuf, uintptr_t count,
-                  struct yaksi_type_s * type, void *device_tmpbuf, int device, void *interm_event,
-                  void **event);
+                  struct yaksi_type_s * type, void *device_tmpbuf, int device, void **event);
     int (*iunpack) (const void *inbuf, void *outbuf, uintptr_t count, struct yaksi_type_s * type,
-                    void *device_tmpbuf, int device, void *interm_event, void **event);
+                    void *device_tmpbuf, int device, void **event);
     int (*pup_is_supported) (struct yaksi_type_s * type, bool * is_supported);
 
     /* memory management */
@@ -60,6 +59,7 @@ typedef struct yaksur_gpudriver_info_s {
     int (*event_destroy) (void *event);
     int (*event_query) (void *event, int *completed);
     int (*event_synchronize) (void *event);
+    int (*event_add_dependency) (void *event, int device);
 
     /* types */
     int (*type_create) (struct yaksi_type_s * type);

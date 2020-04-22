@@ -175,6 +175,7 @@ int yaksuri_cuda_init_hook(yaksur_gpudriver_info_s ** info)
     (*info)->event_destroy = yaksuri_cudai_event_destroy;
     (*info)->event_query = yaksuri_cudai_event_query;
     (*info)->event_synchronize = yaksuri_cudai_event_synchronize;
+    (*info)->event_add_dependency = yaksuri_cudai_event_add_dependency;
     (*info)->type_create = yaksuri_cudai_type_create_hook;
     (*info)->type_free = yaksuri_cudai_type_free_hook;
     (*info)->get_ptr_attr = yaksuri_cudai_get_ptr_attr;
