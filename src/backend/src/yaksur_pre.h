@@ -35,37 +35,35 @@ typedef struct {
     void *priv;
 } yaksur_request_s;
 
-typedef void *(*yaksur_device_malloc_fn) (uintptr_t, int);
-typedef int (*yaksur_get_num_devices_fn) (int *);
-typedef int (*yaksur_check_p2p_comm_fn) (int, int, bool *);
-typedef int (*yaksur_pup_fn) (const void *, void *, uintptr_t, struct yaksi_type_s *,
-                              void *, void *, void **);
-typedef int (*yaksur_pup_is_supported_fn) (struct yaksi_type_s *, bool *);
-typedef int (*yaksur_event_destroy_fn) (void *);
-typedef int (*yaksur_event_query_fn) (void *, int *);
-typedef int (*yaksur_event_synchronize_fn) (void *);
-typedef int (*yaksur_finalize_fn) (void);
-typedef int (*yaksur_type_create_fn) (struct yaksi_type_s *);
-typedef int (*yaksur_type_free_fn) (struct yaksi_type_s *);
-typedef int (*yaksur_get_ptr_attr) (const void *, yaksur_ptr_attr_s *);
-
 typedef struct yaksur_gpudev_info_s {
-    yaksur_get_num_devices_fn get_num_devices;
-    yaksur_check_p2p_comm_fn check_p2p_comm;
-    yaksur_pup_fn ipack;
-    yaksur_pup_fn iunpack;
-    yaksur_pup_is_supported_fn pup_is_supported;
-    yaksu_malloc_fn host_malloc;
-    yaksu_free_fn host_free;
-    yaksur_device_malloc_fn device_malloc;
-    yaksu_free_fn device_free;
-    yaksur_event_destroy_fn event_destroy;
-    yaksur_event_query_fn event_query;
-    yaksur_event_synchronize_fn event_synchronize;
-    yaksur_type_create_fn type_create;
-    yaksur_type_free_fn type_free;
-    yaksur_get_ptr_attr get_ptr_attr;
-    yaksur_finalize_fn finalize;
+    /* miscellaneous */
+    int (*get_num_devices) (int *ndevices);
+    int (*check_p2p_comm) (int sdev, int ddev, bool * is_enabled);
+    int (*finalize) (void);
+
+    /* pup functions */
+    int (*ipack) (const void *inbuf, void *outbuf, uintptr_t count,
+                  struct yaksi_type_s * type, void *device_tmpbuf, void *interm_event,
+                  void **event);
+    int (*iunpack) (const void *inbuf, void *outbuf, uintptr_t count, struct yaksi_type_s * type,
+                    void *device_tmpbuf, void *interm_event, void **event);
+    int (*pup_is_supported) (struct yaksi_type_s * type, bool * is_supported);
+
+    /* memory management */
+    void *(*host_malloc) (uintptr_t size);
+    void (*host_free) (void *ptr);
+    void *(*device_malloc) (uintptr_t size, int device);
+    void (*device_free) (void *ptr);
+    int (*get_ptr_attr) (const void *buf, yaksur_ptr_attr_s * ptrattr);
+
+    /* events */
+    int (*event_destroy) (void *event);
+    int (*event_query) (void *event, int *completed);
+    int (*event_synchronize) (void *event);
+
+    /* types */
+    int (*type_create) (struct yaksi_type_s * type);
+    int (*type_free) (struct yaksi_type_s * type);
 } yaksur_gpudev_info_s;
 
 #endif /* YAKSUR_PRE_H_INCLUDED */
