@@ -93,10 +93,10 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
     request_backend->gpudev_id = id;
     assert(yaksuri_global.gpudev[id].info);
 
-    /* if the GPU can handle the data movement without any temporary
-     * buffers, wrap it up */
     if (inattr.type == YAKSUR_PTR_TYPE__DEVICE && outattr.type == YAKSUR_PTR_TYPE__DEVICE &&
         inattr.device == outattr.device) {
+        /* if the GPU can handle the data movement without any
+         * temporary buffers, wrap it up */
         rc = yaksuri_global.gpudev[id].info->ipack(inbuf, outbuf, count, type, NULL,
                                                    NULL, &request_backend->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
@@ -110,20 +110,18 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
         }
 
         request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
-        goto fn_exit;
+    } else {
+        /* we need temporary buffers and pipelining; queue it up in
+         * the progress engine */
+        request_backend->kind = YAKSURI_REQUEST_KIND__STAGED;
+
+        rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, request,
+                                      inattr, outattr, YAKSURI_PUPTYPE__PACK);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = yaksuri_progress_poke();
+        YAKSU_ERR_CHECK(rc, fn_fail);
     }
-
-
-    /* we need temporary buffers and pipelining; queue it up in the
-     * progress engine */
-    request_backend->kind = YAKSURI_REQUEST_KIND__STAGED;
-
-    rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, request,
-                                  inattr, outattr, YAKSURI_PUPTYPE__PACK);
-    YAKSU_ERR_CHECK(rc, fn_fail);
-
-    rc = yaksuri_progress_poke();
-    YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
     return rc;
@@ -188,10 +186,10 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
     request_backend->gpudev_id = id;
     assert(yaksuri_global.gpudev[id].info);
 
-    /* if the GPU can handle the data movement without any temporary
-     * buffers, wrap it up */
     if (inattr.type == YAKSUR_PTR_TYPE__DEVICE && outattr.type == YAKSUR_PTR_TYPE__DEVICE &&
         inattr.device == outattr.device) {
+        /* if the GPU can handle the data movement without any
+         * temporary buffers, wrap it up */
         rc = yaksuri_global.gpudev[id].info->iunpack(inbuf, outbuf, count, type, NULL,
                                                      NULL, &request_backend->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
@@ -205,20 +203,18 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
         }
 
         request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
-        goto fn_exit;
+    } else {
+        /* we need temporary buffers and pipelining; queue it up in
+         * the progress engine */
+        request_backend->kind = YAKSURI_REQUEST_KIND__STAGED;
+
+        rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, request,
+                                      inattr, outattr, YAKSURI_PUPTYPE__UNPACK);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = yaksuri_progress_poke();
+        YAKSU_ERR_CHECK(rc, fn_fail);
     }
-
-
-    /* we need temporary buffers and pipelining; queue it up in the
-     * progress engine */
-    request_backend->kind = YAKSURI_REQUEST_KIND__STAGED;
-
-    rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, request,
-                                  inattr, outattr, YAKSURI_PUPTYPE__UNPACK);
-    YAKSU_ERR_CHECK(rc, fn_fail);
-
-    rc = yaksuri_progress_poke();
-    YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
     return rc;
