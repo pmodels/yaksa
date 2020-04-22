@@ -95,8 +95,28 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
 
     if (inattr.type == YAKSUR_PTR_TYPE__DEVICE && outattr.type == YAKSUR_PTR_TYPE__DEVICE &&
         inattr.device == outattr.device) {
-        /* if the GPU can handle the data movement without any
-         * temporary buffers, wrap it up */
+        /* device-to-device copies do not need temporary buffers */
+        rc = yaksuri_global.gpudev[id].info->ipack(inbuf, outbuf, count, type, NULL,
+                                                   NULL, &request_backend->event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        int completed;
+        rc = yaksuri_global.gpudev[id].info->event_query(request_backend->event, &completed);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        if (!completed) {
+            yaksu_atomic_store(&request->cc, 1);
+        }
+
+        request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
+    } else if (type->is_contig &&
+               ((inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
+                 outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
+                (inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
+                 outattr.type == YAKSUR_PTR_TYPE__DEVICE))) {
+        /* device-to-host or host-to-device copies do not need
+         * temporary buffers either, if the host buffer is registered
+         * and the type is contiguous */
         rc = yaksuri_global.gpudev[id].info->ipack(inbuf, outbuf, count, type, NULL,
                                                    NULL, &request_backend->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
@@ -188,8 +208,28 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
 
     if (inattr.type == YAKSUR_PTR_TYPE__DEVICE && outattr.type == YAKSUR_PTR_TYPE__DEVICE &&
         inattr.device == outattr.device) {
-        /* if the GPU can handle the data movement without any
-         * temporary buffers, wrap it up */
+        /* device-to-device copies do not need temporary buffers */
+        rc = yaksuri_global.gpudev[id].info->iunpack(inbuf, outbuf, count, type, NULL,
+                                                     NULL, &request_backend->event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        int completed;
+        rc = yaksuri_global.gpudev[id].info->event_query(request_backend->event, &completed);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        if (!completed) {
+            yaksu_atomic_store(&request->cc, 1);
+        }
+
+        request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
+    } else if (type->is_contig &&
+               ((inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
+                 outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
+                (inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
+                 outattr.type == YAKSUR_PTR_TYPE__DEVICE))) {
+        /* device-to-host or host-to-device copies do not need
+         * temporary buffers either, if the host buffer is registered
+         * and the type is contiguous */
         rc = yaksuri_global.gpudev[id].info->iunpack(inbuf, outbuf, count, type, NULL,
                                                      NULL, &request_backend->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
