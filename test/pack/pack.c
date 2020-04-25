@@ -58,7 +58,9 @@ typedef enum {
     MEM_TYPE__DEVICE,
 } mem_type_e;
 
+#ifdef HAVE_CUDA
 static int ndevices = -1;
+#endif
 static int device_id = 0;
 static int device_stride = 0;
 
