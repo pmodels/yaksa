@@ -39,6 +39,7 @@ typedef struct {
     void *event;
 
     enum {
+        YAKSURI_REQUEST_KIND__UNSET,
         YAKSURI_REQUEST_KIND__DIRECT,
         YAKSURI_REQUEST_KIND__STAGED,
     } kind;

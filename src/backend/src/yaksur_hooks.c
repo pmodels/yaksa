@@ -139,6 +139,7 @@ int yaksur_request_create_hook(yaksi_request_s * request)
     yaksuri_request_s *backend = (yaksuri_request_s *) request->backend.priv;
 
     backend->event = NULL;
+    backend->kind = YAKSURI_REQUEST_KIND__UNSET;
 
   fn_exit:
     return rc;

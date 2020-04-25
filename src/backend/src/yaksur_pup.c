@@ -36,6 +36,19 @@ static int get_ptr_attr(const void *buf, yaksur_ptr_attr_s * ptrattr, yaksuri_gp
     goto fn_exit;
 }
 
+/*
+ * In all of the "DIRECT" cases below, there are a few important
+ * things to note:
+ *
+ *  1. We increment the completion counter only for the first
+ *     incomplete request.  Future incomplete requests simply
+ *     overwrite the event.
+ *
+ *  2. We use an increment instead of an atomic store, because some
+ *     operations in this request might go through the progress engine
+ *     (STAGED).
+ */
+
 int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
                  yaksi_request_s * request)
 {
@@ -96,19 +109,20 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
     if (inattr.type == YAKSUR_PTR_TYPE__DEVICE && outattr.type == YAKSUR_PTR_TYPE__DEVICE &&
         inattr.device == outattr.device) {
         /* device-to-device copies do not need temporary buffers */
-        rc = yaksuri_global.gpudev[id].info->ipack(inbuf, outbuf, count, type, NULL,
-                                                   NULL, &request_backend->event);
+        bool first_event = !request_backend->event;
+        rc = yaksuri_global.gpudev[id].info->ipack(inbuf, outbuf, count, type, NULL, NULL,
+                                                   &request_backend->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
-        int completed;
-        rc = yaksuri_global.gpudev[id].info->event_query(request_backend->event, &completed);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-
-        if (!completed) {
-            yaksu_atomic_store(&request->cc, 1);
+        if (first_event) {
+            yaksu_atomic_incr(&request->cc);
         }
 
-        request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
+        /* if the request kind was already set to STAGED, do not
+         * override it, as a part of the request could be staged */
+        if (request_backend->kind == YAKSURI_REQUEST_KIND__UNSET) {
+            request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
+        }
     } else if (type->is_contig &&
                ((inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
                  outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
@@ -117,19 +131,20 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
         /* device-to-host or host-to-device copies do not need
          * temporary buffers either, if the host buffer is registered
          * and the type is contiguous */
-        rc = yaksuri_global.gpudev[id].info->ipack(inbuf, outbuf, count, type, NULL,
-                                                   NULL, &request_backend->event);
+        bool first_event = !request_backend->event;
+        rc = yaksuri_global.gpudev[id].info->ipack(inbuf, outbuf, count, type, NULL, NULL,
+                                                   &request_backend->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
-        int completed;
-        rc = yaksuri_global.gpudev[id].info->event_query(request_backend->event, &completed);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-
-        if (!completed) {
-            yaksu_atomic_store(&request->cc, 1);
+        if (first_event) {
+            yaksu_atomic_incr(&request->cc);
         }
 
-        request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
+        /* if the request kind was already set to STAGED, do not
+         * override it, as a part of the request could be staged */
+        if (request_backend->kind == YAKSURI_REQUEST_KIND__UNSET) {
+            request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
+        }
     } else {
         /* we need temporary buffers and pipelining; queue it up in
          * the progress engine */
@@ -209,19 +224,20 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
     if (inattr.type == YAKSUR_PTR_TYPE__DEVICE && outattr.type == YAKSUR_PTR_TYPE__DEVICE &&
         inattr.device == outattr.device) {
         /* device-to-device copies do not need temporary buffers */
+        bool first_event = !request_backend->event;
         rc = yaksuri_global.gpudev[id].info->iunpack(inbuf, outbuf, count, type, NULL,
                                                      NULL, &request_backend->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
-        int completed;
-        rc = yaksuri_global.gpudev[id].info->event_query(request_backend->event, &completed);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-
-        if (!completed) {
-            yaksu_atomic_store(&request->cc, 1);
+        if (first_event) {
+            yaksu_atomic_incr(&request->cc);
         }
 
-        request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
+        /* if the request kind was already set to STAGED, do not
+         * override it, as a part of the request could be staged */
+        if (request_backend->kind == YAKSURI_REQUEST_KIND__UNSET) {
+            request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
+        }
     } else if (type->is_contig &&
                ((inattr.type == YAKSUR_PTR_TYPE__DEVICE &&
                  outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
@@ -230,19 +246,20 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
         /* device-to-host or host-to-device copies do not need
          * temporary buffers either, if the host buffer is registered
          * and the type is contiguous */
+        bool first_event = !request_backend->event;
         rc = yaksuri_global.gpudev[id].info->iunpack(inbuf, outbuf, count, type, NULL,
                                                      NULL, &request_backend->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
-        int completed;
-        rc = yaksuri_global.gpudev[id].info->event_query(request_backend->event, &completed);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-
-        if (!completed) {
-            yaksu_atomic_store(&request->cc, 1);
+        if (first_event) {
+            yaksu_atomic_incr(&request->cc);
         }
 
-        request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
+        /* if the request kind was already set to STAGED, do not
+         * override it, as a part of the request could be staged */
+        if (request_backend->kind == YAKSURI_REQUEST_KIND__UNSET) {
+            request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
+        }
     } else {
         /* we need temporary buffers and pipelining; queue it up in
          * the progress engine */
