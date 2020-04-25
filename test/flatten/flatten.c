@@ -66,7 +66,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    yaksa_init();
+    yaksa_init(YAKSA_INIT_ATTR__DEFAULT);
 
     rc = DTP_pool_create(typestr, basecount, seed, &dtp);
     assert(rc == DTP_SUCCESS);
