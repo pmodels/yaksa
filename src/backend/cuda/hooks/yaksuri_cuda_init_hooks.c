@@ -20,14 +20,28 @@ static void *cuda_host_malloc(uintptr_t size)
     return ptr;
 }
 
-static void *cuda_device_malloc(uintptr_t size)
+static void *cuda_gpu_malloc(uintptr_t size, int device)
 {
     void *ptr = NULL;
+    cudaError_t cerr;
 
-    cudaError_t cerr = cudaMalloc(&ptr, size);
+    int cur_device;
+    cerr = cudaGetDevice(&cur_device);
     YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
 
+    cerr = cudaSetDevice(device);
+    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
+
+    cerr = cudaMalloc(&ptr, size);
+    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
+
+    cerr = cudaSetDevice(cur_device);
+    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
+
+  fn_exit:
     return ptr;
+  fn_fail:
+    return NULL;
 }
 
 static void cuda_host_free(void *ptr)
@@ -36,7 +50,7 @@ static void cuda_host_free(void *ptr)
     YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
 }
 
-static void cuda_device_free(void *ptr)
+static void cuda_gpu_free(void *ptr)
 {
     cudaError_t cerr = cudaFree(ptr);
     YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
@@ -97,7 +111,7 @@ static int check_p2p_comm(int sdev, int ddev, bool * is_enabled)
     return YAKSA_SUCCESS;
 }
 
-int yaksuri_cuda_init_hook(yaksur_gpudev_info_s ** info)
+int yaksuri_cuda_init_hook(yaksur_gpudriver_info_s ** info)
 {
     int rc = YAKSA_SUCCESS;
     cudaError_t cerr;
@@ -148,7 +162,7 @@ int yaksuri_cuda_init_hook(yaksur_gpudev_info_s ** info)
     cerr = cudaSetDevice(cur_device);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-    *info = (yaksur_gpudev_info_s *) malloc(sizeof(yaksur_gpudev_info_s));
+    *info = (yaksur_gpudriver_info_s *) malloc(sizeof(yaksur_gpudriver_info_s));
     (*info)->get_num_devices = get_num_devices;
     (*info)->check_p2p_comm = check_p2p_comm;
     (*info)->ipack = yaksuri_cudai_ipack;
@@ -156,11 +170,12 @@ int yaksuri_cuda_init_hook(yaksur_gpudev_info_s ** info)
     (*info)->pup_is_supported = yaksuri_cudai_pup_is_supported;
     (*info)->host_malloc = cuda_host_malloc;
     (*info)->host_free = cuda_host_free;
-    (*info)->device_malloc = cuda_device_malloc;
-    (*info)->device_free = cuda_device_free;
+    (*info)->gpu_malloc = cuda_gpu_malloc;
+    (*info)->gpu_free = cuda_gpu_free;
     (*info)->event_destroy = yaksuri_cudai_event_destroy;
     (*info)->event_query = yaksuri_cudai_event_query;
     (*info)->event_synchronize = yaksuri_cudai_event_synchronize;
+    (*info)->event_add_dependency = yaksuri_cudai_event_add_dependency;
     (*info)->type_create = yaksuri_cudai_type_create_hook;
     (*info)->type_free = yaksuri_cudai_type_free_hook;
     (*info)->get_ptr_attr = yaksuri_cudai_get_ptr_attr;

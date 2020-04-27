@@ -23,7 +23,7 @@ int yaksuri_cudai_get_ptr_attr(const void *buf, yaksur_ptr_attr_s * ptrattr)
             ptrattr->type = YAKSUR_PTR_TYPE__REGISTERED_HOST;
             ptrattr->device = -1;
         } else {
-            ptrattr->type = YAKSUR_PTR_TYPE__DEVICE;
+            ptrattr->type = YAKSUR_PTR_TYPE__GPU;
             ptrattr->device = attr.device;
         }
     } else if (cerr == cudaErrorInvalidValue) {

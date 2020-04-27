@@ -15,35 +15,35 @@ yaksuri_global_s yaksuri_global;
 int yaksur_init_hook(void)
 {
     int rc = YAKSA_SUCCESS;
-    yaksuri_gpudev_id_e id;
+    yaksuri_gpudriver_id_e id;
 
     rc = yaksuri_seq_init_hook();
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     /* CUDA hooks */
-    id = YAKSURI_GPUDEV_ID__CUDA;
-    yaksuri_global.gpudev[id].info = NULL;
-    rc = yaksuri_cuda_init_hook(&yaksuri_global.gpudev[id].info);
+    id = YAKSURI_GPUDRIVER_ID__CUDA;
+    yaksuri_global.gpudriver[id].info = NULL;
+    rc = yaksuri_cuda_init_hook(&yaksuri_global.gpudriver[id].info);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
 
     /* final setup for all backends */
-    for (id = YAKSURI_GPUDEV_ID__UNSET + 1; id < YAKSURI_GPUDEV_ID__LAST; id++) {
-        if (yaksuri_global.gpudev[id].info) {
-            yaksuri_global.gpudev[id].host.slab = NULL;
-            yaksuri_global.gpudev[id].host.slab_head_offset = 0;
-            yaksuri_global.gpudev[id].host.slab_tail_offset = 0;
+    for (id = YAKSURI_GPUDRIVER_ID__UNSET + 1; id < YAKSURI_GPUDRIVER_ID__LAST; id++) {
+        if (yaksuri_global.gpudriver[id].info) {
+            yaksuri_global.gpudriver[id].host.slab = NULL;
+            yaksuri_global.gpudriver[id].host.slab_head_offset = 0;
+            yaksuri_global.gpudriver[id].host.slab_tail_offset = 0;
 
             int ndevices;
-            rc = yaksuri_global.gpudev[id].info->get_num_devices(&ndevices);
+            rc = yaksuri_global.gpudriver[id].info->get_num_devices(&ndevices);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
-            yaksuri_global.gpudev[id].device = (yaksuri_slab_s *)
+            yaksuri_global.gpudriver[id].device = (yaksuri_slab_s *)
                 malloc(ndevices * sizeof(yaksuri_slab_s));
             for (int i = 0; i < ndevices; i++) {
-                yaksuri_global.gpudev[id].device[i].slab = NULL;
-                yaksuri_global.gpudev[id].device[i].slab_head_offset = 0;
-                yaksuri_global.gpudev[id].device[i].slab_tail_offset = 0;
+                yaksuri_global.gpudriver[id].device[i].slab = NULL;
+                yaksuri_global.gpudriver[id].device[i].slab_head_offset = 0;
+                yaksuri_global.gpudriver[id].device[i].slab_tail_offset = 0;
             }
         }
     }
@@ -61,27 +61,29 @@ int yaksur_finalize_hook(void)
     rc = yaksuri_seq_finalize_hook();
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    for (yaksuri_gpudev_id_e id = YAKSURI_GPUDEV_ID__UNSET + 1; id < YAKSURI_GPUDEV_ID__LAST; id++) {
-        if (yaksuri_global.gpudev[id].info) {
-            if (yaksuri_global.gpudev[id].host.slab) {
-                yaksuri_global.gpudev[id].info->host_free(yaksuri_global.gpudev[id].host.slab);
+    for (yaksuri_gpudriver_id_e id = YAKSURI_GPUDRIVER_ID__UNSET + 1;
+         id < YAKSURI_GPUDRIVER_ID__LAST; id++) {
+        if (yaksuri_global.gpudriver[id].info) {
+            if (yaksuri_global.gpudriver[id].host.slab) {
+                yaksuri_global.gpudriver[id].info->host_free(yaksuri_global.gpudriver[id].
+                                                             host.slab);
             }
 
             int ndevices;
-            rc = yaksuri_global.gpudev[id].info->get_num_devices(&ndevices);
+            rc = yaksuri_global.gpudriver[id].info->get_num_devices(&ndevices);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             for (int i = 0; i < ndevices; i++) {
-                if (yaksuri_global.gpudev[id].device[i].slab) {
-                    yaksuri_global.gpudev[id].info->device_free(yaksuri_global.gpudev[id].
+                if (yaksuri_global.gpudriver[id].device[i].slab) {
+                    yaksuri_global.gpudriver[id].info->gpu_free(yaksuri_global.gpudriver[id].
                                                                 device[i].slab);
                 }
             }
-            free(yaksuri_global.gpudev[id].device);
+            free(yaksuri_global.gpudriver[id].device);
 
-            rc = yaksuri_global.gpudev[id].info->finalize();
+            rc = yaksuri_global.gpudriver[id].info->finalize();
             YAKSU_ERR_CHECK(rc, fn_fail);
-            free(yaksuri_global.gpudev[id].info);
+            free(yaksuri_global.gpudriver[id].info);
         }
     }
 
@@ -98,9 +100,10 @@ int yaksur_type_create_hook(yaksi_type_s * type)
     rc = yaksuri_seq_type_create_hook(type);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    for (yaksuri_gpudev_id_e id = YAKSURI_GPUDEV_ID__UNSET + 1; id < YAKSURI_GPUDEV_ID__LAST; id++) {
-        if (yaksuri_global.gpudev[id].info) {
-            rc = yaksuri_global.gpudev[id].info->type_create(type);
+    for (yaksuri_gpudriver_id_e id = YAKSURI_GPUDRIVER_ID__UNSET + 1;
+         id < YAKSURI_GPUDRIVER_ID__LAST; id++) {
+        if (yaksuri_global.gpudriver[id].info) {
+            rc = yaksuri_global.gpudriver[id].info->type_create(type);
             YAKSU_ERR_CHECK(rc, fn_fail);
         }
     }
@@ -118,9 +121,10 @@ int yaksur_type_free_hook(yaksi_type_s * type)
     rc = yaksuri_seq_type_free_hook(type);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    for (yaksuri_gpudev_id_e id = YAKSURI_GPUDEV_ID__UNSET + 1; id < YAKSURI_GPUDEV_ID__LAST; id++) {
-        if (yaksuri_global.gpudev[id].info) {
-            rc = yaksuri_global.gpudev[id].info->type_free(type);
+    for (yaksuri_gpudriver_id_e id = YAKSURI_GPUDRIVER_ID__UNSET + 1;
+         id < YAKSURI_GPUDRIVER_ID__LAST; id++) {
+        if (yaksuri_global.gpudriver[id].info) {
+            rc = yaksuri_global.gpudriver[id].info->type_free(type);
             YAKSU_ERR_CHECK(rc, fn_fail);
         }
     }
@@ -139,6 +143,7 @@ int yaksur_request_create_hook(yaksi_request_s * request)
     yaksuri_request_s *backend = (yaksuri_request_s *) request->backend.priv;
 
     backend->event = NULL;
+    backend->kind = YAKSURI_REQUEST_KIND__UNSET;
 
   fn_exit:
     return rc;
@@ -150,11 +155,11 @@ int yaksur_request_free_hook(yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_request_s *backend = (yaksuri_request_s *) request->backend.priv;
-    yaksuri_gpudev_id_e id = backend->gpudev_id;
+    yaksuri_gpudriver_id_e id = backend->gpudriver_id;
 
     if (backend->event) {
-        assert(yaksuri_global.gpudev[id].info);
-        rc = yaksuri_global.gpudev[id].info->event_destroy(backend->event);
+        assert(yaksuri_global.gpudriver[id].info);
+        rc = yaksuri_global.gpudriver[id].info->event_destroy(backend->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
     }
 

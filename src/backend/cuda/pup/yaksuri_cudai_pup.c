@@ -62,7 +62,7 @@ int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, bool * is_supported)
 }
 
 int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                        void *device_tmpbuf, void *interm_event, void **event)
+                        void *gpu_tmpbuf, int target, void **event)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
@@ -80,23 +80,18 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
     cerr = cudaGetDevice(&cur_device);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-    int target = -1;
+    cerr = cudaSetDevice(target);
+    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
+    if (*event == NULL) {
+        cerr = cudaEventCreate((cudaEvent_t *) event);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    }
 
     /* shortcut for contiguous types */
     if (type->is_contig) {
         /* cuda performance is optimized when we synchronize on the
          * source buffer's GPU */
-        target = inattr.device;
-
-        cerr = cudaSetDevice(target);
-        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-
-        if (interm_event) {
-            cerr = cudaStreamWaitEvent(yaksuri_cudai_global.stream[target],
-                                       (cudaEvent_t) interm_event, 0);
-            YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-        }
-
         cerr = cudaMemcpyAsync(outbuf, inbuf, count * type->size, cudaMemcpyDefault,
                                yaksuri_cudai_global.stream[target]);
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
@@ -113,59 +108,23 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
             (inattr.type == cudaMemoryTypeDevice && outattr.type == cudaMemoryTypeManaged) ||
             (inattr.type == cudaMemoryTypeDevice && outattr.type == cudaMemoryTypeDevice &&
              inattr.device == outattr.device)) {
-            target = inattr.device;
-            cerr = cudaSetDevice(target);
-            YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-
-            if (interm_event) {
-                cerr = cudaStreamWaitEvent(yaksuri_cudai_global.stream[target],
-                                           (cudaEvent_t) interm_event, 0);
-                YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-            }
-
             cuda_type->pack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks_x, n_blocks_y,
                             n_blocks_z, target);
         } else if (inattr.type == cudaMemoryTypeManaged && outattr.type == cudaMemoryTypeDevice) {
-            target = outattr.device;
-            cerr = cudaSetDevice(target);
-            YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-
-            if (interm_event) {
-                cerr = cudaStreamWaitEvent(yaksuri_cudai_global.stream[target],
-                                           (cudaEvent_t) interm_event, 0);
-                YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-            }
-
             cuda_type->pack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks_x, n_blocks_y,
                             n_blocks_z, target);
         } else if ((outattr.type == cudaMemoryTypeDevice && inattr.device != outattr.device) ||
                    (outattr.type == cudaMemoryTypeHost)) {
             assert(inattr.type == cudaMemoryTypeDevice);
-
-            target = inattr.device;
-            cerr = cudaSetDevice(target);
-            YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-
-            if (interm_event) {
-                cerr = cudaStreamWaitEvent(yaksuri_cudai_global.stream[target],
-                                           (cudaEvent_t) interm_event, 0);
-                YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-            }
-
-            cuda_type->pack(inbuf, device_tmpbuf, count, cuda_type->md, n_threads, n_blocks_x,
+            cuda_type->pack(inbuf, gpu_tmpbuf, count, cuda_type->md, n_threads, n_blocks_x,
                             n_blocks_y, n_blocks_z, target);
-            cerr = cudaMemcpyAsync(outbuf, device_tmpbuf, count * type->size, cudaMemcpyDefault,
+            cerr = cudaMemcpyAsync(outbuf, gpu_tmpbuf, count * type->size, cudaMemcpyDefault,
                                    yaksuri_cudai_global.stream[target]);
             YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
         } else {
             rc = YAKSA_ERR__INTERNAL;
             goto fn_fail;
         }
-    }
-
-    if (*event == NULL) {
-        cerr = cudaEventCreate((cudaEvent_t *) event);
-        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
     }
 
     cerr = cudaEventRecord((cudaEvent_t) * event, yaksuri_cudai_global.stream[target]);
@@ -181,7 +140,7 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
 }
 
 int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                          void *device_tmpbuf, void *interm_event, void **event)
+                          void *gpu_tmpbuf, int target, void **event)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
@@ -199,23 +158,18 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
     cerr = cudaGetDevice(&cur_device);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-    int target = -1;
+    cerr = cudaSetDevice(target);
+    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
+    if (*event == NULL) {
+        cerr = cudaEventCreate((cudaEvent_t *) event);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    }
 
     /* shortcut for contiguous types */
     if (type->is_contig) {
         /* cuda performance is optimized when we synchronize on the
          * source buffer's GPU */
-        target = inattr.device;
-
-        cerr = cudaSetDevice(target);
-        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-
-        if (interm_event) {
-            cerr = cudaStreamWaitEvent(yaksuri_cudai_global.stream[target],
-                                       (cudaEvent_t) interm_event, 0);
-            YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-        }
-
         cerr = cudaMemcpyAsync(outbuf, inbuf, count * type->size, cudaMemcpyDefault,
                                yaksuri_cudai_global.stream[target]);
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
@@ -232,60 +186,25 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
             (inattr.type == cudaMemoryTypeManaged && outattr.type == cudaMemoryTypeDevice) ||
             (inattr.type == cudaMemoryTypeDevice && outattr.type == cudaMemoryTypeDevice &&
              inattr.device == outattr.device)) {
-            target = outattr.device;
-            cerr = cudaSetDevice(target);
-            YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-
-            if (interm_event) {
-                cerr = cudaStreamWaitEvent(yaksuri_cudai_global.stream[target],
-                                           (cudaEvent_t) interm_event, 0);
-                YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-            }
-
             cuda_type->unpack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks_x,
                               n_blocks_y, n_blocks_z, target);
         } else if (inattr.type == cudaMemoryTypeDevice && outattr.type == cudaMemoryTypeManaged) {
-            target = inattr.device;
-            cerr = cudaSetDevice(target);
-            YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-
-            if (interm_event) {
-                cerr = cudaStreamWaitEvent(yaksuri_cudai_global.stream[target],
-                                           (cudaEvent_t) interm_event, 0);
-                YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-            }
-
             cuda_type->unpack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks_x,
                               n_blocks_y, n_blocks_z, target);
         } else if ((inattr.type == cudaMemoryTypeDevice && inattr.device != outattr.device) ||
                    (inattr.type == cudaMemoryTypeHost)) {
             assert(outattr.type == cudaMemoryTypeDevice);
 
-            target = outattr.device;
-            cerr = cudaSetDevice(target);
-            YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-
-            if (interm_event) {
-                cerr = cudaStreamWaitEvent(yaksuri_cudai_global.stream[target],
-                                           (cudaEvent_t) interm_event, 0);
-                YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-            }
-
-            cerr = cudaMemcpyAsync(device_tmpbuf, inbuf, count * type->size, cudaMemcpyDefault,
+            cerr = cudaMemcpyAsync(gpu_tmpbuf, inbuf, count * type->size, cudaMemcpyDefault,
                                    yaksuri_cudai_global.stream[target]);
             YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-            cuda_type->unpack(device_tmpbuf, outbuf, count, cuda_type->md, n_threads, n_blocks_x,
+            cuda_type->unpack(gpu_tmpbuf, outbuf, count, cuda_type->md, n_threads, n_blocks_x,
                               n_blocks_y, n_blocks_z, target);
         } else {
             rc = YAKSA_ERR__INTERNAL;
             goto fn_fail;
         }
-    }
-
-    if (*event == NULL) {
-        cerr = cudaEventCreate((cudaEvent_t *) event);
-        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
     }
 
     cerr = cudaEventRecord((cudaEvent_t) * event, yaksuri_cudai_global.stream[target]);
