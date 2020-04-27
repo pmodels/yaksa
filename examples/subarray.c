@@ -21,8 +21,8 @@ int main()
     int array_of_starts[2] = { 4, 4 };
     yaksa_subarray_order_e order = YAKSA_SUBARRAY_ORDER__C;
 
-    yaksa_init();       /* before any yaksa API is called the library
-                         * must be initialized */
+    yaksa_init(YAKSA_INIT_ATTR__DEFAULT);       /* before any yaksa API is called the library
+                                                 * must be initialized */
 
     init_matrix(input_matrix, ROWS, COLS);
     set_matrix(pack_buf, ROWS, COLS, 0);

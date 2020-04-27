@@ -70,10 +70,11 @@
     } while (0)
 
 yaksi_global_s yaksi_global = { 0 };
+yaksa_init_attr_t YAKSA_INIT_ATTR__DEFAULT = { 0 };
 
 #define CHUNK_SIZE (1024)
 
-int yaksa_init(void)
+int yaksa_init(yaksa_init_attr_t attr)
 {
     int rc = YAKSA_SUCCESS;
 

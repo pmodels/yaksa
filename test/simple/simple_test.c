@@ -17,7 +17,7 @@ int main()
     yaksa_type_t vector, vector_vector;
     uintptr_t actual;
 
-    yaksa_init();
+    yaksa_init(YAKSA_INIT_ATTR__DEFAULT);
 
     rc = yaksa_create_vector(3, 2, 3, YAKSA_TYPE__INT, &vector);
     assert(rc == YAKSA_SUCCESS);
