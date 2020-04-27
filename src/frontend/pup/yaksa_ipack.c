@@ -15,9 +15,21 @@ int yaksa_ipack(const void *inbuf, uintptr_t incount, yaksa_type_t type, uintptr
 
     assert(yaksi_global.is_initialized);
 
+    if (incount == 0) {
+        *actual_pack_bytes = 0;
+        *request = YAKSA_REQUEST__NULL;
+        goto fn_exit;
+    }
+
     yaksi_type_s *yaksi_type;
     rc = yaksi_type_get(type, &yaksi_type);
     YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (yaksi_type->size == 0) {
+        *actual_pack_bytes = 0;
+        *request = YAKSA_REQUEST__NULL;
+        goto fn_exit;
+    }
 
     yaksi_request_s *yaksi_request;
     rc = yaksi_request_create(&yaksi_request);
