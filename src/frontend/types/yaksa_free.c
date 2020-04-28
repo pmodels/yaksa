@@ -91,6 +91,9 @@ int yaksa_free(yaksa_type_t type)
 
     assert(yaksi_global.is_initialized);
 
+    if (type == YAKSA_TYPE__NULL)
+        goto fn_exit;
+
     rc = yaksi_type_get(type, &yaksi_type);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
