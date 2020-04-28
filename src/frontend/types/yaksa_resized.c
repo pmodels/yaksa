@@ -22,6 +22,7 @@ int yaksi_create_resized(yaksi_type_s * intype, intptr_t lb, uintptr_t extent,
     outtype->kind = YAKSI_TYPE_KIND__RESIZED;
     outtype->tree_depth = intype->tree_depth + 1;
     outtype->size = intype->size;
+    outtype->alignment = intype->alignment;
 
     outtype->lb = lb;
     outtype->ub = lb + extent;

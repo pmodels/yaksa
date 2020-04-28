@@ -27,6 +27,7 @@ int yaksi_create_struct(int count, const int *array_of_blocklengths,
     }
 
     int is_set = 0;
+    outtype->alignment = 0;
     for (int idx = 0; idx < count; idx++) {
         if (array_of_blocklengths[idx] == 0)
             continue;
@@ -38,6 +39,8 @@ int yaksi_create_struct(int count, const int *array_of_blocklengths,
         intptr_t true_lb = lb - array_of_intypes[idx]->lb + array_of_intypes[idx]->true_lb;
         intptr_t true_ub = ub - array_of_intypes[idx]->ub + array_of_intypes[idx]->true_ub;
         int tree_depth = array_of_intypes[idx]->tree_depth;
+        if (outtype->alignment < array_of_intypes[idx]->alignment)
+            outtype->alignment = array_of_intypes[idx]->alignment;
 
         if (is_set) {
             outtype->lb = YAKSU_MIN(lb, outtype->lb);
@@ -54,6 +57,12 @@ int yaksi_create_struct(int count, const int *array_of_blocklengths,
         }
 
         is_set = 1;
+    }
+
+    /* adjust ub based on alignment */
+    uintptr_t diff = (outtype->ub - outtype->lb) % outtype->alignment;
+    if (diff) {
+        outtype->ub += outtype->alignment - diff;
     }
 
     outtype->tree_depth++;
@@ -110,9 +119,15 @@ int yaksa_create_struct(int count, const int *array_of_blocklengths,
                         yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
-    yaksi_type_s **array_of_intypes = (yaksi_type_s **) malloc(count * sizeof(yaksi_type_s *));
 
     assert(yaksi_global.is_initialized);
+
+    if (count == 0) {
+        *newtype = YAKSA_TYPE__NULL;
+        goto fn_exit;
+    }
+
+    yaksi_type_s **array_of_intypes = (yaksi_type_s **) malloc(count * sizeof(yaksi_type_s *));
 
     for (int i = 0; i < count; i++) {
         rc = yaksi_type_get(array_of_types[i], &array_of_intypes[i]);

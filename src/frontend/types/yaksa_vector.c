@@ -22,6 +22,7 @@ int yaksi_create_hvector(int count, int blocklength, intptr_t stride, yaksi_type
     outtype->kind = YAKSI_TYPE_KIND__HVECTOR;
     outtype->tree_depth = intype->tree_depth + 1;
     outtype->size = intype->size * blocklength * count;
+    outtype->alignment = intype->alignment;
 
     intptr_t min_disp;
     intptr_t max_disp;
@@ -75,6 +76,11 @@ int yaksa_create_hvector(int count, int blocklength, intptr_t stride, yaksa_type
 
     assert(yaksi_global.is_initialized);
 
+    if (count == 0) {
+        *newtype = YAKSA_TYPE__NULL;
+        goto fn_exit;
+    }
+
     yaksi_type_s *intype;
     rc = yaksi_type_get(oldtype, &intype);
     YAKSU_ERR_CHECK(rc, fn_fail);
@@ -97,6 +103,11 @@ int yaksa_create_vector(int count, int blocklength, int stride, yaksa_type_t old
     int rc = YAKSA_SUCCESS;
 
     assert(yaksi_global.is_initialized);
+
+    if (count == 0) {
+        *newtype = YAKSA_TYPE__NULL;
+        goto fn_exit;
+    }
 
     yaksi_type_s *intype;
     rc = yaksi_type_get(oldtype, &intype);

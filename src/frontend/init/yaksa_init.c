@@ -19,17 +19,24 @@
                                                                         \
         tmp_type_->kind = YAKSI_TYPE_KIND__BUILTIN;                     \
         tmp_type_->tree_depth = 0;                                      \
+                                                                        \
         tmp_type_->size = sizeof(c_type);                               \
+        struct {                                                        \
+            c_type x;                                                   \
+            char y;                                                     \
+        } z;                                                            \
+        tmp_type_->alignment = sizeof(z) - sizeof(c_type);              \
         tmp_type_->extent = sizeof(c_type);                             \
         tmp_type_->lb = 0;                                              \
         tmp_type_->ub = sizeof(c_type);                                 \
         tmp_type_->true_lb = 0;                                         \
         tmp_type_->true_ub = sizeof(c_type);                            \
+                                                                        \
         tmp_type_->is_contig = true;                                    \
         tmp_type_->num_contig = 1;                                      \
                                                                         \
         yaksur_type_create_hook(tmp_type_);                             \
-        } while (0)
+    } while (0)
 
 #define INIT_BUILTIN_PAIRTYPE(c_type1, c_type2, c_type, TYPE, rc, fn_fail) \
     do {                                                                \
@@ -48,7 +55,17 @@
                                                                         \
         tmp_type_->kind = YAKSI_TYPE_KIND__BUILTIN;                     \
         tmp_type_->tree_depth = 0;                                      \
+                                                                        \
         tmp_type_->size = sizeof(c_type1) + sizeof(c_type2);            \
+        struct {                                                        \
+            c_type1 x;                                                  \
+            char y;                                                     \
+        } z1;                                                           \
+        struct {                                                        \
+            c_type2 x;                                                  \
+            char y;                                                     \
+        } z2;                                                           \
+        tmp_type_->alignment = YAKSU_MAX(sizeof(z1) - sizeof(c_type1), sizeof(z2) - sizeof(c_type2)); \
         tmp_type_->extent = sizeof(c_type);                             \
         tmp_type_->lb = 0;                                              \
         tmp_type_->ub = sizeof(c_type);                                 \

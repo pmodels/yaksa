@@ -55,6 +55,7 @@ typedef struct yaksi_type_s {
     yaksi_type_kind_e kind;
     int tree_depth;
 
+    uint8_t alignment;
     uintptr_t size;
     uintptr_t extent;
     intptr_t lb;

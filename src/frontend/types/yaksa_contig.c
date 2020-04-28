@@ -21,6 +21,7 @@ int yaksi_create_contig(int count, yaksi_type_s * intype, yaksi_type_s ** newtyp
     outtype->kind = YAKSI_TYPE_KIND__CONTIG;
     outtype->tree_depth = intype->tree_depth + 1;
     outtype->size = intype->size * count;
+    outtype->alignment = intype->alignment;
 
     outtype->lb = intype->lb;
     outtype->ub = intype->lb + count * intype->extent;
@@ -54,6 +55,11 @@ int yaksa_create_contig(int count, yaksa_type_t oldtype, yaksa_type_t * newtype)
     int rc = YAKSA_SUCCESS;
 
     assert(yaksi_global.is_initialized);
+
+    if (count == 0) {
+        *newtype = YAKSA_TYPE__NULL;
+        goto fn_exit;
+    }
 
     yaksi_type_s *intype;
     yaksi_type_get(oldtype, &intype);
