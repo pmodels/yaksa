@@ -20,6 +20,7 @@ int yaksi_create_subarray(int ndims, const int *array_of_sizes, const int *array
 
     outtype->kind = YAKSI_TYPE_KIND__SUBARRAY;
     outtype->tree_depth = intype->tree_depth + 1;
+    outtype->alignment = intype->alignment;
 
     /* create a series of hvectors for the subarray, but store the lb
      * and ub separately.  this is because subarray allows the buffer

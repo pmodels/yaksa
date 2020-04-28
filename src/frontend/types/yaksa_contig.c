@@ -21,6 +21,7 @@ int yaksi_create_contig(int count, yaksi_type_s * intype, yaksi_type_s ** newtyp
     outtype->kind = YAKSI_TYPE_KIND__CONTIG;
     outtype->tree_depth = intype->tree_depth + 1;
     outtype->size = intype->size * count;
+    outtype->alignment = intype->alignment;
 
     outtype->lb = intype->lb;
     outtype->ub = intype->lb + count * intype->extent;

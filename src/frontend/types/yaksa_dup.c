@@ -21,6 +21,7 @@ int yaksi_create_dup(yaksi_type_s * intype, yaksi_type_s ** newtype)
     outtype->kind = YAKSI_TYPE_KIND__DUP;
     outtype->tree_depth = intype->tree_depth + 1;
     outtype->size = intype->size;
+    outtype->alignment = intype->alignment;
 
     outtype->lb = intype->lb;
     outtype->ub = intype->ub;

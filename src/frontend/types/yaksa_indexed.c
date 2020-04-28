@@ -26,6 +26,7 @@ int yaksi_create_hindexed(int count, const int *array_of_blocklengths,
     outtype->size = 0;
     for (int i = 0; i < count; i++)
         outtype->size += intype->size * array_of_blocklengths[i];
+    outtype->alignment = intype->alignment;
 
     int is_set = 0;
     for (int idx = 0; idx < count; idx++) {

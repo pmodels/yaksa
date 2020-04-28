@@ -22,6 +22,7 @@ int yaksi_create_hvector(int count, int blocklength, intptr_t stride, yaksi_type
     outtype->kind = YAKSI_TYPE_KIND__HVECTOR;
     outtype->tree_depth = intype->tree_depth + 1;
     outtype->size = intype->size * blocklength * count;
+    outtype->alignment = intype->alignment;
 
     intptr_t min_disp;
     intptr_t max_disp;
