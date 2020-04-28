@@ -112,6 +112,11 @@ int yaksa_create_hindexed(int count, const int *array_of_blocklengths,
 
     assert(yaksi_global.is_initialized);
 
+    if (count == 0) {
+        *newtype = YAKSA_TYPE__NULL;
+        goto fn_exit;
+    }
+
     yaksi_type_s *intype;
     rc = yaksi_type_get(oldtype, &intype);
     YAKSU_ERR_CHECK(rc, fn_fail);
@@ -135,6 +140,11 @@ int yaksa_create_indexed(int count, const int *array_of_blocklengths, const int 
     intptr_t *real_array_of_displs = (intptr_t *) malloc(count * sizeof(intptr_t));
 
     assert(yaksi_global.is_initialized);
+
+    if (count == 0) {
+        *newtype = YAKSA_TYPE__NULL;
+        goto fn_exit;
+    }
 
     yaksi_type_s *intype;
     rc = yaksi_type_get(oldtype, &intype);

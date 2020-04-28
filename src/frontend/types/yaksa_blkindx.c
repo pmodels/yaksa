@@ -85,6 +85,11 @@ int yaksa_create_hindexed_block(int count, int blocklength, const intptr_t * arr
 
     assert(yaksi_global.is_initialized);
 
+    if (count == 0) {
+        *newtype = YAKSA_TYPE__NULL;
+        goto fn_exit;
+    }
+
     yaksi_type_s *intype;
     rc = yaksi_type_get(oldtype, &intype);
     YAKSU_ERR_CHECK(rc, fn_fail);
@@ -105,9 +110,15 @@ int yaksa_create_indexed_block(int count, int blocklength, const int *array_of_d
                                yaksa_type_t oldtype, yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
-    intptr_t *real_array_of_displs = (intptr_t *) malloc(count * sizeof(intptr_t));
 
     assert(yaksi_global.is_initialized);
+
+    if (count == 0) {
+        *newtype = YAKSA_TYPE__NULL;
+        goto fn_exit;
+    }
+
+    intptr_t *real_array_of_displs = (intptr_t *) malloc(count * sizeof(intptr_t));
 
     yaksi_type_s *intype;
     rc = yaksi_type_get(oldtype, &intype);

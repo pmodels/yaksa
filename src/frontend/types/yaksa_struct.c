@@ -119,9 +119,15 @@ int yaksa_create_struct(int count, const int *array_of_blocklengths,
                         yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
-    yaksi_type_s **array_of_intypes = (yaksi_type_s **) malloc(count * sizeof(yaksi_type_s *));
 
     assert(yaksi_global.is_initialized);
+
+    if (count == 0) {
+        *newtype = YAKSA_TYPE__NULL;
+        goto fn_exit;
+    }
+
+    yaksi_type_s **array_of_intypes = (yaksi_type_s **) malloc(count * sizeof(yaksi_type_s *));
 
     for (int i = 0; i < count; i++) {
         rc = yaksi_type_get(array_of_types[i], &array_of_intypes[i]);
