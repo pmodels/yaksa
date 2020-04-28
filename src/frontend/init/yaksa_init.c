@@ -29,7 +29,7 @@
         tmp_type_->num_contig = 1;                                      \
                                                                         \
         yaksur_type_create_hook(tmp_type_);                             \
-        } while (0)
+    } while (0)
 
 #define INIT_BUILTIN_PAIRTYPE(c_type1, c_type2, c_type, TYPE, rc, fn_fail) \
     do {                                                                \
