@@ -56,14 +56,14 @@ int yaksa_create_contig(int count, yaksa_type_t oldtype, yaksa_type_t * newtype)
 
     assert(yaksi_global.is_initialized);
 
-    if (count == 0) {
-        *newtype = YAKSA_TYPE__NULL;
-        goto fn_exit;
-    }
-
     yaksi_type_s *intype;
     rc = yaksi_type_get(oldtype, &intype);
     YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (count * intype->size == 0) {
+        *newtype = YAKSA_TYPE__NULL;
+        goto fn_exit;
+    }
 
     yaksi_type_s *outtype;
     rc = yaksi_create_contig(count, intype, &outtype);

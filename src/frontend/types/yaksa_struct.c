@@ -123,7 +123,15 @@ int yaksa_create_struct(int count, const int *array_of_blocklengths,
 
     assert(yaksi_global.is_initialized);
 
-    if (count == 0) {
+    uintptr_t total_size = 0;
+    for (int i = 0; i < count; i++) {
+        yaksi_type_s *type;
+        rc = yaksi_type_get(array_of_types[i], &type);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        total_size += type->size * array_of_blocklengths[i];
+    }
+    if (total_size == 0) {
         *newtype = YAKSA_TYPE__NULL;
         goto fn_exit;
     }
