@@ -10,22 +10,12 @@
 
 int yaksuri_seq_init_hook(void)
 {
-    int rc = YAKSA_SUCCESS;
-
-  fn_exit:
-    return rc;
-  fn_fail:
-    goto fn_exit;
+    return YAKSA_SUCCESS;
 }
 
 int yaksuri_seq_finalize_hook(void)
 {
-    int rc = YAKSA_SUCCESS;
-
-  fn_exit:
-    return rc;
-  fn_fail:
-    goto fn_exit;
+    return YAKSA_SUCCESS;
 }
 
 int yaksuri_seq_type_create_hook(yaksi_type_s * type)
@@ -49,8 +39,5 @@ int yaksuri_seq_type_free_hook(yaksi_type_s * type)
 
     free(type->backend.seq.priv);
 
-  fn_exit:
     return rc;
-  fn_fail:
-    goto fn_exit;
 }

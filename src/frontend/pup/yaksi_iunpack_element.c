@@ -440,7 +440,7 @@ int yaksi_iunpack_element(const void *inbuf, uintptr_t insize, void *outbuf, yak
             {
                 yaksi_type_s *primary = type->u.subarray.primary;
                 char *dbuf = (char *) outbuf + type->true_lb - primary->true_lb;
-                yaksi_iunpack_element(inbuf, insize, dbuf, primary, outoffset, request);
+                rc = yaksi_iunpack_element(inbuf, insize, dbuf, primary, outoffset, request);
                 YAKSU_ERR_CHECK(rc, fn_fail);
                 break;
             }

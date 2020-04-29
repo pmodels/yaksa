@@ -58,11 +58,8 @@ int yaksu_pool_alloc(uintptr_t elemsize, uintptr_t elems_in_chunk, uintptr_t max
 
     *pool = (void *) pool_head;
 
-  fn_exit:
     pthread_mutex_unlock(&global_mutex);
     return rc;
-  fn_fail:
-    goto fn_exit;
 }
 
 int yaksu_pool_free(yaksu_pool_s pool)
@@ -93,11 +90,8 @@ int yaksu_pool_free(yaksu_pool_s pool)
         fflush(stderr);
     }
 
-  fn_exit:
     pthread_mutex_unlock(&global_mutex);
     return rc;
-  fn_fail:
-    goto fn_exit;
 }
 
 int yaksu_pool_elem_alloc(yaksu_pool_s pool, void **elem, int *elem_idx)
@@ -147,13 +141,11 @@ int yaksu_pool_elem_alloc(yaksu_pool_s pool, void **elem, int *elem_idx)
     if (pool_head->pool_elems == NULL) {
         pool_head->pool_elems = new;
     } else {
-        for (pool_elem_s * tmp = pool_head->pool_elems; tmp; tmp = tmp->next) {
+        pool_elem_s *tmp;
+        for (tmp = pool_head->pool_elems; tmp->next; tmp = tmp->next) {
             idx += pool_head->elems_in_chunk;
-            if (tmp->next == NULL) {
-                tmp->next = new;
-                break;
-            }
         }
+        tmp->next = new;
     }
 
     new->elems[0] = new->slab;
@@ -183,11 +175,8 @@ int yaksu_pool_elem_free(yaksu_pool_s pool, int idx)
 
     tmp->elems[idx] = NULL;
 
-  fn_exit:
     pthread_mutex_unlock(&pool_head->mutex);
     return rc;
-  fn_fail:
-    goto fn_exit;
 }
 
 int yaksu_pool_elem_get(yaksu_pool_s pool, int elem_idx, void **elem)
@@ -205,8 +194,5 @@ int yaksu_pool_elem_get(yaksu_pool_s pool, int elem_idx, void **elem)
 
     *elem = tmp->elems[idx];
 
-  fn_exit:
     return rc;
-  fn_fail:
-    goto fn_exit;
 }

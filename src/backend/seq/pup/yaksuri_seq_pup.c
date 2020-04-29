@@ -17,10 +17,7 @@ int yaksuri_seq_pup_is_supported(yaksi_type_s * type, bool * is_supported)
     else
         *is_supported = false;
 
-  fn_exit:
     return rc;
-  fn_fail:
-    goto fn_exit;
 }
 
 int yaksuri_seq_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type)

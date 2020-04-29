@@ -145,10 +145,7 @@ int yaksur_request_create_hook(yaksi_request_s * request)
     backend->event = NULL;
     backend->kind = YAKSURI_REQUEST_KIND__UNSET;
 
-  fn_exit:
     return rc;
-  fn_fail:
-    goto fn_exit;
 }
 
 int yaksur_request_free_hook(yaksi_request_s * request)

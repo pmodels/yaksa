@@ -62,7 +62,7 @@ int yaksa_create_contig(int count, yaksa_type_t oldtype, yaksa_type_t * newtype)
     }
 
     yaksi_type_s *intype;
-    yaksi_type_get(oldtype, &intype);
+    rc = yaksi_type_get(oldtype, &intype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     yaksi_type_s *outtype;

@@ -137,10 +137,7 @@ def populate_pupfns(pup_max_nesting, backend, blklens, builtin_types, builtin_ma
     yutils.display(OUTFILE, "    break;\n")
     yutils.display(OUTFILE, "}\n")
     yutils.display(OUTFILE, "\n")
-    yutils.display(OUTFILE, "  fn_exit:\n")
     yutils.display(OUTFILE, "    return rc;\n")
-    yutils.display(OUTFILE, "  fn_fail:\n")
-    yutils.display(OUTFILE, "    goto fn_exit;\n")
     yutils.display(OUTFILE, "}\n");
     OUTFILE.close()
 

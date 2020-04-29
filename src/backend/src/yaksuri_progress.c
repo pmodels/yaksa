@@ -77,10 +77,7 @@ static int progress_dequeue(progress_elem_s * elem)
     yaksu_atomic_decr(&elem->request->cc);
     free(elem);
 
-  fn_exit:
     return rc;
-  fn_fail:
-    goto fn_exit;
 }
 
 int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
@@ -127,8 +124,6 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
 
   fn_exit:
     return rc;
-  fn_fail:
-    goto fn_exit;
 }
 
 static int alloc_subop(progress_subop_s ** subop)
@@ -395,6 +390,7 @@ static int free_subop(progress_subop_s * subop)
                 tmp->next = subop->next;
                 if (elem->pup.subop_tail == subop)
                     elem->pup.subop_tail = tmp;
+                break;
             }
         }
     }
