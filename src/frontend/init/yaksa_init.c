@@ -176,6 +176,30 @@ int yaksa_init(yaksa_init_attr_t attr)
     INIT_BUILTIN(uint8_t, BYTE, rc, fn_fail);
 
 
+    /* special initialzation for the NULL type */
+    INIT_BUILTIN(uint8_t, NULL, rc, fn_fail);
+
+    yaksi_type_s *null_type;
+    rc = yaksi_type_get(YAKSA_TYPE__NULL, &null_type);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    null_type->kind = YAKSI_TYPE_KIND__BUILTIN;
+    null_type->tree_depth = 0;
+
+    null_type->size = 0;
+    null_type->alignment = 1;
+    null_type->extent = 0;
+    null_type->lb = 0;
+    null_type->ub = 0;
+    null_type->true_lb = 0;
+    null_type->true_ub = 0;
+
+    null_type->is_contig = true;
+    null_type->num_contig = 0;
+
+    yaksur_type_create_hook(null_type);
+
+
     /* done */
     yaksi_global.is_initialized = 1;
 
