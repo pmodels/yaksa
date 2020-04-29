@@ -112,14 +112,18 @@ int yaksa_create_hindexed(int count, const int *array_of_blocklengths,
 
     assert(yaksi_global.is_initialized);
 
-    if (count == 0) {
-        *newtype = YAKSA_TYPE__NULL;
-        goto fn_exit;
-    }
-
     yaksi_type_s *intype;
     rc = yaksi_type_get(oldtype, &intype);
     YAKSU_ERR_CHECK(rc, fn_fail);
+
+    uintptr_t total_size = 0;
+    for (int i = 0; i < count; i++) {
+        total_size += intype->size * array_of_blocklengths[i];
+    }
+    if (total_size == 0) {
+        *newtype = YAKSA_TYPE__NULL;
+        goto fn_exit;
+    }
 
     yaksi_type_s *outtype;
     rc = yaksi_create_hindexed(count, array_of_blocklengths, array_of_displs, intype, &outtype);
@@ -141,15 +145,18 @@ int yaksa_create_indexed(int count, const int *array_of_blocklengths, const int 
 
     assert(yaksi_global.is_initialized);
 
-    if (count == 0) {
-        *newtype = YAKSA_TYPE__NULL;
-        goto fn_exit;
-    }
-    assert(count > 0);
-
     yaksi_type_s *intype;
     rc = yaksi_type_get(oldtype, &intype);
     YAKSU_ERR_CHECK(rc, fn_fail);
+
+    uintptr_t total_size = 0;
+    for (int i = 0; i < count; i++) {
+        total_size += intype->size * array_of_blocklengths[i];
+    }
+    if (total_size == 0) {
+        *newtype = YAKSA_TYPE__NULL;
+        goto fn_exit;
+    }
 
     for (int i = 0; i < count; i++)
         real_array_of_displs[i] = array_of_displs[i] * intype->extent;

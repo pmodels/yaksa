@@ -85,14 +85,14 @@ int yaksa_create_hindexed_block(int count, int blocklength, const intptr_t * arr
 
     assert(yaksi_global.is_initialized);
 
-    if (count == 0) {
-        *newtype = YAKSA_TYPE__NULL;
-        goto fn_exit;
-    }
-
     yaksi_type_s *intype;
     rc = yaksi_type_get(oldtype, &intype);
     YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (count * intype->size == 0) {
+        *newtype = YAKSA_TYPE__NULL;
+        goto fn_exit;
+    }
 
     yaksi_type_s *outtype;
     rc = yaksi_create_hindexed_block(count, blocklength, array_of_displs, intype, &outtype);
@@ -114,17 +114,17 @@ int yaksa_create_indexed_block(int count, int blocklength, const int *array_of_d
 
     assert(yaksi_global.is_initialized);
 
-    if (count == 0) {
+    yaksi_type_s *intype;
+    rc = yaksi_type_get(oldtype, &intype);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (count * intype->size == 0) {
         *newtype = YAKSA_TYPE__NULL;
         goto fn_exit;
     }
     assert(count > 0);
 
     real_array_of_displs = (intptr_t *) malloc(count * sizeof(intptr_t));
-
-    yaksi_type_s *intype;
-    rc = yaksi_type_get(oldtype, &intype);
-    YAKSU_ERR_CHECK(rc, fn_fail);
 
     for (int i = 0; i < count; i++)
         real_array_of_displs[i] = array_of_displs[i] * intype->extent;

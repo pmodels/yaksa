@@ -141,14 +141,14 @@ int yaksa_create_subarray(int ndims, const int *array_of_sizes, const int *array
 
     assert(yaksi_global.is_initialized);
 
-    if (ndims == 0) {
-        *newtype = YAKSA_TYPE__NULL;
-        goto fn_exit;
-    }
-
     yaksi_type_s *intype;
     rc = yaksi_type_get(oldtype, &intype);
     YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (ndims * intype->size == 0) {
+        *newtype = YAKSA_TYPE__NULL;
+        goto fn_exit;
+    }
 
     yaksi_type_s *outtype;
     rc = yaksi_create_subarray(ndims, array_of_sizes, array_of_subsizes, array_of_starts, order,
