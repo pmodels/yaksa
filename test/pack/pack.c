@@ -128,7 +128,7 @@ int main(int argc, char **argv)
     DTP_pool_s dtp;
     DTP_obj_s sobj, dobj;
     int rc;
-    char typestr[MAX_DTP_BASESTRLEN + 1];
+    char typestr[MAX_DTP_BASESTRLEN + 1] = { 0 };
     int basecount = -1;
     int seed = -1;
     int iters = -1;
@@ -240,7 +240,7 @@ int main(int argc, char **argv)
             exit(1);
         }
     }
-    if (typestr == NULL || basecount <= 0 || seed < 0 || iters < 0 || segments < 0 ||
+    if (strlen(typestr) == 0 || basecount <= 0 || seed < 0 || iters < 0 || segments < 0 ||
         pack_order == PACK_ORDER__UNSET || overlap < 0) {
         fprintf(stderr, "Usage: ./pack {options}\n");
         fprintf(stderr, "   -datatype    base datatype to use, e.g., int\n");
