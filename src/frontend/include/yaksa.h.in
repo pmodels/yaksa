@@ -92,7 +92,7 @@ typedef enum {
  * \brief yaksa predefined requests
  */
 typedef enum {
-    YAKSA_REQUEST__NULL = -1,
+    YAKSA_REQUEST__NULL = 0,
 
     /* terminal */
     YAKSI_REQUEST__LAST,

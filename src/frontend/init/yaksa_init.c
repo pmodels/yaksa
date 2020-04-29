@@ -117,6 +117,18 @@ int yaksa_init(yaksa_init_attr_t attr)
                           &yaksi_global.request_pool);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
+    /* these are the first set of allocations for our builtin
+     * requests, so the indices should match that of the request
+     * themselves */
+    for (int i = 0; i < YAKSI_REQUEST__LAST; i++) {
+        struct yaksi_request_s *request;
+
+        rc = yaksi_request_create(&request);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        assert(request->id == i);
+    }
+
 
     /* initialize the backend */
     rc = yaksur_init_hook();
