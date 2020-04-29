@@ -119,7 +119,7 @@ typedef struct {
 
     char base_type_str[DTPI_MAX_BASE_TYPE_STR_LEN + 1];
     uintptr_t base_type_count;
-    intptr_t base_type_extent;
+    uintptr_t base_type_extent;
 
     /* in case the base type is a struct */
     int base_type_is_struct;
@@ -359,7 +359,7 @@ enum {
  * now */
 typedef struct DTPI_Attr {
     DTPI_Datatype_kind_e kind;
-    intptr_t child_type_extent;
+    uintptr_t child_type_extent;
     struct DTPI_Attr *child;
 
     union {
@@ -369,7 +369,7 @@ typedef struct DTPI_Attr {
 
         struct {
             intptr_t lb;
-            intptr_t extent;
+            uintptr_t extent;
         } resized;
 
         struct {
