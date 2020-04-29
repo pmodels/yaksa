@@ -60,6 +60,7 @@ int yaksi_create_struct(int count, const int *array_of_blocklengths,
     }
 
     /* adjust ub based on alignment */
+    assert(outtype->alignment);
     uintptr_t diff = (outtype->ub - outtype->lb) % outtype->alignment;
     if (diff) {
         outtype->ub += outtype->alignment - diff;
@@ -127,6 +128,7 @@ int yaksa_create_struct(int count, const int *array_of_blocklengths,
         goto fn_exit;
     }
 
+    assert(count > 0);
     yaksi_type_s **array_of_intypes = (yaksi_type_s **) malloc(count * sizeof(yaksi_type_s *));
 
     for (int i = 0; i < count; i++) {

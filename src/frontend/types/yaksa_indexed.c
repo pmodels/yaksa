@@ -145,6 +145,7 @@ int yaksa_create_indexed(int count, const int *array_of_blocklengths, const int 
         *newtype = YAKSA_TYPE__NULL;
         goto fn_exit;
     }
+    assert(count > 0);
 
     yaksi_type_s *intype;
     rc = yaksi_type_get(oldtype, &intype);
@@ -158,11 +159,10 @@ int yaksa_create_indexed(int count, const int *array_of_blocklengths, const int 
                                &outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    free(real_array_of_displs);
-
     *newtype = outtype->id;
 
   fn_exit:
+    free(real_array_of_displs);
     return rc;
   fn_fail:
     goto fn_exit;
