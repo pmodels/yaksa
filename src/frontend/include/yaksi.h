@@ -154,6 +154,21 @@ typedef struct {
     int y;
 } yaksi_long_double_int_s;
 
+typedef struct {
+    float x;
+    float y;
+} yaksi_c_complex_s;
+
+typedef struct {
+    double x;
+    double y;
+} yaksi_c_double_complex_s;
+
+typedef struct {
+    long double x;
+    long double y;
+} yaksi_c_long_double_complex_s;
+
 
 /* post headers come after the type declarations */
 #include "yaksur_post.h"
