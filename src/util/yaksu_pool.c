@@ -142,6 +142,7 @@ int yaksu_pool_elem_alloc(yaksu_pool_s pool, void **elem, int *elem_idx)
         pool_head->pool_elems = new;
     } else {
         pool_elem_s *tmp;
+        idx += pool_head->elems_in_chunk;
         for (tmp = pool_head->pool_elems; tmp->next; tmp = tmp->next) {
             idx += pool_head->elems_in_chunk;
         }
