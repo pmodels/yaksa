@@ -33,9 +33,6 @@ builtin_maps = {
     "YAKSA_TYPE__UINT16_T": "int16_t",
     "YAKSA_TYPE__UINT32_T": "int32_t",
     "YAKSA_TYPE__UINT64_T": "int64_t",
-    "YAKSA_TYPE__C_COMPLEX": "float",
-    "YAKSA_TYPE__C_DOUBLE_COMPLEX": "double",
-    "YAKSA_TYPE__C_LONG_DOUBLE_COMPLEX": "double",
     "YAKSA_TYPE__BYTE": "int8_t"
 }
 

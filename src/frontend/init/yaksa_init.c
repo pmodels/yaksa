@@ -160,9 +160,6 @@ int yaksa_init(yaksa_init_attr_t attr)
     INIT_BUILTIN(float, FLOAT, rc, fn_fail);
     INIT_BUILTIN(double, DOUBLE, rc, fn_fail);
     INIT_BUILTIN(long double, LONG_DOUBLE, rc, fn_fail);
-    INIT_BUILTIN(float, C_COMPLEX, rc, fn_fail);
-    INIT_BUILTIN(double, C_DOUBLE_COMPLEX, rc, fn_fail);
-    INIT_BUILTIN(long double, C_LONG_DOUBLE_COMPLEX, rc, fn_fail);
 
     INIT_BUILTIN_PAIRTYPE(float, int, yaksi_float_int_s, FLOAT_INT, rc, fn_fail);
     INIT_BUILTIN_PAIRTYPE(double, int, yaksi_double_int_s, DOUBLE_INT, rc, fn_fail);
@@ -172,6 +169,10 @@ int yaksa_init(yaksa_init_attr_t attr)
     /* *INDENT-ON* */
     INIT_BUILTIN_PAIRTYPE(short, int, yaksi_short_int_s, SHORT_INT, rc, fn_fail);
     INIT_BUILTIN_PAIRTYPE(long double, int, yaksi_long_double_int_s, LONG_DOUBLE_INT, rc, fn_fail);
+    INIT_BUILTIN_PAIRTYPE(float, float, yaksi_c_complex_s, C_COMPLEX, rc, fn_fail);
+    INIT_BUILTIN_PAIRTYPE(double, double, yaksi_c_double_complex_s, C_DOUBLE_COMPLEX, rc, fn_fail);
+    INIT_BUILTIN_PAIRTYPE(long double, long double, yaksi_c_long_double_complex_s,
+                          C_LONG_DOUBLE_COMPLEX, rc, fn_fail);
 
     INIT_BUILTIN(uint8_t, BYTE, rc, fn_fail);
 
