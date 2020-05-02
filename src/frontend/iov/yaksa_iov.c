@@ -14,7 +14,7 @@
         TYPE *z = (TYPE *) buf + iov_offset / 2;                        \
         bool element_is_contig;                                         \
                                                                         \
-        if ((const char *) &z->y - (const char *) z == sizeof(TYPE1) + sizeof(TYPE2)) \
+        if ((const char *) &z->y - (const char *) z == sizeof(TYPE1))   \
             element_is_contig = true;                                   \
         else                                                            \
             element_is_contig = false;                                  \
