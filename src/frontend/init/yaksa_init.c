@@ -77,11 +77,10 @@
                                                                         \
         if (tmp_type_->size == tmp_type_->extent) {                     \
             tmp_type_->is_contig = true;                                \
-            tmp_type_->num_contig = 1;                                  \
         } else {                                                        \
             tmp_type_->is_contig = false;                               \
-            tmp_type_->num_contig = 2;                                  \
         }                                                               \
+        tmp_type_->num_contig = 1 + !element_is_contig;                 \
                                                                         \
         yaksur_type_create_hook(tmp_type_);                             \
     } while (0)
