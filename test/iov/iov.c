@@ -261,6 +261,22 @@ int main(int argc, char **argv)
             }
         }
 
+        /* update the segment starts and lengths, so a basic type is
+         * not split across multiple segments */
+        uintptr_t basic_iov_len;
+        rc = yaksa_iov_len(1, dtp.DTP_base_type, &basic_iov_len);
+        assert(rc == YAKSA_SUCCESS);
+
+        for (int m = 0; m < segments; m++) {
+            while (segment_starts[m] % basic_iov_len) {
+                segment_starts[m]--;
+                segment_lengths[m]++;
+            }
+            while (segment_lengths[m] % basic_iov_len) {
+                segment_lengths[m]++;
+            }
+        }
+
         /* create the sobj iov and fill it with the segments */
         struct iovec *sobj_iov = (struct iovec *) malloc(sobj_iov_len * sizeof(struct iovec));
         struct iovec *sobj_tmp_iov = (struct iovec *) malloc(sobj_iov_len * sizeof(struct iovec));

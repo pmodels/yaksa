@@ -9,46 +9,39 @@
 #include <string.h>
 #include <assert.h>
 
+/* we always "pack" full elements into the IOV, never partial */
 #define BUILTIN_PAIRTYPE_IOV(buf, count, iov_offset, max_iov_len, iov, TYPE, TYPE1, TYPE2, idx) \
     do {                                                                \
-        TYPE *z = (TYPE *) buf + iov_offset / 2;                        \
+        TYPE tmp;                                                       \
         bool element_is_contig;                                         \
                                                                         \
-        if ((const char *) &z->y - (const char *) z == sizeof(TYPE1))   \
+        if ((const char *) &tmp.y - (const char *) &tmp == sizeof(TYPE1)) \
             element_is_contig = true;                                   \
         else                                                            \
             element_is_contig = false;                                  \
                                                                         \
         idx = 0;                                                        \
-        if (iov_offset % 2) {                                           \
-            iov[idx].iov_base = &z->y;                                  \
-            iov[idx].iov_len = sizeof(TYPE2);                           \
-            (idx)++;                                                    \
-            z++;                                                        \
-        }                                                               \
-                                                                        \
-        uintptr_t real_count = count - (iov_offset + idx) / 2;          \
-        for (int i_ = 0; i_ < real_count; i_++) {                       \
-            if (element_is_contig) {                                    \
-                iov[idx].iov_base = z;                                  \
-                iov[idx].iov_len = sizeof(TYPE1) + sizeof(TYPE2);       \
+        if (element_is_contig) {                                        \
+            TYPE *z = (TYPE *) buf + iov_offset;                        \
+            int real_count = YAKSU_MIN(max_iov_len, count - iov_offset); \
+            for (int x = 0; x < real_count; x++) {                      \
+                iov[x].iov_base = z;                                    \
+                iov[x].iov_len = sizeof(TYPE1) + sizeof(TYPE2);         \
+                z++;                                                    \
                 (idx)++;                                                \
-                if (idx == max_iov_len)                                 \
-                    break;                                              \
-            } else {                                                    \
-                iov[idx].iov_base = z;                                  \
-                iov[idx].iov_len = sizeof(TYPE1);                       \
-                (idx)++;                                                \
-                if (idx == max_iov_len)                                 \
-                    break;                                              \
-                iov[idx].iov_base = &z->y;                              \
-                iov[idx].iov_len = sizeof(TYPE2);                       \
-                (idx)++;                                                \
-                if (idx == max_iov_len)                                 \
-                    break;                                              \
             }                                                           \
-                                                                        \
-            z++;                                                        \
+        } else {                                                        \
+            assert(iov_offset % 2 == 0);                                \
+            TYPE *z = (TYPE *) buf + iov_offset / 2;                    \
+            int real_count = YAKSU_MIN(max_iov_len - 1, count * 2 - iov_offset); \
+            for (int x = 0; x < real_count; x += 2) {                   \
+                iov[x].iov_base = z;                                    \
+                iov[x].iov_len = sizeof(TYPE1);                         \
+                iov[x+1].iov_base = &z->y;                              \
+                iov[x+1].iov_len = sizeof(TYPE2);                       \
+                z++;                                                    \
+                (idx) += 2;                                             \
+            }                                                           \
         }                                                               \
     } while (0)
 
