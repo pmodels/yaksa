@@ -109,8 +109,9 @@ AC_ARG_ENABLE([embedded],AS_HELP_STRING([--enable-embedded],[enables embedded bu
 AM_CONDITIONAL([EMBEDDED_BUILD], [test x${enable_embedded} = xyes])
 
 # --enable-debug
-AC_ARG_ENABLE([debug],AS_HELP_STRING([--enable-debug],[adds -g to CFLAGS]),,[enable_debug=no])
-if test "${enable_debug}" = "yes" ; then
+AC_ARG_ENABLE([g],AS_HELP_STRING([--enable-g],[alias for --enable-debug]),,[enable_g=no])
+AC_ARG_ENABLE([debug],AS_HELP_STRING([--enable-debug],[adds -g to CFLAGS]),,[enable_debug=${enable_g}])
+if test "${enable_debug}" != "no" ; then
     PAC_APPEND_FLAG([-g],[CFLAGS])
 fi
 
