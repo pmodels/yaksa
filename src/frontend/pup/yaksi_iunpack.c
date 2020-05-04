@@ -9,12 +9,15 @@
 #include <assert.h>
 
 int yaksi_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t outcount,
-                  yaksi_type_s * type, uintptr_t outoffset, yaksi_request_s * request)
+                  yaksi_type_s * type, uintptr_t outoffset, uintptr_t * actual_unpack_bytes,
+                  yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
     uintptr_t total_bytes = outcount * type->size - outoffset;
 
     assert(insize <= total_bytes);
+
+    *actual_unpack_bytes = 0;
 
     if (type->kind == YAKSI_TYPE_KIND__BUILTIN && insize < type->size)
         goto fn_exit;
@@ -56,13 +59,16 @@ int yaksi_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t o
         assert(type->size > remoffset);
 
         uintptr_t tmp_unpack_bytes = YAKSU_MIN(rem_unpack_bytes, type->size - remoffset);
+        uintptr_t tmp_actual_unpack_bytes;
 
-        rc = yaksi_iunpack_element(sbuf, tmp_unpack_bytes, dbuf, type, remoffset, request);
+        rc = yaksi_iunpack_element(sbuf, tmp_unpack_bytes, dbuf, type, remoffset,
+                                   &tmp_actual_unpack_bytes, request);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
-        rem_unpack_bytes -= tmp_unpack_bytes;
+        rem_unpack_bytes -= tmp_actual_unpack_bytes;
+        *actual_unpack_bytes += tmp_actual_unpack_bytes;
 
-        if (rem_unpack_bytes == 0) {
+        if (rem_unpack_bytes == 0 || tmp_actual_unpack_bytes == 0) {
             /* if we are out of unpack buffer, return */
             goto fn_exit;
         }
@@ -80,6 +86,7 @@ int yaksi_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t o
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         rem_unpack_bytes -= numelems * type->size;
+        *actual_unpack_bytes += numelems * type->size;
 
         sbuf += numelems * type->size;
         dbuf += numelems * type->extent;
@@ -88,8 +95,13 @@ int yaksi_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t o
 
     /* step 4: partial unpack the next element */
     if (rem_unpack_bytes) {
-        rc = yaksi_iunpack_element(sbuf, rem_unpack_bytes, dbuf, type, remoffset, request);
+        uintptr_t tmp_actual_unpack_bytes;
+
+        rc = yaksi_iunpack_element(sbuf, rem_unpack_bytes, dbuf, type, remoffset,
+                                   &tmp_actual_unpack_bytes, request);
         YAKSU_ERR_CHECK(rc, fn_fail);
+
+        *actual_unpack_bytes += tmp_actual_unpack_bytes;
     }
 
   fn_exit:

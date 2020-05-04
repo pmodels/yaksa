@@ -133,8 +133,9 @@ int main(int argc, char **argv)
         rc = DTP_obj_buf_init(sobj, sbuf, -1, -1, basecount);
         assert(rc == DTP_SUCCESS);
 
+        uintptr_t actual_unpack_bytes;
         rc = yaksa_iunpack(tbuf, actual_pack_bytes, sbuf + sobj.DTP_buf_offset,
-                           sobj.DTP_type_count, newtype, 0, &request);
+                           sobj.DTP_type_count, newtype, 0, &actual_unpack_bytes, &request);
         assert(rc == YAKSA_SUCCESS);
 
         if (request != YAKSA_REQUEST__NULL) {
