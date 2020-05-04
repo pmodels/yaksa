@@ -365,7 +365,7 @@ int yaksa_free(yaksa_type_t type);
  *                               (incount, type) tuple
  * \param[out] outbuf            Output buffer into which data is being packed
  * \param[in]  max_pack_bytes    Maximum number of bytes that can be packed in the output buffer
- * \param[out] actual_pack_bytes Actual number of bytes that were packed in the output buffer
+ * \param[out] actual_pack_bytes Actual number of bytes that were packed into the output buffer
  * \param[out] request           Request handle associated with the operation
  *                               (YAKSA_REQUEST__NULL if the request already completed)
  */
@@ -383,11 +383,13 @@ int yaksa_ipack(const void *inbuf, uintptr_t incount, yaksa_type_t type, uintptr
  * \param[in]  type              Datatype representing the layout
  * \param[in]  outoffset         Number of bytes to skip from the layout represented by the
  *                               (incount, type) tuple
+ * \param[out] actual_unpack_bytes Actual number of bytes that were unpacked into the output buffer
  * \param[out] request           Request handle associated with the operation
  *                               (YAKSA_REQUEST__NULL if the request already completed)
  */
 int yaksa_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t outcount,
-                  yaksa_type_t type, uintptr_t outoffset, yaksa_request_t * request);
+                  yaksa_type_t type, uintptr_t outoffset, uintptr_t * actual_unpack_bytes,
+                  yaksa_request_t * request);
 
 /*!
  * \brief tests to see if a request has completed

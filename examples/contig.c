@@ -35,7 +35,9 @@ int main()
     assert(rc == YAKSA_SUCCESS);
 
     /* unpack */
-    rc = yaksa_iunpack(pack_buf, SIZE * sizeof(int), unpack_buf, 1, contig, 0, &request);
+    uintptr_t actual_unpack_bytes;
+    rc = yaksa_iunpack(pack_buf, SIZE * sizeof(int), unpack_buf, 1, contig, 0, &actual_unpack_bytes,
+                       &request);
     assert(rc == YAKSA_SUCCESS);
     rc = yaksa_request_wait(request);
     assert(rc == YAKSA_SUCCESS);

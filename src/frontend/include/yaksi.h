@@ -204,11 +204,13 @@ int yaksi_ipack_element(const void *inbuf, yaksi_type_s * type, uintptr_t inoffs
                         yaksi_request_s * request);
 
 int yaksi_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t outcount,
-                  yaksi_type_s * type, uintptr_t outoffset, yaksi_request_s * request);
+                  yaksi_type_s * type, uintptr_t outoffset, uintptr_t * actual_unpack_bytes,
+                  yaksi_request_s * request);
 int yaksi_iunpack_backend(const void *inbuf, void *outbuf, uintptr_t outcount, yaksi_type_s * type,
                           yaksi_request_s * request);
 int yaksi_iunpack_element(const void *inbuf, uintptr_t insize, void *outbuf, yaksi_type_s * type,
-                          uintptr_t outoffset, yaksi_request_s * request);
+                          uintptr_t outoffset, uintptr_t * actual_unpack_bytes,
+                          yaksi_request_s * request);
 
 int yaksi_iov_len(uintptr_t count, yaksi_type_s * type, uintptr_t * iov_len);
 

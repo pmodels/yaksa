@@ -410,9 +410,12 @@ int main(int argc, char **argv)
             rc = yaksa_request_wait(request);
             assert(rc == YAKSA_SUCCESS);
 
+            uintptr_t actual_unpack_bytes;
             rc = yaksa_iunpack(tbuf, actual_pack_bytes, dbuf_d + dobj.DTP_buf_offset,
-                               dobj.DTP_type_count, dobj.DTP_datatype, segment_starts[j], &request);
+                               dobj.DTP_type_count, dobj.DTP_datatype, segment_starts[j],
+                               &actual_unpack_bytes, &request);
             assert(rc == YAKSA_SUCCESS);
+            assert(actual_pack_bytes == actual_unpack_bytes);
 
             rc = yaksa_request_wait(request);
             assert(rc == YAKSA_SUCCESS);

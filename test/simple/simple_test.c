@@ -55,7 +55,8 @@ int main()
         val += 71;
     }
 
-    rc = yaksa_iunpack(outbuf, actual, inbuf, 1, vector_vector, 0, &request);
+    uintptr_t actual_unpack_bytes;
+    rc = yaksa_iunpack(outbuf, actual, inbuf, 1, vector_vector, 0, &actual_unpack_bytes, &request);
     assert(rc == YAKSA_SUCCESS);
 
     rc = yaksa_request_wait(request);

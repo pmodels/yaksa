@@ -46,8 +46,9 @@ int main()
     rc = yaksa_request_wait(request);
     assert(rc == YAKSA_SUCCESS);
 
+    uintptr_t actual_unpack_bytes;
     rc = yaksa_iunpack(pack_buf, ROWS * BLKLEN * sizeof(int), unpack_buf, 1, hindexed_block, 0,
-                       &request);
+                       &actual_unpack_bytes, &request);
     assert(rc == YAKSA_SUCCESS);
     rc = yaksa_request_wait(request);
     assert(rc == YAKSA_SUCCESS);
