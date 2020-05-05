@@ -18,6 +18,7 @@ int yaksa_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t o
     assert(yaksi_global.is_initialized);
 
     if (outcount == 0) {
+        *actual_unpack_bytes = 0;
         *request = YAKSA_REQUEST__NULL;
         goto fn_exit;
     }
@@ -27,6 +28,7 @@ int yaksa_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t o
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     if (yaksi_type->size == 0) {
+        *actual_unpack_bytes = 0;
         *request = YAKSA_REQUEST__NULL;
         goto fn_exit;
     }
