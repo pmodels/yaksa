@@ -117,10 +117,10 @@ fi
 
 # --enable-fast
 AC_ARG_ENABLE([fast],AS_HELP_STRING([--enable-fast=O<opt>],[adds -O<opt> to CFLAGS]),,[enable_fast=yes])
-if test "${enable_fast}" = "yes" ; then
-    PAC_APPEND_FLAG([-O2],[CFLAGS])
-elif test "${enable_fast}" != "no" ; then
+if test "`echo ${enable_fast} | cut -c1`" = "O" ; then
     PAC_APPEND_FLAG([-${enable_fast}],[CFLAGS])
+elif test "${enable_fast}" != "no" ; then
+    PAC_APPEND_FLAG([-O2],[CFLAGS])
 fi
 
 
