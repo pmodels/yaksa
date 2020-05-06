@@ -9,38 +9,36 @@
 #include <string.h>
 #include <stdlib.h>
 
-static int unflatten(yaksi_type_s ** type, const void *flattened_type)
+static inline int unflatten(yaksi_type_s ** type, const void *flattened_type)
 {
     int rc = YAKSA_SUCCESS;
     yaksi_type_s *newtype;
     const char *flatbuf = (const char *) flattened_type;
 
-    rc = yaksi_type_alloc(&newtype);
-    YAKSU_ERR_CHECK(rc, fn_fail);
+    if (((yaksi_type_s *) flattened_type)->kind == YAKSI_TYPE_KIND__BUILTIN) {
+        int id = ((yaksi_type_s *) flattened_type)->id;
+        yaksi_type_s *tmp;
+        rc = yaksi_type_get(id, &tmp);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+        yaksu_atomic_incr(&tmp->refcount);
+        newtype = tmp;
+        goto setup_hooks;
+    } else {
+        rc = yaksi_type_alloc(&newtype);
+        YAKSU_ERR_CHECK(rc, fn_fail);
 
-    /* don't overwrite the local ID, but keep the original ID that we
-     * got over the flattened type */
-    unsigned int local_id, orig_id;
-    local_id = newtype->id;
-    memcpy(newtype, flatbuf, sizeof(yaksi_type_s));
-    flatbuf += sizeof(yaksi_type_s);
-    orig_id = newtype->id;
-    newtype->id = local_id;
-    yaksu_atomic_store(&newtype->refcount, 1);
+        /* don't overwrite the local ID with the unflattened type ID,
+         * which potentially belongs to a different process or a
+         * different type. */
+        unsigned int local_id;
+        local_id = newtype->id;
+        memcpy(newtype, flatbuf, sizeof(yaksi_type_s));
+        flatbuf += sizeof(yaksi_type_s);
+        newtype->id = local_id;
+        yaksu_atomic_store(&newtype->refcount, 1);
+    }
 
     switch (newtype->kind) {
-        case YAKSI_TYPE_KIND__BUILTIN:
-            {
-                /* replace newtype with the actual builtin type */
-                yaksi_type_s *tmp;
-                rc = yaksi_type_get(orig_id, &tmp);
-                YAKSU_ERR_CHECK(rc, fn_fail);
-                yaksu_atomic_incr(&tmp->refcount);
-                yaksi_type_free(newtype);
-                newtype = tmp;
-            }
-            break;
-
         case YAKSI_TYPE_KIND__CONTIG:
             rc = unflatten(&newtype->u.contig.child, flatbuf);
             YAKSU_ERR_CHECK(rc, fn_fail);
@@ -125,6 +123,7 @@ static int unflatten(yaksi_type_s ** type, const void *flattened_type)
             assert(0);
     }
 
+  setup_hooks:
     yaksur_type_create_hook(newtype);
     *type = newtype;
 

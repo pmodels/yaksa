@@ -14,6 +14,20 @@ int yaksi_create_hindexed(int count, const int *array_of_blocklengths,
 {
     int rc = YAKSA_SUCCESS;
 
+    /* shortcut for hindexed_block types */
+    bool is_hindexed_block = true;
+    for (int i = 1; i < count; i++) {
+        if (array_of_blocklengths[i] != array_of_blocklengths[i - 1])
+            is_hindexed_block = false;
+    }
+    if (is_hindexed_block) {
+        rc = yaksi_create_hindexed_block(count, array_of_blocklengths[0], array_of_displs, intype,
+                                         newtype);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+        goto fn_exit;
+    }
+
+    /* regular hindexed type */
     yaksi_type_s *outtype;
     rc = yaksi_type_alloc(&outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
