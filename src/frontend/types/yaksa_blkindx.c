@@ -13,6 +13,27 @@ int yaksi_create_hindexed_block(int count, int blocklength, const intptr_t * arr
 {
     int rc = YAKSA_SUCCESS;
 
+    /* shortcut for vector types */
+    bool is_hvector = true;
+    if (array_of_displs[0])
+        is_hvector = false;
+    for (int i = 2; i < count; i++) {
+        if (array_of_displs[i] - array_of_displs[i - 1] != array_of_displs[1] - array_of_displs[0])
+            is_hvector = false;
+    }
+    if (is_hvector) {
+        if (count > 1) {
+            rc = yaksi_create_hvector(count, blocklength, array_of_displs[1] - array_of_displs[0],
+                                      intype, newtype);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+        } else {
+            rc = yaksi_create_hvector(count, blocklength, 0, intype, newtype);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+        }
+        goto fn_exit;
+    }
+
+    /* regular hindexed type */
     yaksi_type_s *outtype;
     rc = yaksi_type_alloc(&outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);

@@ -14,6 +14,20 @@ int yaksi_create_struct(int count, const int *array_of_blocklengths,
 {
     int rc = YAKSA_SUCCESS;
 
+    /* shortcut for hindexed types */
+    bool is_hindexed = true;
+    for (int i = 1; i < count; i++) {
+        if (array_of_intypes[i]->id != array_of_intypes[i - 1]->id)
+            is_hindexed = false;
+    }
+    if (is_hindexed) {
+        rc = yaksi_create_hindexed(count, array_of_blocklengths, array_of_displs,
+                                   array_of_intypes[0], newtype);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+        goto fn_exit;
+    }
+
+    /* regular struct type */
     yaksi_type_s *outtype;
     rc = yaksi_type_alloc(&outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
