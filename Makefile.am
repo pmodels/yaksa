@@ -19,12 +19,17 @@ noinst_PROGRAMS =
 nodist_noinst_SCRIPTS =
 dist_noinst_SCRIPTS = autogen.sh
 
+if EMBEDDED_BUILD
+noinst_LTLIBRARIES = libyaksa.la
+else
 lib_LTLIBRARIES = libyaksa.la
+endif !EMBEDDED_BUILD
+
 libyaksa_la_SOURCES =
 AM_CPPFLAGS =
 
 if EMBEDDED_BUILD
-libyaksa_la_LDFLAGS =
+libyaksa_la_LDFLAGS = -avoid-version
 else
 libyaksa_la_LDFLAGS = -version-info @libyaksa_so_version@
 endif !EMBEDDED_BUILD
