@@ -29,14 +29,14 @@ int main()
     uintptr_t actual_pack_bytes;
 
     rc = yaksa_ipack(input_matrix, 1, hvector, 0, pack_buf, ROWS * sizeof(int), &actual_pack_bytes,
-                     &request);
+                     NULL, &request);
     assert(rc == YAKSA_SUCCESS);
     rc = yaksa_request_wait(request);
     assert(rc == YAKSA_SUCCESS);
 
     uintptr_t actual_unpack_bytes;
     rc = yaksa_iunpack(pack_buf, ROWS * sizeof(int), unpack_buf, 1, hvector, 0,
-                       &actual_unpack_bytes, &request);
+                       &actual_unpack_bytes, NULL, &request);
     assert(rc == YAKSA_SUCCESS);
     rc = yaksa_request_wait(request);
     assert(rc == YAKSA_SUCCESS);
@@ -48,13 +48,13 @@ int main()
 
     /* pack second column */
     rc = yaksa_ipack(input_matrix + 1, 1, hvector, 0, pack_buf, ROWS * sizeof(int),
-                     &actual_pack_bytes, &request);
+                     &actual_pack_bytes, NULL, &request);
     assert(rc == YAKSA_SUCCESS);
     rc = yaksa_request_wait(request);
     assert(rc == YAKSA_SUCCESS);
 
     rc = yaksa_iunpack(pack_buf, ROWS * sizeof(int), unpack_buf + 1, 1, hvector, 0,
-                       &actual_unpack_bytes, &request);
+                       &actual_unpack_bytes, NULL, &request);
     assert(rc == YAKSA_SUCCESS);
     rc = yaksa_request_wait(request);
     assert(rc == YAKSA_SUCCESS);
@@ -74,12 +74,14 @@ int main()
     set_matrix(pack_buf, ROWS, COLS, 0);
     set_matrix(unpack_buf, ROWS, COLS, 0);
 
-    rc = yaksa_ipack(input_matrix, 1, hvector, 0, pack_buf, 256, &actual_pack_bytes, &request);
+    rc = yaksa_ipack(input_matrix, 1, hvector, 0, pack_buf, 256, &actual_pack_bytes,
+                     NULL, &request);
     assert(rc == YAKSA_SUCCESS);
     rc = yaksa_request_wait(request);
     assert(rc == YAKSA_SUCCESS);
 
-    rc = yaksa_iunpack(pack_buf, 256, unpack_buf, 1, hvector, 0, &actual_unpack_bytes, &request);
+    rc = yaksa_iunpack(pack_buf, 256, unpack_buf, 1, hvector, 0, &actual_unpack_bytes,
+                       NULL, &request);
     assert(rc == YAKSA_SUCCESS);
     rc = yaksa_request_wait(request);
     assert(rc == YAKSA_SUCCESS);

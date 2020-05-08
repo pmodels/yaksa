@@ -50,7 +50,7 @@ static int get_ptr_attr(const void *buf, yaksur_ptr_attr_s * ptrattr, yaksuri_gp
  */
 
 int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                 yaksi_request_s * request)
+                 yaksi_info_s * info, yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
     yaksur_ptr_attr_s inattr, outattr;
@@ -86,7 +86,7 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
         if (!is_supported) {
             rc = YAKSA_ERR__NOT_SUPPORTED;
         } else {
-            rc = yaksuri_seq_ipack(inbuf, outbuf, count, type);
+            rc = yaksuri_seq_ipack(inbuf, outbuf, count, info, type);
             YAKSU_ERR_CHECK(rc, fn_fail);
         }
         goto fn_exit;
@@ -112,7 +112,7 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
         /* gpu-to-gpu copies do not need temporary buffers */
         bool first_event = !request_backend->event;
         rc = yaksuri_global.gpudriver[id].info->ipack(inbuf, outbuf, count, type, NULL,
-                                                      inattr.device, &request_backend->event);
+                                                      inattr.device, info, &request_backend->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (first_event) {
@@ -131,7 +131,7 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
          * and the type is contiguous */
         bool first_event = !request_backend->event;
         rc = yaksuri_global.gpudriver[id].info->ipack(inbuf, outbuf, count, type, NULL,
-                                                      inattr.device, &request_backend->event);
+                                                      inattr.device, info, &request_backend->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (first_event) {
@@ -150,7 +150,8 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
          * and the type is contiguous */
         bool first_event = !request_backend->event;
         rc = yaksuri_global.gpudriver[id].info->ipack(inbuf, outbuf, count, type, NULL,
-                                                      outattr.device, &request_backend->event);
+                                                      outattr.device, info,
+                                                      &request_backend->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (first_event) {
@@ -168,7 +169,7 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
         request_backend->kind = YAKSURI_REQUEST_KIND__STAGED;
 
         rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, request,
-                                      inattr, outattr, YAKSURI_PUPTYPE__PACK);
+                                      inattr, outattr, YAKSURI_PUPTYPE__PACK, info);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         rc = yaksuri_progress_poke();
@@ -182,7 +183,7 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
 }
 
 int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                   yaksi_request_s * request)
+                   yaksi_info_s * info, yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
     yaksur_ptr_attr_s inattr, outattr;
@@ -218,7 +219,7 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
         if (!is_supported) {
             rc = YAKSA_ERR__NOT_SUPPORTED;
         } else {
-            rc = yaksuri_seq_iunpack(inbuf, outbuf, count, type);
+            rc = yaksuri_seq_iunpack(inbuf, outbuf, count, info, type);
             YAKSU_ERR_CHECK(rc, fn_fail);
         }
         goto fn_exit;
@@ -244,7 +245,8 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
         /* gpu-to-gpu copies do not need temporary buffers */
         bool first_event = !request_backend->event;
         rc = yaksuri_global.gpudriver[id].info->iunpack(inbuf, outbuf, count, type, NULL,
-                                                        inattr.device, &request_backend->event);
+                                                        inattr.device, info,
+                                                        &request_backend->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (first_event) {
@@ -263,7 +265,8 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
          * and the type is contiguous */
         bool first_event = !request_backend->event;
         rc = yaksuri_global.gpudriver[id].info->iunpack(inbuf, outbuf, count, type, NULL,
-                                                        inattr.device, &request_backend->event);
+                                                        inattr.device, info,
+                                                        &request_backend->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (first_event) {
@@ -282,7 +285,8 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
          * and the type is contiguous */
         bool first_event = !request_backend->event;
         rc = yaksuri_global.gpudriver[id].info->iunpack(inbuf, outbuf, count, type, NULL,
-                                                        outattr.device, &request_backend->event);
+                                                        outattr.device, info,
+                                                        &request_backend->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (first_event) {
@@ -300,7 +304,7 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
         request_backend->kind = YAKSURI_REQUEST_KIND__STAGED;
 
         rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, request,
-                                      inattr, outattr, YAKSURI_PUPTYPE__UNPACK);
+                                      inattr, outattr, YAKSURI_PUPTYPE__UNPACK, info);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         rc = yaksuri_progress_poke();

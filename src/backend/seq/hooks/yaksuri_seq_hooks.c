@@ -41,3 +41,19 @@ int yaksuri_seq_type_free_hook(yaksi_type_s * type)
 
     return rc;
 }
+
+int yaksuri_seq_info_create_hook(yaksi_info_s * info)
+{
+    return YAKSA_SUCCESS;
+}
+
+int yaksuri_seq_info_free_hook(yaksi_info_s * info)
+{
+    return YAKSA_SUCCESS;
+}
+
+int yaksuri_seq_info_keyval_append(yaksi_info_s * info, const char *key, const void *val,
+                                   unsigned int vallen)
+{
+    return YAKSA_SUCCESS;
+}

@@ -24,6 +24,7 @@ typedef struct {
 } yaksur_ptr_attr_s;
 
 struct yaksi_type_s;
+struct yaksi_info_s;
 
 typedef struct yaksur_type_s {
     void *priv;
@@ -35,6 +36,11 @@ typedef struct {
     void *priv;
 } yaksur_request_s;
 
+typedef struct {
+    yaksuri_seq_info_s seq;
+    yaksuri_cuda_info_s cuda;
+} yaksur_info_s;
+
 typedef struct yaksur_gpudriver_info_s {
     /* miscellaneous */
     int (*get_num_devices) (int *ndevices);
@@ -43,9 +49,10 @@ typedef struct yaksur_gpudriver_info_s {
 
     /* pup functions */
     int (*ipack) (const void *inbuf, void *outbuf, uintptr_t count,
-                  struct yaksi_type_s * type, void *device_tmpbuf, int device, void **event);
+                  struct yaksi_type_s * type, void *device_tmpbuf, int device,
+                  struct yaksi_info_s * info, void **event);
     int (*iunpack) (const void *inbuf, void *outbuf, uintptr_t count, struct yaksi_type_s * type,
-                    void *device_tmpbuf, int device, void **event);
+                    void *device_tmpbuf, int device, struct yaksi_info_s * info, void **event);
     int (*pup_is_supported) (struct yaksi_type_s * type, bool * is_supported);
 
     /* memory management */
@@ -64,6 +71,12 @@ typedef struct yaksur_gpudriver_info_s {
     /* types */
     int (*type_create) (struct yaksi_type_s * type);
     int (*type_free) (struct yaksi_type_s * type);
+
+    /* info */
+    int (*info_create) (struct yaksi_info_s * info);
+    int (*info_free) (struct yaksi_info_s * info);
+    int (*info_keyval_append) (struct yaksi_info_s * info, const char *key, const void *val,
+                               unsigned int vallen);
 } yaksur_gpudriver_info_s;
 
 #endif /* YAKSUR_PRE_H_INCLUDED */

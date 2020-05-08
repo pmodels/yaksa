@@ -11,7 +11,7 @@
 
 int yaksa_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t outcount,
                   yaksa_type_t type, uintptr_t outoffset, uintptr_t * actual_unpack_bytes,
-                  yaksa_request_t * request)
+                  yaksa_info_t info, yaksa_request_t * request)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -37,8 +37,9 @@ int yaksa_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t o
     rc = yaksi_request_create(&yaksi_request);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
+    yaksi_info_s *yaksi_info = (yaksi_info_s *) info;
     rc = yaksi_iunpack(inbuf, insize, outbuf, outcount, yaksi_type, outoffset, actual_unpack_bytes,
-                       yaksi_request);
+                       yaksi_info, yaksi_request);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     int cc = yaksu_atomic_load(&yaksi_request->cc);
