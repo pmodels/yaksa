@@ -161,15 +161,15 @@ int DTPI_parse_base_type_str(DTP_pool_s * dtp, const char *str)
 
     for (i = 0; i < num_types; i++) {
         uintptr_t size;
-        rc = yaksa_get_size(array_of_types[i], &size);
+        rc = yaksa_type_get_size(array_of_types[i], &size);
         DTPI_ERR_CHK_RC(rc);
 
         array_of_displs[i] = displ;
         displ += (array_of_blklens[i] * size);
     }
 
-    rc = yaksa_create_struct(num_types, array_of_blklens, array_of_displs, array_of_types,
-                             &dtp->DTP_base_type);
+    rc = yaksa_type_create_struct(num_types, array_of_blklens, array_of_displs, array_of_types,
+                                  &dtp->DTP_base_type);
     DTPI_ERR_CHK_RC(rc);
 
     dtpi->base_type_is_struct = 1;
@@ -179,7 +179,7 @@ int DTPI_parse_base_type_str(DTP_pool_s * dtp, const char *str)
     dtpi->base_type_attrs.array_of_types = array_of_types;
 
   fn_exit:
-    yaksa_get_extent(dtp->DTP_base_type, &lb, &dtpi->base_type_extent);
+    yaksa_type_get_extent(dtp->DTP_base_type, &lb, &dtpi->base_type_extent);
     for (i = 0; i < num_types; i++) {
         DTPI_FREE(typestr[i]);
         DTPI_FREE(countstr[i]);

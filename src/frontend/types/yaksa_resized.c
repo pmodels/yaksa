@@ -8,8 +8,8 @@
 #include <stdlib.h>
 #include <assert.h>
 
-int yaksi_create_resized(yaksi_type_s * intype, intptr_t lb, uintptr_t extent,
-                         yaksi_type_s ** newtype)
+int yaksi_type_create_resized(yaksi_type_s * intype, intptr_t lb, uintptr_t extent,
+                              yaksi_type_s ** newtype)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -50,8 +50,8 @@ int yaksi_create_resized(yaksi_type_s * intype, intptr_t lb, uintptr_t extent,
     goto fn_exit;
 }
 
-int yaksa_create_resized(yaksa_type_t oldtype, intptr_t lb, uintptr_t extent,
-                         yaksa_type_t * newtype)
+int yaksa_type_create_resized(yaksa_type_t oldtype, intptr_t lb, uintptr_t extent,
+                              yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -62,7 +62,7 @@ int yaksa_create_resized(yaksa_type_t oldtype, intptr_t lb, uintptr_t extent,
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     yaksi_type_s *outtype;
-    rc = yaksi_create_resized(intype, lb, extent, &outtype);
+    rc = yaksi_type_create_resized(intype, lb, extent, &outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     *newtype = outtype->id;

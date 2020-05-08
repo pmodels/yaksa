@@ -28,8 +28,8 @@ int main()
     set_matrix(pack_buf, ROWS, COLS, 0);
     set_matrix(unpack_buf, ROWS, COLS, 0);
 
-    rc = yaksa_create_subarray(ndims, array_of_sizes, array_of_subsizes,
-                               array_of_starts, order, YAKSA_TYPE__INT, &subarray);
+    rc = yaksa_type_create_subarray(ndims, array_of_sizes, array_of_subsizes,
+                                    array_of_starts, order, YAKSA_TYPE__INT, &subarray);
     assert(rc == YAKSA_SUCCESS);
 
     yaksa_request_t request;
@@ -50,7 +50,7 @@ int main()
     print_matrix(input_matrix, 8, 8, "input_matrix=");
     print_matrix(unpack_buf, 8, 8, "unpack_buf=");
 
-    yaksa_free(subarray);
+    yaksa_type_free(subarray);
     yaksa_finalize();
     return 0;
 }

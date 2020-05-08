@@ -62,7 +62,7 @@ int DTP_pool_free(DTP_pool_s dtp)
     DTPI_ERR_ARG_CHECK(!dtpi, rc);
 
     if (dtpi->base_type_is_struct) {
-        rc = yaksa_free(dtp.DTP_base_type);
+        rc = yaksa_type_free(dtp.DTP_base_type);
         DTPI_ERR_CHK_RC(rc);
 
         DTPI_FREE(dtpi->base_type_attrs.array_of_blklens);
@@ -129,10 +129,10 @@ int DTP_obj_create(DTP_pool_s dtp, DTP_obj_s * obj, uintptr_t maxbufsize)
         intptr_t lb;
         uintptr_t extent;
 
-        rc = yaksa_get_true_extent(obj->DTP_datatype, &true_lb, &true_extent);
+        rc = yaksa_type_get_true_extent(obj->DTP_datatype, &true_lb, &true_extent);
         DTPI_ERR_CHK_RC(rc);
 
-        rc = yaksa_get_extent(obj->DTP_datatype, &lb, &extent);
+        rc = yaksa_type_get_extent(obj->DTP_datatype, &lb, &extent);
         DTPI_ERR_CHK_RC(rc);
 
         obj->DTP_bufsize = (extent * obj->DTP_type_count) + true_extent - extent;
@@ -191,7 +191,7 @@ int DTP_obj_free(DTP_obj_s obj)
     DTPI_FUNC_ENTER();
 
     if (obj_priv->dtp.DTP_base_type != obj.DTP_datatype) {
-        rc = yaksa_free(obj.DTP_datatype);
+        rc = yaksa_type_free(obj.DTP_datatype);
         DTPI_ERR_CHK_RC(rc);
     }
 
@@ -226,7 +226,7 @@ int DTP_obj_buf_init(DTP_obj_s obj, void *buf, int val_start, int val_stride, ui
 
     DTPI_FUNC_ENTER();
 
-    yaksa_get_extent(obj.DTP_datatype, &lb, &extent);
+    yaksa_type_get_extent(obj.DTP_datatype, &lb, &extent);
     for (int i = 0; i < obj.DTP_type_count; i++) {
         rc = DTPI_init_verify(obj_priv->dtp, obj, buf, obj_priv->attr_tree,
                               obj.DTP_buf_offset + i * extent, &val, val_stride, &rem_val_count, 0);
@@ -260,7 +260,7 @@ int DTP_obj_buf_check(DTP_obj_s obj, void *buf, int val_start, int val_stride, u
 
     DTPI_FUNC_ENTER();
 
-    yaksa_get_extent(obj.DTP_datatype, &lb, &extent);
+    yaksa_type_get_extent(obj.DTP_datatype, &lb, &extent);
     for (int i = 0; i < obj.DTP_type_count; i++) {
         rc = DTPI_init_verify(obj_priv->dtp, obj, buf, obj_priv->attr_tree,
                               obj.DTP_buf_offset + i * extent, &val, val_stride, &rem_val_count, 1);

@@ -8,9 +8,9 @@
 #include <stdlib.h>
 #include <assert.h>
 
-int yaksi_create_subarray(int ndims, const int *array_of_sizes, const int *array_of_subsizes,
-                          const int *array_of_starts, yaksa_subarray_order_e order,
-                          yaksi_type_s * intype, yaksi_type_s ** newtype)
+int yaksi_type_create_subarray(int ndims, const int *array_of_sizes, const int *array_of_subsizes,
+                               const int *array_of_starts, yaksa_subarray_order_e order,
+                               yaksi_type_s * intype, yaksi_type_s ** newtype)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -36,29 +36,29 @@ int yaksi_create_subarray(int ndims, const int *array_of_sizes, const int *array
 
     yaksi_type_s *current, *next;
     if (order == YAKSA_SUBARRAY_ORDER__C) {
-        rc = yaksi_create_contig(array_of_subsizes[ndims - 1], intype, &current);
+        rc = yaksi_type_create_contig(array_of_subsizes[ndims - 1], intype, &current);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         for (int i = ndims - 2; i >= 0; i--) {
             stride *= array_of_sizes[i + 1];
-            rc = yaksi_create_hvector(array_of_subsizes[i], 1, stride, current, &next);
+            rc = yaksi_type_create_hvector(array_of_subsizes[i], 1, stride, current, &next);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
-            rc = yaksi_free(current);
+            rc = yaksi_type_free(current);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             current = next;
         }
     } else {
-        rc = yaksi_create_contig(array_of_subsizes[0], intype, &current);
+        rc = yaksi_type_create_contig(array_of_subsizes[0], intype, &current);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         for (int i = 1; i < ndims; i++) {
             stride *= array_of_sizes[i - 1];
-            rc = yaksi_create_hvector(array_of_subsizes[i], 1, stride, current, &next);
+            rc = yaksi_type_create_hvector(array_of_subsizes[i], 1, stride, current, &next);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
-            rc = yaksi_free(current);
+            rc = yaksi_type_free(current);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             current = next;
@@ -69,10 +69,10 @@ int yaksi_create_subarray(int ndims, const int *array_of_sizes, const int *array
     for (int i = 0; i < ndims; i++)
         extent *= array_of_sizes[i];
 
-    rc = yaksi_create_resized(current, 0, extent, &next);
+    rc = yaksi_type_create_resized(current, 0, extent, &next);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    rc = yaksi_free(current);
+    rc = yaksi_type_free(current);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     outtype->u.subarray.primary = next;
@@ -133,9 +133,9 @@ int yaksi_create_subarray(int ndims, const int *array_of_sizes, const int *array
     goto fn_exit;
 }
 
-int yaksa_create_subarray(int ndims, const int *array_of_sizes, const int *array_of_subsizes,
-                          const int *array_of_starts, yaksa_subarray_order_e order,
-                          yaksa_type_t oldtype, yaksa_type_t * newtype)
+int yaksa_type_create_subarray(int ndims, const int *array_of_sizes, const int *array_of_subsizes,
+                               const int *array_of_starts, yaksa_subarray_order_e order,
+                               yaksa_type_t oldtype, yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -151,8 +151,8 @@ int yaksa_create_subarray(int ndims, const int *array_of_sizes, const int *array
     }
 
     yaksi_type_s *outtype;
-    rc = yaksi_create_subarray(ndims, array_of_sizes, array_of_subsizes, array_of_starts, order,
-                               intype, &outtype);
+    rc = yaksi_type_create_subarray(ndims, array_of_sizes, array_of_subsizes, array_of_starts,
+                                    order, intype, &outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     *newtype = outtype->id;

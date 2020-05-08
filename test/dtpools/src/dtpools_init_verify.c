@@ -207,7 +207,7 @@ static int init_verify_base_type(DTP_pool_s dtp, DTP_obj_s obj, void *buf_,
                 DTPI_ERR_CHK_RC(rc);
 
                 uintptr_t size;
-                rc = yaksa_get_size(dtpi->base_type_attrs.array_of_types[i], &size);
+                rc = yaksa_type_get_size(dtpi->base_type_attrs.array_of_types[i], &size);
                 DTPI_ERR_CHK_RC(rc);
                 offset += size;
                 val += val_stride;

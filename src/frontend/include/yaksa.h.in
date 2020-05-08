@@ -181,8 +181,8 @@ int yaksa_finalize(void);
  * \param[in]  oldtype      Base datatype forming each element in the vector
  * \param[out] newtype      Final generated type
  */
-int yaksa_create_vector(int count, int blocklength, int stride, yaksa_type_t oldtype,
-                        yaksa_type_t * newtype);
+int yaksa_type_create_vector(int count, int blocklength, int stride, yaksa_type_t oldtype,
+                             yaksa_type_t * newtype);
 
 /*!
  * \brief creates a hvector layout
@@ -194,8 +194,8 @@ int yaksa_create_vector(int count, int blocklength, int stride, yaksa_type_t old
  * \param[in]  oldtype      Base datatype forming each element in the vector
  * \param[out] newtype      Final generated type
  */
-int yaksa_create_hvector(int count, int blocklength, intptr_t stride, yaksa_type_t oldtype,
-                         yaksa_type_t * newtype);
+int yaksa_type_create_hvector(int count, int blocklength, intptr_t stride, yaksa_type_t oldtype,
+                              yaksa_type_t * newtype);
 
 /*!
  * \brief creates a contig layout
@@ -204,7 +204,7 @@ int yaksa_create_hvector(int count, int blocklength, intptr_t stride, yaksa_type
  * \param[in]  oldtype      Base datatype forming each element in the contig
  * \param[out] newtype      Final generated type
  */
-int yaksa_create_contig(int count, yaksa_type_t oldtype, yaksa_type_t * newtype);
+int yaksa_type_create_contig(int count, yaksa_type_t oldtype, yaksa_type_t * newtype);
 
 /*!
  * \brief creates a copy of the oldtype
@@ -212,7 +212,7 @@ int yaksa_create_contig(int count, yaksa_type_t oldtype, yaksa_type_t * newtype)
  * \param[in]  oldtype      Base datatype being dup'ed
  * \param[out] newtype      Final generated type
  */
-int yaksa_create_dup(yaksa_type_t oldtype, yaksa_type_t * newtype);
+int yaksa_type_create_dup(yaksa_type_t oldtype, yaksa_type_t * newtype);
 
 /*!
  * \brief creates a block-indexed layout
@@ -224,8 +224,8 @@ int yaksa_create_dup(yaksa_type_t oldtype, yaksa_type_t * newtype);
  * \param[in]  oldtype                Base datatype forming each element in the new type
  * \param[out] newtype                Final generated type
  */
-int yaksa_create_indexed_block(int count, int blocklength, const int *array_of_displacements,
-                               yaksa_type_t oldtype, yaksa_type_t * newtype);
+int yaksa_type_create_indexed_block(int count, int blocklength, const int *array_of_displacements,
+                                    yaksa_type_t oldtype, yaksa_type_t * newtype);
 
 /*!
  * \brief creates a block-hindexed layout
@@ -237,8 +237,9 @@ int yaksa_create_indexed_block(int count, int blocklength, const int *array_of_d
  * \param[in]  oldtype                Base datatype forming each element in the new type
  * \param[out] newtype                Final generated type
  */
-int yaksa_create_hindexed_block(int count, int blocklength, const intptr_t * array_of_displacements,
-                                yaksa_type_t oldtype, yaksa_type_t * newtype);
+int yaksa_type_create_hindexed_block(int count, int blocklength,
+                                     const intptr_t * array_of_displacements, yaksa_type_t oldtype,
+                                     yaksa_type_t * newtype);
 
 /*!
  * \brief creates a indexed layout
@@ -250,9 +251,9 @@ int yaksa_create_hindexed_block(int count, int blocklength, const intptr_t * arr
  * \param[in]  oldtype                Base datatype forming each element in the new type
  * \param[out] newtype                Final generated type
  */
-int yaksa_create_indexed(int count, const int *array_of_blocklengths,
-                         const int *array_of_displacements, yaksa_type_t oldtype,
-                         yaksa_type_t * newtype);
+int yaksa_type_create_indexed(int count, const int *array_of_blocklengths,
+                              const int *array_of_displacements, yaksa_type_t oldtype,
+                              yaksa_type_t * newtype);
 
 /*!
  * \brief creates a hindexed layout
@@ -264,9 +265,9 @@ int yaksa_create_indexed(int count, const int *array_of_blocklengths,
  * \param[in]  oldtype                Base datatype forming each element in the new type
  * \param[out] newtype                Final generated type
  */
-int yaksa_create_hindexed(int count, const int *array_of_blocklengths,
-                          const intptr_t * array_of_displacements, yaksa_type_t oldtype,
-                          yaksa_type_t * newtype);
+int yaksa_type_create_hindexed(int count, const int *array_of_blocklengths,
+                               const intptr_t * array_of_displacements, yaksa_type_t oldtype,
+                               yaksa_type_t * newtype);
 
 /*!
  * \brief creates a resized layout with updated lower and extent
@@ -276,8 +277,8 @@ int yaksa_create_hindexed(int count, const int *array_of_blocklengths,
  * \param[in]  extent                 New extent to use
  * \param[out] newtype                Final generated type
  */
-int yaksa_create_resized(yaksa_type_t oldtype, intptr_t lb, uintptr_t extent,
-                         yaksa_type_t * newtype);
+int yaksa_type_create_resized(yaksa_type_t oldtype, intptr_t lb, uintptr_t extent,
+                              yaksa_type_t * newtype);
 
 /*!
  * \brief creates a struct layout
@@ -289,9 +290,9 @@ int yaksa_create_resized(yaksa_type_t oldtype, intptr_t lb, uintptr_t extent,
  * \param[in]  array_of_types         Array of base datatype forming each element in the new type
  * \param[out] newtype                Final generated type
  */
-int yaksa_create_struct(int count, const int *array_of_blocklengths,
-                        const intptr_t * array_of_displacements,
-                        const yaksa_type_t * array_of_types, yaksa_type_t * newtype);
+int yaksa_type_create_struct(int count, const int *array_of_blocklengths,
+                             const intptr_t * array_of_displacements,
+                             const yaksa_type_t * array_of_types, yaksa_type_t * newtype);
 
 /*!
  * \brief creates a subarray layout
@@ -304,9 +305,9 @@ int yaksa_create_struct(int count, const int *array_of_blocklengths,
  * \param[in]  oldtype                Base datatype forming each element in the new type
  * \param[out] newtype                Final generated type
  */
-int yaksa_create_subarray(int ndims, const int *array_of_sizes, const int *array_of_subsizes,
-                          const int *array_of_starts, yaksa_subarray_order_e order,
-                          yaksa_type_t oldtype, yaksa_type_t * newtype);
+int yaksa_type_create_subarray(int ndims, const int *array_of_sizes, const int *array_of_subsizes,
+                               const int *array_of_starts, yaksa_subarray_order_e order,
+                               yaksa_type_t oldtype, yaksa_type_t * newtype);
 
 /*!
  * \brief gets the size of (number of bytes in) the datatype
@@ -314,7 +315,7 @@ int yaksa_create_subarray(int ndims, const int *array_of_sizes, const int *array
  * \param[in]  type         The datatype whose size is being requested
  * \param[out] size         The size of the datatype
  */
-int yaksa_get_size(yaksa_type_t type, uintptr_t * size);
+int yaksa_type_get_size(yaksa_type_t type, uintptr_t * size);
 
 /*!
  * \brief gets the true extent (true span) of the datatype
@@ -329,7 +330,7 @@ int yaksa_get_size(yaksa_type_t type, uintptr_t * size);
  *                          which can be larger than the size of the
  *                          datatype, if the layout is noncontiguous)
  */
-int yaksa_get_true_extent(yaksa_type_t type, intptr_t * lb, uintptr_t * extent);
+int yaksa_type_get_true_extent(yaksa_type_t type, intptr_t * lb, uintptr_t * extent);
 
 /*!
  * \brief gets the extent (span) of the datatype
@@ -346,14 +347,14 @@ int yaksa_get_true_extent(yaksa_type_t type, intptr_t * lb, uintptr_t * extent);
  *                          values were modified by creating a resized
  *                          datatype)
  */
-int yaksa_get_extent(yaksa_type_t type, intptr_t * lb, uintptr_t * extent);
+int yaksa_type_get_extent(yaksa_type_t type, intptr_t * lb, uintptr_t * extent);
 
 /*!
  * \brief frees the datatype
  *
  * \param[in]  type         The datatype being freed
  */
-int yaksa_free(yaksa_type_t type);
+int yaksa_type_free(yaksa_type_t type);
 
 /*!
  * \brief packs the data represented by the (incount, type) tuple into a contiguous buffer

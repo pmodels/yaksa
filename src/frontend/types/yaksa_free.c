@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-int yaksi_free(yaksi_type_s * type)
+int yaksi_type_free(yaksi_type_s * type)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -25,33 +25,33 @@ int yaksi_free(yaksi_type_s * type)
     /* free the child types */
     switch (type->kind) {
         case YAKSI_TYPE_KIND__CONTIG:
-            rc = yaksi_free(type->u.contig.child);
+            rc = yaksi_type_free(type->u.contig.child);
             YAKSU_ERR_CHECK(rc, fn_fail);
             break;
 
         case YAKSI_TYPE_KIND__DUP:
-            rc = yaksi_free(type->u.dup.child);
+            rc = yaksi_type_free(type->u.dup.child);
             YAKSU_ERR_CHECK(rc, fn_fail);
             break;
 
         case YAKSI_TYPE_KIND__RESIZED:
-            rc = yaksi_free(type->u.resized.child);
+            rc = yaksi_type_free(type->u.resized.child);
             YAKSU_ERR_CHECK(rc, fn_fail);
             break;
 
         case YAKSI_TYPE_KIND__HVECTOR:
-            rc = yaksi_free(type->u.hvector.child);
+            rc = yaksi_type_free(type->u.hvector.child);
             YAKSU_ERR_CHECK(rc, fn_fail);
             break;
 
         case YAKSI_TYPE_KIND__BLKHINDX:
-            rc = yaksi_free(type->u.blkhindx.child);
+            rc = yaksi_type_free(type->u.blkhindx.child);
             YAKSU_ERR_CHECK(rc, fn_fail);
             free(type->u.blkhindx.array_of_displs);
             break;
 
         case YAKSI_TYPE_KIND__HINDEXED:
-            rc = yaksi_free(type->u.hindexed.child);
+            rc = yaksi_type_free(type->u.hindexed.child);
             YAKSU_ERR_CHECK(rc, fn_fail);
             free(type->u.hindexed.array_of_blocklengths);
             free(type->u.hindexed.array_of_displs);
@@ -59,7 +59,7 @@ int yaksi_free(yaksi_type_s * type)
 
         case YAKSI_TYPE_KIND__STRUCT:
             for (int i = 0; i < type->u.str.count; i++) {
-                rc = yaksi_free(type->u.str.array_of_types[i]);
+                rc = yaksi_type_free(type->u.str.array_of_types[i]);
                 YAKSU_ERR_CHECK(rc, fn_fail);
             }
             free(type->u.str.array_of_types);
@@ -68,7 +68,7 @@ int yaksi_free(yaksi_type_s * type)
             break;
 
         case YAKSI_TYPE_KIND__SUBARRAY:
-            rc = yaksi_free(type->u.subarray.primary);
+            rc = yaksi_type_free(type->u.subarray.primary);
             YAKSU_ERR_CHECK(rc, fn_fail);
             break;
 
@@ -76,7 +76,7 @@ int yaksi_free(yaksi_type_s * type)
             break;
     }
 
-    yaksi_type_free(type);
+    yaksi_type_dealloc(type);
 
   fn_exit:
     return rc;
@@ -84,7 +84,7 @@ int yaksi_free(yaksi_type_s * type)
     goto fn_exit;
 }
 
-int yaksa_free(yaksa_type_t type)
+int yaksa_type_free(yaksa_type_t type)
 {
     yaksi_type_s *yaksi_type;
     int rc = YAKSA_SUCCESS;
@@ -97,7 +97,7 @@ int yaksa_free(yaksa_type_t type)
     rc = yaksi_type_get(type, &yaksi_type);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    rc = yaksi_free(yaksi_type);
+    rc = yaksi_type_free(yaksi_type);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:

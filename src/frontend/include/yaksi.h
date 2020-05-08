@@ -175,24 +175,25 @@ typedef struct {
 
 
 /* function declarations come at the very end */
-int yaksi_create_hvector(int count, int blocklength, intptr_t stride, yaksi_type_s * intype,
-                         yaksi_type_s ** outtype);
-int yaksi_create_contig(int count, yaksi_type_s * intype, yaksi_type_s ** outtype);
-int yaksi_create_dup(yaksi_type_s * intype, yaksi_type_s ** outtype);
-int yaksi_create_hindexed(int count, const int *array_of_blocklengths,
-                          const intptr_t * array_of_displacements, yaksi_type_s * intype,
-                          yaksi_type_s ** outtype);
-int yaksi_create_hindexed_block(int count, int blocklength, const intptr_t * array_of_displacements,
-                                yaksi_type_s * intype, yaksi_type_s ** outtype);
-int yaksi_create_resized(yaksi_type_s * intype, intptr_t lb, uintptr_t extent,
-                         yaksi_type_s ** outtype);
-int yaksi_create_struct(int count, const int *array_of_blocklengths,
-                        const intptr_t * array_of_displacements, yaksi_type_s ** array_of_intypes,
-                        yaksi_type_s ** outtype);
-int yaksi_create_subarray(int ndims, const int *array_of_sizes, const int *array_of_subsizes,
-                          const int *array_of_starts, yaksa_subarray_order_e order,
-                          yaksi_type_s * intype, yaksi_type_s ** outtype);
-int yaksi_free(yaksi_type_s * type);
+int yaksi_type_create_hvector(int count, int blocklength, intptr_t stride, yaksi_type_s * intype,
+                              yaksi_type_s ** outtype);
+int yaksi_type_create_contig(int count, yaksi_type_s * intype, yaksi_type_s ** outtype);
+int yaksi_type_create_dup(yaksi_type_s * intype, yaksi_type_s ** outtype);
+int yaksi_type_create_hindexed(int count, const int *array_of_blocklengths,
+                               const intptr_t * array_of_displacements, yaksi_type_s * intype,
+                               yaksi_type_s ** outtype);
+int yaksi_type_create_hindexed_block(int count, int blocklength,
+                                     const intptr_t * array_of_displacements, yaksi_type_s * intype,
+                                     yaksi_type_s ** outtype);
+int yaksi_type_create_resized(yaksi_type_s * intype, intptr_t lb, uintptr_t extent,
+                              yaksi_type_s ** outtype);
+int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
+                             const intptr_t * array_of_displacements,
+                             yaksi_type_s ** array_of_intypes, yaksi_type_s ** outtype);
+int yaksi_type_create_subarray(int ndims, const int *array_of_sizes, const int *array_of_subsizes,
+                               const int *array_of_starts, yaksa_subarray_order_e order,
+                               yaksi_type_s * intype, yaksi_type_s ** outtype);
+int yaksi_type_free(yaksi_type_s * type);
 
 int yaksi_ipack(const void *inbuf, uintptr_t incount, yaksi_type_s * type, uintptr_t inoffset,
                 void *outbuf, uintptr_t max_pack_bytes, uintptr_t * actual_pack_bytes,
@@ -218,7 +219,7 @@ int yaksi_flatten_size(yaksi_type_s * type, uintptr_t * flattened_type_size);
 
 /* type pool */
 int yaksi_type_alloc(yaksi_type_s ** type);
-int yaksi_type_free(yaksi_type_s * type);
+int yaksi_type_dealloc(yaksi_type_s * type);
 int yaksi_type_get(yaksa_type_t type, yaksi_type_s ** yaksi_type);
 
 /* request pool */

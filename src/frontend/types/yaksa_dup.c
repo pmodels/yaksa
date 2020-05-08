@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-int yaksi_create_dup(yaksi_type_s * intype, yaksi_type_s ** newtype)
+int yaksi_type_create_dup(yaksi_type_s * intype, yaksi_type_s ** newtype)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -43,7 +43,7 @@ int yaksi_create_dup(yaksi_type_s * intype, yaksi_type_s ** newtype)
     goto fn_exit;
 }
 
-int yaksa_create_dup(yaksa_type_t oldtype, yaksa_type_t * newtype)
+int yaksa_type_create_dup(yaksa_type_t oldtype, yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -54,7 +54,7 @@ int yaksa_create_dup(yaksa_type_t oldtype, yaksa_type_t * newtype)
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     yaksi_type_s *outtype;
-    rc = yaksi_create_dup(intype, &outtype);
+    rc = yaksi_type_create_dup(intype, &outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     *newtype = outtype->id;

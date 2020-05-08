@@ -30,8 +30,8 @@ int main()
     set_matrix(pack_buf, ROWS, COLS, 0);
     set_matrix(unpack_buf, ROWS, COLS, 0);
 
-    rc = yaksa_create_hindexed(ROWS - 1, array_of_blocklengths, array_of_displacements,
-                               YAKSA_TYPE__INT, &hindexed);
+    rc = yaksa_type_create_hindexed(ROWS - 1, array_of_blocklengths, array_of_displacements,
+                                    YAKSA_TYPE__INT, &hindexed);
     assert(rc == YAKSA_SUCCESS);
 
     yaksa_request_t request;
@@ -53,7 +53,7 @@ int main()
     print_matrix(pack_buf, ROWS, COLS, "pack_buf=");
     print_matrix(unpack_buf, ROWS, COLS, "unpack_buf=");
 
-    yaksa_free(hindexed);
+    yaksa_type_free(hindexed);
     yaksa_finalize();
     return 0;
 }

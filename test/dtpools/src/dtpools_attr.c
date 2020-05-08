@@ -15,7 +15,7 @@
     do {                                                                \
         uintptr_t type_extent;                                          \
         intptr_t lb_;                                                   \
-        yaksa_get_extent(type, &lb_, &type_extent);                     \
+        yaksa_type_get_extent(type, &lb_, &type_extent);                     \
         if (type_extent != extent) {                                    \
             fprintf(stderr, "expected extent of %" PRIxPTR ", but got %" PRIxPTR "\n", extent, type_extent); \
             fflush(stderr);                                             \
@@ -37,7 +37,7 @@ static int construct_contig(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
     DTPI_ERR_CHK_RC(rc);
 
     intptr_t tmp_lb;
-    rc = yaksa_get_extent(type, &tmp_lb, &attr->child_type_extent);
+    rc = yaksa_type_get_extent(type, &tmp_lb, &attr->child_type_extent);
     DTPI_ERR_CHK_RC(rc);
 
     while (1) {
@@ -62,7 +62,7 @@ static int construct_contig(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
             break;
     }
 
-    rc = yaksa_create_contig(attr->u.contig.blklen, type, newtype);
+    rc = yaksa_type_create_contig(attr->u.contig.blklen, type, newtype);
     DTPI_ERR_CHK_RC(rc);
 
     confirm_extent(*newtype, extent);
@@ -70,7 +70,7 @@ static int construct_contig(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
   fn_exit:
     *new_count = count;
     if (attr_tree_depth > 1) {
-        rc = yaksa_free(type);
+        rc = yaksa_type_free(type);
         DTPI_ERR_CHK_RC(rc);
     }
     return rc;
@@ -91,16 +91,16 @@ static int construct_dup(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * attr
     DTPI_ERR_CHK_RC(rc);
 
     intptr_t tmp_lb;
-    rc = yaksa_get_extent(type, &tmp_lb, &attr->child_type_extent);
+    rc = yaksa_type_get_extent(type, &tmp_lb, &attr->child_type_extent);
     DTPI_ERR_CHK_RC(rc);
 
-    rc = yaksa_create_dup(type, newtype);
+    rc = yaksa_type_create_dup(type, newtype);
     DTPI_ERR_CHK_RC(rc);
 
   fn_exit:
     *new_count = count;
     if (attr_tree_depth > 1) {
-        rc = yaksa_free(type);
+        rc = yaksa_type_free(type);
         DTPI_ERR_CHK_RC(rc);
     }
     return rc;
@@ -123,12 +123,12 @@ static int construct_resized(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
     rc = DTPI_construct_datatype(dtp, attr_tree_depth - 1, &attr->child, &type, &count);
     DTPI_ERR_CHK_RC(rc);
 
-    rc = yaksa_get_extent(type, &lb, &attr->child_type_extent);
+    rc = yaksa_type_get_extent(type, &lb, &attr->child_type_extent);
     DTPI_ERR_CHK_RC(rc);
 
     extent = attr->child_type_extent;
 
-    rc = yaksa_get_true_extent(type, &true_lb, &true_extent);
+    rc = yaksa_type_get_true_extent(type, &true_lb, &true_extent);
     DTPI_ERR_CHK_RC(rc);
 
     int64_t e;
@@ -170,7 +170,7 @@ static int construct_resized(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
         break;
     }
 
-    rc = yaksa_create_resized(type, attr->u.resized.lb, attr->u.resized.extent, newtype);
+    rc = yaksa_type_create_resized(type, attr->u.resized.lb, attr->u.resized.extent, newtype);
     DTPI_ERR_CHK_RC(rc);
 
     confirm_extent(*newtype, attr->u.resized.extent);
@@ -178,7 +178,7 @@ static int construct_resized(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
   fn_exit:
     *new_count = count;
     if (attr_tree_depth > 1) {
-        rc = yaksa_free(type);
+        rc = yaksa_type_free(type);
         DTPI_ERR_CHK_RC(rc);
     }
     return rc;
@@ -201,7 +201,7 @@ static int construct_vector(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
     DTPI_ERR_CHK_RC(rc);
 
     intptr_t tmp_lb;
-    rc = yaksa_get_extent(type, &tmp_lb, &attr->child_type_extent);
+    rc = yaksa_type_get_extent(type, &tmp_lb, &attr->child_type_extent);
     DTPI_ERR_CHK_RC(rc);
 
     uintptr_t tmp_count = count;
@@ -277,8 +277,8 @@ static int construct_vector(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
             break;
     }
 
-    rc = yaksa_create_vector(attr->u.vector.numblks,
-                             attr->u.vector.blklen, attr->u.vector.stride, type, newtype);
+    rc = yaksa_type_create_vector(attr->u.vector.numblks,
+                                  attr->u.vector.blklen, attr->u.vector.stride, type, newtype);
     DTPI_ERR_CHK_RC(rc);
 
     confirm_extent(*newtype, extent);
@@ -286,7 +286,7 @@ static int construct_vector(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
   fn_exit:
     *new_count = count;
     if (attr_tree_depth > 1) {
-        rc = yaksa_free(type);
+        rc = yaksa_type_free(type);
         DTPI_ERR_CHK_RC(rc);
     }
     return rc;
@@ -309,7 +309,7 @@ static int construct_hvector(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
     DTPI_ERR_CHK_RC(rc);
 
     intptr_t tmp_lb;
-    rc = yaksa_get_extent(type, &tmp_lb, &attr->child_type_extent);
+    rc = yaksa_type_get_extent(type, &tmp_lb, &attr->child_type_extent);
     DTPI_ERR_CHK_RC(rc);
 
     uintptr_t tmp_count = count;
@@ -389,8 +389,8 @@ static int construct_hvector(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
             break;
     }
 
-    rc = yaksa_create_hvector(attr->u.hvector.numblks,
-                              attr->u.hvector.blklen, attr->u.hvector.stride, type, newtype);
+    rc = yaksa_type_create_hvector(attr->u.hvector.numblks,
+                                   attr->u.hvector.blklen, attr->u.hvector.stride, type, newtype);
     DTPI_ERR_CHK_RC(rc);
 
     confirm_extent(*newtype, extent);
@@ -398,7 +398,7 @@ static int construct_hvector(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
   fn_exit:
     *new_count = count;
     if (attr_tree_depth > 1) {
-        rc = yaksa_free(type);
+        rc = yaksa_type_free(type);
         DTPI_ERR_CHK_RC(rc);
     }
     return rc;
@@ -421,7 +421,7 @@ static int construct_blkindx(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
     DTPI_ERR_CHK_RC(rc);
 
     intptr_t tmp_lb;
-    rc = yaksa_get_extent(type, &tmp_lb, &attr->child_type_extent);
+    rc = yaksa_type_get_extent(type, &tmp_lb, &attr->child_type_extent);
     DTPI_ERR_CHK_RC(rc);
 
     uintptr_t tmp_count = count;
@@ -525,9 +525,9 @@ static int construct_blkindx(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
             break;
     }
 
-    rc = yaksa_create_indexed_block(attr->u.blkindx.numblks,
-                                    attr->u.blkindx.blklen,
-                                    attr->u.blkindx.array_of_displs, type, newtype);
+    rc = yaksa_type_create_indexed_block(attr->u.blkindx.numblks,
+                                         attr->u.blkindx.blklen,
+                                         attr->u.blkindx.array_of_displs, type, newtype);
     DTPI_ERR_CHK_RC(rc);
 
     confirm_extent(*newtype, extent);
@@ -535,7 +535,7 @@ static int construct_blkindx(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
   fn_exit:
     *new_count = count;
     if (attr_tree_depth > 1) {
-        rc = yaksa_free(type);
+        rc = yaksa_type_free(type);
         DTPI_ERR_CHK_RC(rc);
     }
     return rc;
@@ -558,7 +558,7 @@ static int construct_blkhindx(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
     DTPI_ERR_CHK_RC(rc);
 
     intptr_t tmp_lb;
-    rc = yaksa_get_extent(type, &tmp_lb, &attr->child_type_extent);
+    rc = yaksa_type_get_extent(type, &tmp_lb, &attr->child_type_extent);
     DTPI_ERR_CHK_RC(rc);
 
     uintptr_t tmp_count = count;
@@ -665,9 +665,9 @@ static int construct_blkhindx(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
             break;
     }
 
-    rc = yaksa_create_hindexed_block(attr->u.blkhindx.numblks,
-                                     attr->u.blkhindx.blklen,
-                                     attr->u.blkhindx.array_of_displs, type, newtype);
+    rc = yaksa_type_create_hindexed_block(attr->u.blkhindx.numblks,
+                                          attr->u.blkhindx.blklen,
+                                          attr->u.blkhindx.array_of_displs, type, newtype);
     DTPI_ERR_CHK_RC(rc);
 
     confirm_extent(*newtype, extent);
@@ -675,7 +675,7 @@ static int construct_blkhindx(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
   fn_exit:
     *new_count = count;
     if (attr_tree_depth > 1) {
-        rc = yaksa_free(type);
+        rc = yaksa_type_free(type);
         DTPI_ERR_CHK_RC(rc);
     }
     return rc;
@@ -698,7 +698,7 @@ static int construct_indexed(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
     DTPI_ERR_CHK_RC(rc);
 
     intptr_t tmp_lb;
-    rc = yaksa_get_extent(type, &tmp_lb, &attr->child_type_extent);
+    rc = yaksa_type_get_extent(type, &tmp_lb, &attr->child_type_extent);
     DTPI_ERR_CHK_RC(rc);
 
     uintptr_t tmp_count = count;
@@ -836,9 +836,9 @@ static int construct_indexed(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
             break;
     }
 
-    rc = yaksa_create_indexed(attr->u.indexed.numblks,
-                              attr->u.indexed.array_of_blklens,
-                              attr->u.indexed.array_of_displs, type, newtype);
+    rc = yaksa_type_create_indexed(attr->u.indexed.numblks,
+                                   attr->u.indexed.array_of_blklens,
+                                   attr->u.indexed.array_of_displs, type, newtype);
     DTPI_ERR_CHK_RC(rc);
 
     confirm_extent(*newtype, extent);
@@ -846,7 +846,7 @@ static int construct_indexed(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
   fn_exit:
     *new_count = count;
     if (attr_tree_depth > 1) {
-        rc = yaksa_free(type);
+        rc = yaksa_type_free(type);
         DTPI_ERR_CHK_RC(rc);
     }
     return rc;
@@ -869,7 +869,7 @@ static int construct_hindexed(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
     DTPI_ERR_CHK_RC(rc);
 
     intptr_t tmp_lb;
-    rc = yaksa_get_extent(type, &tmp_lb, &attr->child_type_extent);
+    rc = yaksa_type_get_extent(type, &tmp_lb, &attr->child_type_extent);
     DTPI_ERR_CHK_RC(rc);
 
     uintptr_t tmp_count = count;
@@ -1011,9 +1011,9 @@ static int construct_hindexed(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
             break;
     }
 
-    rc = yaksa_create_hindexed(attr->u.hindexed.numblks,
-                               attr->u.hindexed.array_of_blklens,
-                               attr->u.hindexed.array_of_displs, type, newtype);
+    rc = yaksa_type_create_hindexed(attr->u.hindexed.numblks,
+                                    attr->u.hindexed.array_of_blklens,
+                                    attr->u.hindexed.array_of_displs, type, newtype);
     DTPI_ERR_CHK_RC(rc);
 
     confirm_extent(*newtype, extent);
@@ -1021,7 +1021,7 @@ static int construct_hindexed(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
   fn_exit:
     *new_count = count;
     if (attr_tree_depth > 1) {
-        rc = yaksa_free(type);
+        rc = yaksa_type_free(type);
         DTPI_ERR_CHK_RC(rc);
     }
     return rc;
@@ -1044,7 +1044,7 @@ static int construct_subarray(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
     DTPI_ERR_CHK_RC(rc);
 
     intptr_t tmp_lb;
-    rc = yaksa_get_extent(type, &tmp_lb, &attr->child_type_extent);
+    rc = yaksa_type_get_extent(type, &tmp_lb, &attr->child_type_extent);
     DTPI_ERR_CHK_RC(rc);
 
     int ndims_attr = DTPI_rand(dtpi) % DTPI_ATTR_SUBARRAY_NDIMS__LAST;
@@ -1126,11 +1126,11 @@ static int construct_subarray(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
         DTPI_ERR_ASSERT(0, rc);
     }
 
-    rc = yaksa_create_subarray(attr->u.subarray.ndims,
-                               attr->u.subarray.array_of_sizes,
-                               attr->u.subarray.array_of_subsizes,
-                               attr->u.subarray.array_of_starts,
-                               attr->u.subarray.order, type, newtype);
+    rc = yaksa_type_create_subarray(attr->u.subarray.ndims,
+                                    attr->u.subarray.array_of_sizes,
+                                    attr->u.subarray.array_of_subsizes,
+                                    attr->u.subarray.array_of_starts,
+                                    attr->u.subarray.order, type, newtype);
     DTPI_ERR_CHK_RC(rc);
 
     confirm_extent(*newtype, extent);
@@ -1138,7 +1138,7 @@ static int construct_subarray(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
   fn_exit:
     *new_count = (uintptr_t) count;
     if (attr_tree_depth > 1) {
-        rc = yaksa_free(type);
+        rc = yaksa_type_free(type);
         DTPI_ERR_CHK_RC(rc);
     }
     return rc;
@@ -1161,7 +1161,7 @@ static int construct_struct(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
     DTPI_ERR_CHK_RC(rc);
 
     intptr_t tmp_lb;
-    rc = yaksa_get_extent(type, &tmp_lb, &attr->child_type_extent);
+    rc = yaksa_type_get_extent(type, &tmp_lb, &attr->child_type_extent);
     DTPI_ERR_CHK_RC(rc);
 
     uintptr_t tmp_count = count;
@@ -1314,9 +1314,9 @@ static int construct_struct(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
         for (int i = 0; i < attr->u.structure.numblks; i++)
             array_of_types[i] = type;
 
-        rc = yaksa_create_struct(attr->u.structure.numblks,
-                                 attr->u.structure.array_of_blklens,
-                                 attr->u.structure.array_of_displs, array_of_types, newtype);
+        rc = yaksa_type_create_struct(attr->u.structure.numblks,
+                                      attr->u.structure.array_of_blklens,
+                                      attr->u.structure.array_of_displs, array_of_types, newtype);
         DTPI_ERR_CHK_RC(rc);
 
         DTPI_FREE(array_of_types);
@@ -1327,7 +1327,7 @@ static int construct_struct(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
   fn_exit:
     *new_count = count;
     if (attr_tree_depth > 1) {
-        rc = yaksa_free(type);
+        rc = yaksa_type_free(type);
         DTPI_ERR_CHK_RC(rc);
     }
     return rc;

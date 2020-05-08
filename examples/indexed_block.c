@@ -29,8 +29,8 @@ int main()
     set_matrix(pack_buf, ROWS, COLS, 0);
     set_matrix(unpack_buf, ROWS, COLS, 0);
 
-    rc = yaksa_create_indexed_block(ROWS, BLKLEN, array_of_displacements, YAKSA_TYPE__INT,
-                                    &indexed_block);
+    rc = yaksa_type_create_indexed_block(ROWS, BLKLEN, array_of_displacements, YAKSA_TYPE__INT,
+                                         &indexed_block);
     assert(rc == YAKSA_SUCCESS);
 
     yaksa_request_t request;
@@ -51,7 +51,7 @@ int main()
     print_matrix(input_matrix, ROWS, COLS, "input_matrix=");
     print_matrix(unpack_buf, ROWS, COLS, "unpack_buf=");
 
-    yaksa_free(indexed_block);
+    yaksa_type_free(indexed_block);
     yaksa_finalize();
     return 0;
 }

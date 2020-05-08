@@ -160,7 +160,7 @@ int main(int argc, char **argv)
         assert(rc == DTP_SUCCESS);
 
         uintptr_t ssize;
-        rc = yaksa_get_size(sobj.DTP_datatype, &ssize);
+        rc = yaksa_type_get_size(sobj.DTP_datatype, &ssize);
         assert(rc == YAKSA_SUCCESS);
 
 
@@ -184,7 +184,7 @@ int main(int argc, char **argv)
         assert(rc == DTP_SUCCESS);
 
         uintptr_t dsize;
-        rc = yaksa_get_size(dobj.DTP_datatype, &dsize);
+        rc = yaksa_type_get_size(dobj.DTP_datatype, &dsize);
         assert(rc == YAKSA_SUCCESS);
 
 

@@ -8,9 +8,9 @@
 #include <stdlib.h>
 #include <assert.h>
 
-int yaksi_create_struct(int count, const int *array_of_blocklengths,
-                        const intptr_t * array_of_displs, yaksi_type_s ** array_of_intypes,
-                        yaksi_type_s ** newtype)
+int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
+                             const intptr_t * array_of_displs, yaksi_type_s ** array_of_intypes,
+                             yaksi_type_s ** newtype)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -21,8 +21,8 @@ int yaksi_create_struct(int count, const int *array_of_blocklengths,
             is_hindexed = false;
     }
     if (is_hindexed) {
-        rc = yaksi_create_hindexed(count, array_of_blocklengths, array_of_displs,
-                                   array_of_intypes[0], newtype);
+        rc = yaksi_type_create_hindexed(count, array_of_blocklengths, array_of_displs,
+                                        array_of_intypes[0], newtype);
         YAKSU_ERR_CHECK(rc, fn_fail);
         goto fn_exit;
     }
@@ -129,9 +129,9 @@ int yaksi_create_struct(int count, const int *array_of_blocklengths,
     goto fn_exit;
 }
 
-int yaksa_create_struct(int count, const int *array_of_blocklengths,
-                        const intptr_t * array_of_displs, const yaksa_type_t * array_of_types,
-                        yaksa_type_t * newtype)
+int yaksa_type_create_struct(int count, const int *array_of_blocklengths,
+                             const intptr_t * array_of_displs, const yaksa_type_t * array_of_types,
+                             yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -159,8 +159,8 @@ int yaksa_create_struct(int count, const int *array_of_blocklengths,
     }
 
     yaksi_type_s *outtype;
-    rc = yaksi_create_struct(count, array_of_blocklengths, array_of_displs, array_of_intypes,
-                             &outtype);
+    rc = yaksi_type_create_struct(count, array_of_blocklengths, array_of_displs, array_of_intypes,
+                                  &outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     *newtype = outtype->id;
