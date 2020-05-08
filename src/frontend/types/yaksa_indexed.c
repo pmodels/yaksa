@@ -8,9 +8,9 @@
 #include <stdlib.h>
 #include <assert.h>
 
-int yaksi_create_hindexed(int count, const int *array_of_blocklengths,
-                          const intptr_t * array_of_displs, yaksi_type_s * intype,
-                          yaksi_type_s ** newtype)
+int yaksi_type_create_hindexed(int count, const int *array_of_blocklengths,
+                               const intptr_t * array_of_displs, yaksi_type_s * intype,
+                               yaksi_type_s ** newtype)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -21,8 +21,8 @@ int yaksi_create_hindexed(int count, const int *array_of_blocklengths,
             is_hindexed_block = false;
     }
     if (is_hindexed_block) {
-        rc = yaksi_create_hindexed_block(count, array_of_blocklengths[0], array_of_displs, intype,
-                                         newtype);
+        rc = yaksi_type_create_hindexed_block(count, array_of_blocklengths[0], array_of_displs,
+                                              intype, newtype);
         YAKSU_ERR_CHECK(rc, fn_fail);
         goto fn_exit;
     }
@@ -118,9 +118,9 @@ int yaksi_create_hindexed(int count, const int *array_of_blocklengths,
     goto fn_exit;
 }
 
-int yaksa_create_hindexed(int count, const int *array_of_blocklengths,
-                          const intptr_t * array_of_displs, yaksa_type_t oldtype,
-                          yaksa_type_t * newtype)
+int yaksa_type_create_hindexed(int count, const int *array_of_blocklengths,
+                               const intptr_t * array_of_displs, yaksa_type_t oldtype,
+                               yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -140,7 +140,8 @@ int yaksa_create_hindexed(int count, const int *array_of_blocklengths,
     }
 
     yaksi_type_s *outtype;
-    rc = yaksi_create_hindexed(count, array_of_blocklengths, array_of_displs, intype, &outtype);
+    rc = yaksi_type_create_hindexed(count, array_of_blocklengths, array_of_displs, intype,
+                                    &outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     *newtype = outtype->id;
@@ -151,8 +152,9 @@ int yaksa_create_hindexed(int count, const int *array_of_blocklengths,
     goto fn_exit;
 }
 
-int yaksa_create_indexed(int count, const int *array_of_blocklengths, const int *array_of_displs,
-                         yaksa_type_t oldtype, yaksa_type_t * newtype)
+int yaksa_type_create_indexed(int count, const int *array_of_blocklengths,
+                              const int *array_of_displs, yaksa_type_t oldtype,
+                              yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
     intptr_t *real_array_of_displs = (intptr_t *) malloc(count * sizeof(intptr_t));
@@ -176,8 +178,8 @@ int yaksa_create_indexed(int count, const int *array_of_blocklengths, const int 
         real_array_of_displs[i] = array_of_displs[i] * intype->extent;
 
     yaksi_type_s *outtype;
-    rc = yaksi_create_hindexed(count, array_of_blocklengths, real_array_of_displs, intype,
-                               &outtype);
+    rc = yaksi_type_create_hindexed(count, array_of_blocklengths, real_array_of_displs, intype,
+                                    &outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     *newtype = outtype->id;

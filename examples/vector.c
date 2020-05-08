@@ -22,7 +22,7 @@ int main()
     set_matrix(pack_buf, ROWS, COLS, 0);
     set_matrix(unpack_buf, ROWS, COLS, 0);
 
-    rc = yaksa_create_vector(ROWS, 1, COLS, YAKSA_TYPE__INT, &vector);
+    rc = yaksa_type_create_vector(ROWS, 1, COLS, YAKSA_TYPE__INT, &vector);
     assert(rc == YAKSA_SUCCESS);
 
     yaksa_request_t request;
@@ -61,7 +61,7 @@ int main()
 
     print_matrix(unpack_buf, ROWS, ROWS, "unpack_buf+1=");
 
-    yaksa_free(vector);
+    yaksa_type_free(vector);
     yaksa_finalize();
     return 0;
 }

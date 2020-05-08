@@ -22,7 +22,7 @@ int main()
     set_matrix(pack_buf, ROWS, COLS, 0);
     set_matrix(unpack_buf, ROWS, COLS, 0);
 
-    rc = yaksa_create_contig(SIZE, YAKSA_TYPE__INT, &contig);
+    rc = yaksa_type_create_contig(SIZE, YAKSA_TYPE__INT, &contig);
     assert(rc == YAKSA_SUCCESS);
 
     /* pack */
@@ -46,7 +46,7 @@ int main()
     print_matrix(pack_buf, ROWS, COLS, "pack_buf=");
     print_matrix(unpack_buf, ROWS, COLS, "unpack_buf=");
 
-    yaksa_free(contig);
+    yaksa_type_free(contig);
     yaksa_finalize();
     return 0;
 }

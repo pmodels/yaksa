@@ -22,7 +22,7 @@ int main()
     set_matrix(pack_buf, ROWS, COLS, 0);
     set_matrix(unpack_buf, ROWS, COLS, 0);
 
-    rc = yaksa_create_hvector(ROWS, 1, COLS * sizeof(int), YAKSA_TYPE__INT, &hvector);
+    rc = yaksa_type_create_hvector(ROWS, 1, COLS * sizeof(int), YAKSA_TYPE__INT, &hvector);
     assert(rc == YAKSA_SUCCESS);
 
     yaksa_request_t request;
@@ -60,15 +60,15 @@ int main()
     assert(rc == YAKSA_SUCCESS);
 
     print_matrix(unpack_buf, ROWS, ROWS, "unpack_buf+1=");
-    yaksa_free(hvector);
+    yaksa_type_free(hvector);
 
     /* matrix transposition using hvector */
     yaksa_type_t vector;
 
-    rc = yaksa_create_vector(ROWS, 1, COLS, YAKSA_TYPE__INT, &vector);
+    rc = yaksa_type_create_vector(ROWS, 1, COLS, YAKSA_TYPE__INT, &vector);
     assert(rc == YAKSA_SUCCESS);
 
-    rc = yaksa_create_hvector(COLS, 1, sizeof(int), vector, &hvector);
+    rc = yaksa_type_create_hvector(COLS, 1, sizeof(int), vector, &hvector);
     assert(rc == YAKSA_SUCCESS);
 
     set_matrix(pack_buf, ROWS, COLS, 0);
@@ -88,8 +88,8 @@ int main()
     print_matrix(pack_buf, ROWS, COLS, "pack_buf=");
     print_matrix(unpack_buf, ROWS, ROWS, "unpack_buf=");
 
-    yaksa_free(vector);
-    yaksa_free(hvector);
+    yaksa_type_free(vector);
+    yaksa_type_free(hvector);
     yaksa_finalize();
     return 0;
 }

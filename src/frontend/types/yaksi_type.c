@@ -23,7 +23,7 @@ int yaksi_type_alloc(struct yaksi_type_s **type)
     goto fn_exit;
 }
 
-int yaksi_type_free(struct yaksi_type_s *type)
+int yaksi_type_dealloc(struct yaksi_type_s *type)
 {
     int rc = YAKSA_SUCCESS;
 
