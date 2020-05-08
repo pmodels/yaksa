@@ -357,6 +357,21 @@ int yaksa_type_get_extent(yaksa_type_t type, intptr_t * lb, uintptr_t * extent);
 int yaksa_type_free(yaksa_type_t type);
 
 /*!
+ * \brief tests to see if a request has completed
+ *
+ * \param[in]  request           The request object that needs to be tested
+ * \param[out] completed         Flag to tell the caller whether the request object has completed
+ */
+int yaksa_request_test(yaksa_request_t request, int *completed);
+
+/*!
+ * \brief waits till a request has completed
+ *
+ * \param[in]  request           The request object that needs to be waited up on
+ */
+int yaksa_request_wait(yaksa_request_t request);
+
+/*!
  * \brief packs the data represented by the (incount, type) tuple into a contiguous buffer
  *
  * \param[in]  inbuf             Input buffer from which data is being packed
@@ -391,21 +406,6 @@ int yaksa_ipack(const void *inbuf, uintptr_t incount, yaksa_type_t type, uintptr
 int yaksa_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t outcount,
                   yaksa_type_t type, uintptr_t outoffset, uintptr_t * actual_unpack_bytes,
                   yaksa_request_t * request);
-
-/*!
- * \brief tests to see if a request has completed
- *
- * \param[in]  request           The request object that needs to be tested
- * \param[out] completed         Flag to tell the caller whether the request object has completed
- */
-int yaksa_request_test(yaksa_request_t request, int *completed);
-
-/*!
- * \brief waits till a request has completed
- *
- * \param[in]  request           The request object that needs to be waited up on
- */
-int yaksa_request_wait(yaksa_request_t request);
 
 /*!
  * \brief gets the number of contiguous segments in the (count, type) tuple
