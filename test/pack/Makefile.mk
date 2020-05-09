@@ -3,7 +3,7 @@
 ##     See COPYRIGHT in top-level directory
 ##
 
-pack_testlists = $(top_srcdir)/test/pack/testlist.gen
+pack_testlists = $(top_srcdir)/test/pack/testlist.gen $(top_srcdir)/test/pack/testlist.threads.gen
 EXTRA_DIST += $(top_srcdir)/test/pack/testlist.gen
 
 EXTRA_PROGRAMS += \

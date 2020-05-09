@@ -44,6 +44,7 @@ missing
 /test/yaksa_test_config.h.in
 /test/yaksa_test_config.h
 /test/flatten/testlist.gen
+/test/flatten/testlist.threads.gen
 /test/iov/testlist.gen
 /test/pack/testlist.cuda.d-d-d.gen
 /test/pack/testlist.cuda.d-rh-d.gen
@@ -53,7 +54,9 @@ missing
 /test/pack/testlist.cuda.md-stride.d-d-d.gen
 /test/pack/testlist.cuda.md.d-d-d.gen
 /test/pack/testlist.cuda.md.urh-d-urh.gen
+/test/pack/testlist.cuda.md.urh-d-urh.threads.gen
 /test/pack/testlist.gen
+/test/pack/testlist.threads.gen
 /test/simple/testlist.gen
 /README
 

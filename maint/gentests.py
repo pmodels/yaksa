@@ -37,7 +37,7 @@ def gen_simple_tests(testlist):
     sys.stdout.write("done\n")
 
 ##### pack/iov tests generator
-def gen_pack_iov_tests(fn, testlist, extra_args):
+def gen_pack_iov_tests(fn, testlist, extra_args = ""):
     global seed
 
     segments = [ 1, 64 ]
@@ -87,7 +87,7 @@ def gen_pack_iov_tests(fn, testlist, extra_args):
 
 
 ##### flatten tests generator
-def gen_flatten_tests(testlist):
+def gen_flatten_tests(testlist, extra_args = ""):
     global seed
 
     prefix = os.path.dirname(testlist)
@@ -98,7 +98,10 @@ def gen_flatten_tests(testlist):
         sys.stderr.write("error creating testlist %s\n" % testlist)
         sys.exit()
 
-    sys.stdout.write("generating flatten tests ... ")
+    if (extra_args == ""):
+        sys.stdout.write("generating flatten tests ... ")
+    else:
+        sys.stdout.write("generating flatten (%s) tests ... " % extra_args)
     for count in counts:
         for t in types:
             outstr = os.path.join(prefix, "flatten") + " "
@@ -107,6 +110,8 @@ def gen_flatten_tests(testlist):
             outstr += "-seed %d " % seed
             seed = seed + 1
             outstr += "-iters %d" % iters[count]
+            if (extra_args != ""):
+                outstr += extra_args
             outfile.write(outstr + "\n")
     outfile.write("\n")
     outfile.close()
@@ -118,23 +123,61 @@ if __name__ == '__main__':
     gen_simple_tests("test/simple/testlist.gen")
 
     gen_pack_iov_tests("pack", "test/pack/testlist.gen", \
-                       " -sbuf-memtype unreg-host -tbuf-memtype unreg-host -dbuf-memtype unreg-host")
+                       " -sbuf-memtype unreg-host" + \
+                       " -tbuf-memtype unreg-host" + \
+                       " -dbuf-memtype unreg-host")
+    gen_pack_iov_tests("pack", "test/pack/testlist.threads.gen", \
+                       " -sbuf-memtype unreg-host" + \
+                       " -tbuf-memtype unreg-host" + \
+                       " -dbuf-memtype unreg-host" + \
+                       " -num-threads 4")
     gen_pack_iov_tests("pack", "test/pack/testlist.cuda.d-d-d.gen", \
-                       " -sbuf-memtype device -tbuf-memtype device -dbuf-memtype device")
+                       " -sbuf-memtype device" + \
+                       " -tbuf-memtype device" + \
+                       " -dbuf-memtype device")
     gen_pack_iov_tests("pack", "test/pack/testlist.cuda.d-rh-d.gen", \
-                       " -sbuf-memtype device -tbuf-memtype reg-host -dbuf-memtype device")
+                       " -sbuf-memtype device" + \
+                       " -tbuf-memtype reg-host" + \
+                       " -dbuf-memtype device")
     gen_pack_iov_tests("pack", "test/pack/testlist.cuda.d-urh-d.gen", \
-                       " -sbuf-memtype device -tbuf-memtype unreg-host -dbuf-memtype device")
+                       " -sbuf-memtype device" + \
+                       " -tbuf-memtype unreg-host" + \
+                       " -dbuf-memtype device")
     gen_pack_iov_tests("pack", "test/pack/testlist.cuda.rh-d-rh.gen", \
-                       " -sbuf-memtype reg-host -tbuf-memtype device -dbuf-memtype reg-host")
+                       " -sbuf-memtype reg-host" + \
+                       " -tbuf-memtype device" + \
+                       " -dbuf-memtype reg-host")
     gen_pack_iov_tests("pack", "test/pack/testlist.cuda.urh-d-urh.gen", \
-                       " -sbuf-memtype unreg-host -tbuf-memtype device -dbuf-memtype unreg-host")
+                       " -sbuf-memtype unreg-host" + \
+                       " -tbuf-memtype device" + \
+                       " -dbuf-memtype unreg-host")
     gen_pack_iov_tests("pack", "test/pack/testlist.cuda.md.d-d-d.gen", \
-        " -sbuf-memtype device -tbuf-memtype device -dbuf-memtype device -device-start-id 1 -device-stride 0")
+                       " -sbuf-memtype device" + \
+                       " -tbuf-memtype device" + \
+                       " -dbuf-memtype device" + \
+                       " -device-start-id 1" + \
+                       " -device-stride 0")
     gen_pack_iov_tests("pack", "test/pack/testlist.cuda.md.urh-d-urh.gen", \
-    " -sbuf-memtype unreg-host -tbuf-memtype device -dbuf-memtype unreg-host -device-start-id 1 -device-stride 0")
+                       " -sbuf-memtype unreg-host" + \
+                       " -tbuf-memtype device" + \
+                       " -dbuf-memtype unreg-host" + \
+                       " -device-start-id 1" + \
+                       " -device-stride 0")
+    gen_pack_iov_tests("pack", "test/pack/testlist.cuda.md.urh-d-urh.threads.gen", \
+                       " -sbuf-memtype unreg-host" + \
+                       " -tbuf-memtype device" + \
+                       " -dbuf-memtype unreg-host" + \
+                       " -num-threads 4" + \
+                       " -device-start-id 1" + \
+                       " -device-stride 0")
     gen_pack_iov_tests("pack", "test/pack/testlist.cuda.md-stride.d-d-d.gen", \
-        " -sbuf-memtype device -tbuf-memtype device -dbuf-memtype device -device-start-id 1 -device-stride 1")
+                       " -sbuf-memtype device" + \
+                       " -tbuf-memtype device" + \
+                       " -dbuf-memtype device" + \
+                       " -device-start-id 1" + \
+                       " -device-stride 1")
 
-    gen_pack_iov_tests("iov", "test/iov/testlist.gen", "")
+    gen_pack_iov_tests("iov", "test/iov/testlist.gen")
+    gen_pack_iov_tests("iov", "test/iov/testlist.threads.gen", " -num-threads 4")
     gen_flatten_tests("test/flatten/testlist.gen")
+    gen_flatten_tests("test/flatten/testlist.threads.gen", " -num-threads 4")
