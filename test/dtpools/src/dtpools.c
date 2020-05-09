@@ -30,9 +30,10 @@ int DTP_pool_create(const char *base_type_str, uintptr_t base_type_count, int se
     DTPI_ERR_CHK_RC(rc);
 
     /* setup the random number generation parameters */
-    dtpi->seed = seed;
-    dtpi->rand_count = 0;
-    dtpi->rand_idx = DTPI_RAND_LIST_SIZE;
+    srand(seed);
+    for (int i = 0; i < DTPI_RAND_LIST_SIZE; i++)
+        dtpi->rand_list[i] = rand();
+    dtpi->rand_idx = 0;
 
     dtpi->base_type_count = base_type_count;
 
