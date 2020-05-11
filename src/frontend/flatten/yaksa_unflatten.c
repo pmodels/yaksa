@@ -22,7 +22,7 @@ static inline int unflatten(yaksi_type_s ** type, const void *flattened_type)
         YAKSU_ERR_CHECK(rc, fn_fail);
         yaksu_atomic_incr(&tmp->refcount);
         newtype = tmp;
-        goto setup_hooks;
+        goto fn_exit;
     } else {
         rc = yaksi_type_alloc(&newtype);
         YAKSU_ERR_CHECK(rc, fn_fail);
@@ -123,11 +123,10 @@ static inline int unflatten(yaksi_type_s ** type, const void *flattened_type)
             assert(0);
     }
 
-  setup_hooks:
     yaksur_type_create_hook(newtype);
-    *type = newtype;
 
   fn_exit:
+    *type = newtype;
     return rc;
   fn_fail:
     goto fn_exit;
