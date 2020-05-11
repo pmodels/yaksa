@@ -403,7 +403,7 @@ int main(int argc, char **argv)
 
             rc = yaksa_ipack(sbuf_d + sobj.DTP_buf_offset, sobj.DTP_type_count, sobj.DTP_datatype,
                              segment_starts[j], tbuf, segment_lengths[j], &actual_pack_bytes,
-                             &request);
+                             NULL, &request);
             assert(rc == YAKSA_SUCCESS);
             assert(actual_pack_bytes <= segment_lengths[j]);
 
@@ -413,7 +413,7 @@ int main(int argc, char **argv)
             uintptr_t actual_unpack_bytes;
             rc = yaksa_iunpack(tbuf, actual_pack_bytes, dbuf_d + dobj.DTP_buf_offset,
                                dobj.DTP_type_count, dobj.DTP_datatype, segment_starts[j],
-                               &actual_unpack_bytes, &request);
+                               &actual_unpack_bytes, NULL, &request);
             assert(rc == YAKSA_SUCCESS);
             assert(actual_pack_bytes == actual_unpack_bytes);
 

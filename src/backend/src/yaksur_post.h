@@ -15,11 +15,15 @@ int yaksur_type_create_hook(yaksi_type_s * type);
 int yaksur_type_free_hook(yaksi_type_s * type);
 int yaksur_request_create_hook(yaksi_request_s * request);
 int yaksur_request_free_hook(yaksi_request_s * request);
+int yaksur_info_create_hook(yaksi_info_s * info);
+int yaksur_info_free_hook(yaksi_info_s * info);
+int yaksur_info_keyval_append(yaksi_info_s * info, const char *key, const void *val,
+                              unsigned int vallen);
 
 int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                 yaksi_request_s * request);
+                 yaksi_info_s * info, yaksi_request_s * request);
 int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                   yaksi_request_s * request);
+                   yaksi_info_s * info, yaksi_request_s * request);
 int yaksur_request_test(yaksi_request_s * request);
 int yaksur_request_wait(yaksi_request_s * request);
 

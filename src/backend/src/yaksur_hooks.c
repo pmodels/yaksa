@@ -167,3 +167,67 @@ int yaksur_request_free_hook(yaksi_request_s * request)
   fn_fail:
     goto fn_exit;
 }
+
+int yaksur_info_create_hook(yaksi_info_s * info)
+{
+    int rc = YAKSA_SUCCESS;
+
+    rc = yaksuri_seq_info_create_hook(info);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    for (yaksuri_gpudriver_id_e id = YAKSURI_GPUDRIVER_ID__UNSET + 1;
+         id < YAKSURI_GPUDRIVER_ID__LAST; id++) {
+        if (yaksuri_global.gpudriver[id].info) {
+            rc = yaksuri_global.gpudriver[id].info->info_create(info);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+        }
+    }
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
+int yaksur_info_free_hook(yaksi_info_s * info)
+{
+    int rc = YAKSA_SUCCESS;
+
+    rc = yaksuri_seq_info_free_hook(info);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    for (yaksuri_gpudriver_id_e id = YAKSURI_GPUDRIVER_ID__UNSET + 1;
+         id < YAKSURI_GPUDRIVER_ID__LAST; id++) {
+        if (yaksuri_global.gpudriver[id].info) {
+            rc = yaksuri_global.gpudriver[id].info->info_free(info);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+        }
+    }
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
+int yaksur_info_keyval_append(yaksi_info_s * info, const char *key, const void *val,
+                              unsigned int vallen)
+{
+    int rc = YAKSA_SUCCESS;
+
+    rc = yaksuri_seq_info_keyval_append(info, key, val, vallen);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    for (yaksuri_gpudriver_id_e id = YAKSURI_GPUDRIVER_ID__UNSET + 1;
+         id < YAKSURI_GPUDRIVER_ID__LAST; id++) {
+        if (yaksuri_global.gpudriver[id].info) {
+            rc = yaksuri_global.gpudriver[id].info->info_keyval_append(info, key, val, vallen);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+        }
+    }
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}

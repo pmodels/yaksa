@@ -10,7 +10,7 @@
 
 int yaksi_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t outcount,
                   yaksi_type_s * type, uintptr_t outoffset, uintptr_t * actual_unpack_bytes,
-                  yaksi_request_s * request)
+                  yaksi_info_s * info, yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
     uintptr_t total_bytes = outcount * type->size - outoffset;
@@ -62,7 +62,7 @@ int yaksi_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t o
         uintptr_t tmp_actual_unpack_bytes;
 
         rc = yaksi_iunpack_element(sbuf, tmp_unpack_bytes, dbuf, type, remoffset,
-                                   &tmp_actual_unpack_bytes, request);
+                                   &tmp_actual_unpack_bytes, info, request);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         rem_unpack_bytes -= tmp_actual_unpack_bytes;
@@ -82,7 +82,7 @@ int yaksi_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t o
     /* step 3: perform a full unpack of the next few elements */
     uintptr_t numelems = rem_unpack_bytes / type->size;
     if (numelems) {
-        rc = yaksi_iunpack_backend(sbuf, dbuf, numelems, type, request);
+        rc = yaksi_iunpack_backend(sbuf, dbuf, numelems, type, info, request);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         rem_unpack_bytes -= numelems * type->size;
@@ -98,7 +98,7 @@ int yaksi_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t o
         uintptr_t tmp_actual_unpack_bytes;
 
         rc = yaksi_iunpack_element(sbuf, rem_unpack_bytes, dbuf, type, remoffset,
-                                   &tmp_actual_unpack_bytes, request);
+                                   &tmp_actual_unpack_bytes, info, request);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         *actual_unpack_bytes += tmp_actual_unpack_bytes;

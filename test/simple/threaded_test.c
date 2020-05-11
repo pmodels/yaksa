@@ -36,7 +36,7 @@ void *thread_fn(void *arg)
 
     yaksa_request_t request;
     rc = yaksa_ipack(inbuf, 1, vector_vector, 0, outbuf, DIMSIZE * DIMSIZE * sizeof(int), &actual,
-                     &request);
+                     NULL, &request);
     assert(rc == YAKSA_SUCCESS);
     assert(actual == 5 * 3 * 2 * sizeof(int));
 
@@ -60,7 +60,8 @@ void *thread_fn(void *arg)
     }
 
     uintptr_t actual_unpack_bytes;
-    rc = yaksa_iunpack(outbuf, actual, inbuf, 1, vector_vector, 0, &actual_unpack_bytes, &request);
+    rc = yaksa_iunpack(outbuf, actual, inbuf, 1, vector_vector, 0, &actual_unpack_bytes,
+                       NULL, &request);
     assert(rc == YAKSA_SUCCESS);
 
     rc = yaksa_request_wait(request);

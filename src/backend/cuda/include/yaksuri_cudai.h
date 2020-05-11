@@ -94,6 +94,10 @@ typedef struct yaksuri_cudai_type_s {
 int yaksuri_cudai_finalize_hook(void);
 int yaksuri_cudai_type_create_hook(yaksi_type_s * type);
 int yaksuri_cudai_type_free_hook(yaksi_type_s * type);
+int yaksuri_cudai_info_create_hook(yaksi_info_s * info);
+int yaksuri_cudai_info_free_hook(yaksi_info_s * info);
+int yaksuri_cudai_info_keyval_append(yaksi_info_s * info, const char *key, const void *val,
+                                     unsigned int vallen);
 
 int yaksuri_cudai_event_destroy(void *event);
 int yaksuri_cudai_event_query(void *event, int *completed);
@@ -106,9 +110,9 @@ int yaksuri_cudai_md_alloc(yaksi_type_s * type);
 int yaksuri_cudai_populate_pupfns(yaksi_type_s * type);
 
 int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                        void *gpu_tmpbuf, int device, void **event);
+                        void *gpu_tmpbuf, int device, yaksi_info_s * info, void **event);
 int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                          void *gpu_tmpbuf, int device, void **event);
+                          void *gpu_tmpbuf, int device, yaksi_info_s * info, void **event);
 int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, bool * is_supported);
 
 /* *INDENT-OFF* */
