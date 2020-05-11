@@ -218,6 +218,8 @@ int yaksi_iunpack_element(const void *inbuf, uintptr_t insize, void *outbuf, yak
                           yaksi_info_s * info, yaksi_request_s * request);
 
 int yaksi_iov_len(uintptr_t count, yaksi_type_s * type, uintptr_t * iov_len);
+int yaksi_iov(const char *buf, uintptr_t count, yaksi_type_s * type, uintptr_t iov_offset,
+              struct iovec *iov, uintptr_t max_iov_len, uintptr_t * actual_iov_len);
 
 int yaksi_flatten_size(yaksi_type_s * type, uintptr_t * flattened_type_size);
 

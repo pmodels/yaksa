@@ -91,6 +91,13 @@ typedef struct yaksuri_cudai_type_s {
     uintptr_t num_elements;
 } yaksuri_cudai_type_s;
 
+#define YAKSURI_CUDAI_INFO__DEFAULT_IOV_PUP_THRESHOLD   (16384)
+
+typedef struct {
+    uintptr_t iov_pack_threshold;
+    uintptr_t iov_unpack_threshold;
+} yaksuri_cudai_info_s;
+
 int yaksuri_cudai_finalize_hook(void);
 int yaksuri_cudai_type_create_hook(yaksi_type_s * type);
 int yaksuri_cudai_type_free_hook(yaksi_type_s * type);
