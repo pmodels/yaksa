@@ -15,6 +15,7 @@ int yaksuri_cudai_info_create_hook(yaksi_info_s * info)
     yaksuri_cudai_info_s *cuda;
 
     cuda = (yaksuri_cudai_info_s *) malloc(sizeof(yaksuri_cudai_info_s));
+    YAKSU_ERR_CHKANDJUMP(!cuda, rc, YAKSA_ERR__OUT_OF_MEM, fn_fail);
 
     /* set default values for info keys */
     cuda->iov_pack_threshold = YAKSURI_CUDAI_INFO__DEFAULT_IOV_PUP_THRESHOLD;
@@ -30,20 +31,14 @@ int yaksuri_cudai_info_create_hook(yaksi_info_s * info)
 
 int yaksuri_cudai_info_free_hook(yaksi_info_s * info)
 {
-    int rc = YAKSA_SUCCESS;
-
     free(info->backend.cuda.priv);
 
-  fn_exit:
-    return rc;
-  fn_fail:
-    goto fn_exit;
+    return YAKSA_SUCCESS;
 }
 
 int yaksuri_cudai_info_keyval_append(yaksi_info_s * info, const char *key, const void *val,
                                      unsigned int vallen)
 {
-    int rc = YAKSA_SUCCESS;
     yaksuri_cudai_info_s *cuda = (yaksuri_cudai_info_s *) info->backend.cuda.priv;
 
     if (!strncmp(key, "yaksa_cuda_iov_pack_threshold", YAKSA_INFO_MAX_KEYLEN)) {
@@ -54,8 +49,5 @@ int yaksuri_cudai_info_keyval_append(yaksi_info_s * info, const char *key, const
         cuda->iov_unpack_threshold = (uintptr_t) val;
     }
 
-  fn_exit:
-    return rc;
-  fn_fail:
-    goto fn_exit;
+    return YAKSA_SUCCESS;
 }

@@ -157,6 +157,11 @@ int yaksu_pool_elem_alloc(yaksu_pool_s pool, void **elem, int *elem_idx)
     pthread_mutex_unlock(&pool_head->mutex);
     return rc;
   fn_fail:
+    if (new) {
+        free(new->elems);
+        free(new->slab);
+        free(new);
+    }
     goto fn_exit;
 }
 
