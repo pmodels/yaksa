@@ -14,6 +14,8 @@ typedef struct {
     void *priv;
 } yaksuri_seq_type_s;
 
-typedef int yaksuri_seq_info_s;
+typedef struct {
+    void *priv;
+} yaksuri_seq_info_s;
 
 #endif /* YAKSURI_SEQ_PRE_H_INCLUDED */

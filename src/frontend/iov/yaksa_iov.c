@@ -45,8 +45,8 @@
         }                                                               \
     } while (0)
 
-static int to_iov(const char *buf, uintptr_t count, yaksi_type_s * type, uintptr_t iov_offset,
-                  struct iovec *iov, uintptr_t max_iov_len, uintptr_t * actual_iov_len)
+int yaksi_iov(const char *buf, uintptr_t count, yaksi_type_s * type, uintptr_t iov_offset,
+              struct iovec *iov, uintptr_t max_iov_len, uintptr_t * actual_iov_len)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -130,8 +130,9 @@ static int to_iov(const char *buf, uintptr_t count, yaksi_type_s * type, uintptr
                         } else {
                             uintptr_t tmp_iov_len;
 
-                            rc = to_iov(rem_buf, type->u.hvector.blocklength, type->u.hvector.child,
-                                        rem_iov_offset, rem_iov, rem_iov_len, &tmp_iov_len);
+                            rc = yaksi_iov(rem_buf, type->u.hvector.blocklength,
+                                           type->u.hvector.child, rem_iov_offset, rem_iov,
+                                           rem_iov_len, &tmp_iov_len);
                             YAKSU_ERR_CHECK(rc, fn_fail);
 
                             rem_iov_len -= tmp_iov_len;
@@ -173,9 +174,9 @@ static int to_iov(const char *buf, uintptr_t count, yaksi_type_s * type, uintptr
                                 type->u.blkhindx.array_of_displs[j];
                             uintptr_t tmp_iov_len;
 
-                            rc = to_iov(rem_buf, type->u.blkhindx.blocklength,
-                                        type->u.blkhindx.child, rem_iov_offset, rem_iov,
-                                        rem_iov_len, &tmp_iov_len);
+                            rc = yaksi_iov(rem_buf, type->u.blkhindx.blocklength,
+                                           type->u.blkhindx.child, rem_iov_offset, rem_iov,
+                                           rem_iov_len, &tmp_iov_len);
                             YAKSU_ERR_CHECK(rc, fn_fail);
 
                             rem_iov_len -= tmp_iov_len;
@@ -215,9 +216,9 @@ static int to_iov(const char *buf, uintptr_t count, yaksi_type_s * type, uintptr
                                 type->u.hindexed.array_of_displs[j];
                             uintptr_t tmp_iov_len;
 
-                            rc = to_iov(rem_buf, type->u.hindexed.array_of_blocklengths[j],
-                                        type->u.hindexed.child, rem_iov_offset, rem_iov,
-                                        rem_iov_len, &tmp_iov_len);
+                            rc = yaksi_iov(rem_buf, type->u.hindexed.array_of_blocklengths[j],
+                                           type->u.hindexed.child, rem_iov_offset, rem_iov,
+                                           rem_iov_len, &tmp_iov_len);
                             YAKSU_ERR_CHECK(rc, fn_fail);
 
                             rem_iov_len -= tmp_iov_len;
@@ -257,9 +258,9 @@ static int to_iov(const char *buf, uintptr_t count, yaksi_type_s * type, uintptr
                                 type->u.str.array_of_displs[j];
                             uintptr_t tmp_iov_len;
 
-                            rc = to_iov(rem_buf, type->u.str.array_of_blocklengths[j],
-                                        type->u.str.array_of_types[j], rem_iov_offset, rem_iov,
-                                        rem_iov_len, &tmp_iov_len);
+                            rc = yaksi_iov(rem_buf, type->u.str.array_of_blocklengths[j],
+                                           type->u.str.array_of_types[j], rem_iov_offset, rem_iov,
+                                           rem_iov_len, &tmp_iov_len);
                             YAKSU_ERR_CHECK(rc, fn_fail);
 
                             rem_iov_len -= tmp_iov_len;
@@ -292,8 +293,8 @@ static int to_iov(const char *buf, uintptr_t count, yaksi_type_s * type, uintptr
                     } else {
                         uintptr_t tmp_iov_len;
 
-                        rc = to_iov(rem_buf, 1, type->u.resized.child, rem_iov_offset, rem_iov,
-                                    rem_iov_len, &tmp_iov_len);
+                        rc = yaksi_iov(rem_buf, 1, type->u.resized.child, rem_iov_offset, rem_iov,
+                                       rem_iov_len, &tmp_iov_len);
                         YAKSU_ERR_CHECK(rc, fn_fail);
 
                         rem_iov_len -= tmp_iov_len;
@@ -312,8 +313,8 @@ static int to_iov(const char *buf, uintptr_t count, yaksi_type_s * type, uintptr
 
         case YAKSI_TYPE_KIND__CONTIG:
             {
-                rc = to_iov(buf, count * type->u.contig.count, type->u.contig.child,
-                            iov_offset, iov, max_iov_len, actual_iov_len);
+                rc = yaksi_iov(buf, count * type->u.contig.count, type->u.contig.child,
+                               iov_offset, iov, max_iov_len, actual_iov_len);
                 YAKSU_ERR_CHECK(rc, fn_fail);
             }
             break;
@@ -336,8 +337,8 @@ static int to_iov(const char *buf, uintptr_t count, yaksi_type_s * type, uintptr
                     } else {
                         uintptr_t tmp_iov_len;
 
-                        rc = to_iov(rem_buf, 1, primary, rem_iov_offset, rem_iov, rem_iov_len,
-                                    &tmp_iov_len);
+                        rc = yaksi_iov(rem_buf, 1, primary, rem_iov_offset, rem_iov, rem_iov_len,
+                                       &tmp_iov_len);
                         YAKSU_ERR_CHECK(rc, fn_fail);
 
                         rem_iov_len -= tmp_iov_len;
@@ -352,8 +353,8 @@ static int to_iov(const char *buf, uintptr_t count, yaksi_type_s * type, uintptr
             break;
 
         case YAKSI_TYPE_KIND__DUP:
-            rc = to_iov(buf, count, type->u.dup.child, iov_offset, iov, max_iov_len,
-                        actual_iov_len);
+            rc = yaksi_iov(buf, count, type->u.dup.child, iov_offset, iov, max_iov_len,
+                           actual_iov_len);
             YAKSU_ERR_CHECK(rc, fn_fail);
             break;
     }
@@ -375,7 +376,7 @@ int yaksa_iov(const char *buf, uintptr_t count, yaksa_type_t type, uintptr_t iov
     rc = yaksi_type_get(type, &yaksi_type);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    rc = to_iov(buf, count, yaksi_type, iov_offset, iov, max_iov_len, actual_iov_len);
+    rc = yaksi_iov(buf, count, yaksi_type, iov_offset, iov, max_iov_len, actual_iov_len);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
