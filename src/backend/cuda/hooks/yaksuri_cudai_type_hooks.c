@@ -51,6 +51,8 @@ int yaksuri_cudai_type_create_hook(yaksi_type_s * type)
     int rc = YAKSA_SUCCESS;
 
     type->backend.cuda.priv = malloc(sizeof(yaksuri_cudai_type_s));
+    YAKSU_ERR_CHKANDJUMP(!type->backend.cuda.priv, rc, YAKSA_ERR__OUT_OF_MEM, fn_fail);
+
     yaksuri_cudai_type_s *cuda = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
 
     cuda->num_elements = get_num_elements(type);
