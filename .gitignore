@@ -46,6 +46,7 @@ missing
 /test/flatten/testlist.gen
 /test/flatten/testlist.threads.gen
 /test/iov/testlist.gen
+/test/iov/testlist.threads.gen
 /test/pack/testlist.cuda.d-d-d.gen
 /test/pack/testlist.cuda.d-rh-d.gen
 /test/pack/testlist.cuda.d-urh-d.gen
