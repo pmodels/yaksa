@@ -8,6 +8,7 @@
 #include <cuda_runtime_api.h>
 #include "yaksi.h"
 #include "yaksuri_cudai.h"
+#include <stdlib.h>
 
 #define THREAD_BLOCK_SIZE  (256)
 #define MAX_GRIDSZ_X       ((1ULL << 31) - 1)
@@ -104,10 +105,12 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
                                yaksuri_cudai_global.stream[target]);
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
     } else if (type->size / type->num_contig >= iov_pack_threshold) {
-        struct iovec iov[MAX_IOV_LENGTH];
+        struct iovec *iov;
         uintptr_t actual_iov_len;
 
         if (type->num_contig * count <= MAX_IOV_LENGTH) {
+            iov = (struct iovec *) malloc(type->num_contig * count * sizeof(struct iovec));
+
             rc = yaksi_iov(inbuf, count, type, 0, iov, MAX_IOV_LENGTH, &actual_iov_len);
             YAKSU_ERR_CHECK(rc, fn_fail);
             assert(actual_iov_len == type->num_contig * count);
@@ -118,7 +121,11 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
                                 yaksuri_cudai_global.stream[target]);
                 dbuf += iov[i].iov_len;
             }
+
+            free(iov);
         } else if (type->num_contig <= MAX_IOV_LENGTH) {
+            iov = (struct iovec *) malloc(type->num_contig * sizeof(struct iovec));
+
             uintptr_t iov_offset = 0;
             char *dbuf = (char *) outbuf;
             const char *sbuf = (const char *) inbuf;
@@ -135,6 +142,8 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
 
                 sbuf += type->extent;
             }
+
+            free(iov);
         } else {
             rc = YAKSA_ERR__NOT_SUPPORTED;
         }
@@ -223,10 +232,12 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
                                yaksuri_cudai_global.stream[target]);
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
     } else if (type->size / type->num_contig >= iov_unpack_threshold) {
-        struct iovec iov[MAX_IOV_LENGTH];
+        struct iovec *iov;
         uintptr_t actual_iov_len;
 
         if (type->num_contig * count <= MAX_IOV_LENGTH) {
+            iov = (struct iovec *) malloc(type->num_contig * count * sizeof(struct iovec));
+
             rc = yaksi_iov(outbuf, count, type, 0, iov, MAX_IOV_LENGTH, &actual_iov_len);
             YAKSU_ERR_CHECK(rc, fn_fail);
             assert(actual_iov_len == type->num_contig * count);
@@ -237,7 +248,11 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
                                 yaksuri_cudai_global.stream[target]);
                 sbuf += iov[i].iov_len;
             }
+
+            free(iov);
         } else if (type->num_contig <= MAX_IOV_LENGTH) {
+            iov = (struct iovec *) malloc(type->num_contig * sizeof(struct iovec));
+
             uintptr_t iov_offset = 0;
             char *dbuf = (char *) outbuf;
             const char *sbuf = (const char *) inbuf;
@@ -254,6 +269,8 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
 
                 dbuf += type->extent;
             }
+
+            free(iov);
         } else {
             rc = YAKSA_ERR__NOT_SUPPORTED;
         }
