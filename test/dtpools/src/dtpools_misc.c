@@ -237,21 +237,6 @@ int DTPI_rand(DTPI_pool_s * dtpi)
 
     DTPI_FUNC_ENTER();
 
-    DTPI_ERR_ASSERT(dtpi->rand_idx <= DTPI_RAND_LIST_SIZE, rc);
-
-    if (dtpi->rand_idx == DTPI_RAND_LIST_SIZE) {
-        dtpi->rand_idx = 0;
-
-        srand(dtpi->seed);
-        for (int i = 0; i < dtpi->rand_count; i++)
-            rand();
-
-        for (int i = 0; i < DTPI_RAND_LIST_SIZE; i++) {
-            dtpi->rand_count++;
-            dtpi->rand_list[i] = rand();
-        }
-    }
-
     ret = dtpi->rand_list[dtpi->rand_idx];
     dtpi->rand_idx++;
 

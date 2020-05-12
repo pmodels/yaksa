@@ -108,12 +108,10 @@ extern int DTPI_func_nesting;
         free(obj);                              \
     } while (0)
 
-#define DTPI_RAND_LIST_SIZE  (1024)
+#define DTPI_RAND_LIST_SIZE  (1024 * 1024)
 #define DTPI_MAX_BASE_TYPE_STR_LEN  (128)
 
 typedef struct {
-    int seed;
-    int rand_count;
     int rand_idx;
     int rand_list[DTPI_RAND_LIST_SIZE];
 
