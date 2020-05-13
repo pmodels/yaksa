@@ -16,7 +16,7 @@ static inline int unflatten(yaksi_type_s ** type, const void *flattened_type)
     const char *flatbuf = (const char *) flattened_type;
 
     if (((yaksi_type_s *) flattened_type)->kind == YAKSI_TYPE_KIND__BUILTIN) {
-        int id = ((yaksi_type_s *) flattened_type)->id;
+        yaksa_type_t id = ((yaksi_type_s *) flattened_type)->id;
         yaksi_type_s *tmp;
         rc = yaksi_type_get(id, &tmp);
         YAKSU_ERR_CHECK(rc, fn_fail);
@@ -30,7 +30,7 @@ static inline int unflatten(yaksi_type_s ** type, const void *flattened_type)
         /* don't overwrite the local ID with the unflattened type ID,
          * which potentially belongs to a different process or a
          * different type. */
-        unsigned int local_id;
+        yaksa_type_t local_id;
         local_id = newtype->id;
         memcpy(newtype, flatbuf, sizeof(yaksi_type_s));
         flatbuf += sizeof(yaksi_type_s);

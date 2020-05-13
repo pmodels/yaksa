@@ -14,7 +14,10 @@ static int get_ptr_attr(const void *buf, yaksur_ptr_attr_s * ptrattr, yaksuri_gp
     int rc = YAKSA_SUCCESS;
 
     /* Each GPU backend can claim "ownership" of the input buffer */
-    for (*id = YAKSURI_GPUDRIVER_ID__UNSET + 1; *id < YAKSURI_GPUDRIVER_ID__LAST; (*id)++) {
+    for (*id = YAKSURI_GPUDRIVER_ID__UNSET; *id < YAKSURI_GPUDRIVER_ID__LAST; (*id)++) {
+        if (*id == YAKSURI_GPUDRIVER_ID__UNSET)
+            continue;
+
         if (yaksuri_global.gpudriver[*id].info) {
             rc = yaksuri_global.gpudriver[*id].info->get_ptr_attr(buf, ptrattr);
             YAKSU_ERR_CHECK(rc, fn_fail);
