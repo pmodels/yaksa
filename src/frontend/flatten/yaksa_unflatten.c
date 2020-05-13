@@ -12,7 +12,7 @@
 static inline int unflatten(yaksi_type_s ** type, const void *flattened_type)
 {
     int rc = YAKSA_SUCCESS;
-    yaksi_type_s *newtype;
+    yaksi_type_s *newtype = NULL;
     const char *flatbuf = (const char *) flattened_type;
 
     if (((yaksi_type_s *) flattened_type)->kind == YAKSI_TYPE_KIND__BUILTIN) {
