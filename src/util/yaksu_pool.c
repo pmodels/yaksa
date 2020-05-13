@@ -99,6 +99,7 @@ int yaksu_pool_elem_alloc(yaksu_pool_s pool, void **elem, int *elem_idx)
     int rc = YAKSA_SUCCESS;
     pool_head_s *pool_head = (pool_head_s *) pool;
     int idx;
+    pool_elem_s *new = NULL;
 
     pthread_mutex_lock(&pool_head->mutex);
 
@@ -124,7 +125,7 @@ int yaksu_pool_elem_alloc(yaksu_pool_s pool, void **elem, int *elem_idx)
 
     /* allocate another chunk */
     idx = 0;
-    pool_elem_s *new = (pool_elem_s *) malloc(sizeof(pool_elem_s));
+    new = (pool_elem_s *) malloc(sizeof(pool_elem_s));
     YAKSU_ERR_CHKANDJUMP(!new, rc, YAKSA_ERR__OUT_OF_MEM, fn_fail);
 
     new->slab = pool_head->malloc_fn(pool_head->elems_in_chunk * pool_head->elemsize);
