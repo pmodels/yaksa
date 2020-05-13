@@ -9,12 +9,12 @@
 int yaksi_request_create(yaksi_request_s ** request)
 {
     int rc = YAKSA_SUCCESS;
-    int idx;
+    unsigned int idx;
 
     rc = yaksu_pool_elem_alloc(yaksi_global.request_pool, (void **) request, &idx);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    (*request)->id = idx;
+    (*request)->id = (yaksa_request_t) idx;
     yaksu_atomic_store(&(*request)->cc, 0);
 
     rc = yaksur_request_create_hook(*request);

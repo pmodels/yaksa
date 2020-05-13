@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdint.h>
+#include <limits.h>
 
 #define INIT_BUILTIN(c_type, TYPE, rc, fn_fail)                         \
     do {                                                                \
@@ -95,14 +96,14 @@ int yaksa_init(yaksa_init_attr_t attr)
     int rc = YAKSA_SUCCESS;
 
     /* initialize the type pool */
-    rc = yaksu_pool_alloc(sizeof(yaksi_type_s), CHUNK_SIZE, UINTPTR_MAX, malloc, free,
+    rc = yaksu_pool_alloc(sizeof(yaksi_type_s), CHUNK_SIZE, UINT_MAX, malloc, free,
                           &yaksi_global.type_pool);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     /* these are the first set of allocations for our builtin
      * datatypes, so the indices should match that of the datatype
      * themselves */
-    for (int i = 0; i < YAKSI_TYPE__LAST; i++) {
+    for (yaksa_type_t i = YAKSA_TYPE__NULL; i < YAKSI_TYPE__LAST; i++) {
         struct yaksi_type_s *type;
 
         rc = yaksi_type_alloc(&type);
@@ -112,14 +113,14 @@ int yaksa_init(yaksa_init_attr_t attr)
     }
 
     /* initialize the request pool */
-    rc = yaksu_pool_alloc(sizeof(yaksi_request_s), CHUNK_SIZE, UINTPTR_MAX, malloc, free,
+    rc = yaksu_pool_alloc(sizeof(yaksi_request_s), CHUNK_SIZE, UINT_MAX, malloc, free,
                           &yaksi_global.request_pool);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     /* these are the first set of allocations for our builtin
      * requests, so the indices should match that of the request
      * themselves */
-    for (int i = 0; i < YAKSI_REQUEST__LAST; i++) {
+    for (yaksa_request_t i = YAKSA_REQUEST__NULL; i < YAKSI_REQUEST__LAST; i++) {
         struct yaksi_request_s *request;
 
         rc = yaksi_request_create(&request);
@@ -219,7 +220,7 @@ int yaksa_finalize(void)
 
 
     /* free the builtin datatypes */
-    for (int i = 0; i < YAKSI_TYPE__LAST; i++) {
+    for (yaksa_type_t i = YAKSA_TYPE__NULL; i < YAKSI_TYPE__LAST; i++) {
         yaksi_type_s *type;
 
         rc = yaksi_type_get(i, &type);
@@ -234,7 +235,7 @@ int yaksa_finalize(void)
 
 
     /* free the builtin requests */
-    for (int i = 0; i < YAKSI_REQUEST__LAST; i++) {
+    for (yaksa_request_t i = YAKSA_REQUEST__NULL; i < YAKSI_REQUEST__LAST; i++) {
         yaksi_request_s *request;
 
         rc = yaksi_request_get(i, &request);

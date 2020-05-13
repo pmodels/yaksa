@@ -187,7 +187,7 @@ Backends supported: ${supported_backends}
 ${backend_info}
 
 ##################################################################
-# End of yaksa build
+# End of yaksa configure
 ##################################################################
 
 EOF

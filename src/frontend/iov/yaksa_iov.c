@@ -14,32 +14,33 @@
     do {                                                                \
         TYPE tmp;                                                       \
         bool element_is_contig;                                         \
+        uintptr_t offset = (const char *) &tmp.y - (const char *) &tmp; \
                                                                         \
-        if ((const char *) &tmp.y - (const char *) &tmp == sizeof(TYPE1)) \
+        if (offset == sizeof(TYPE1))                                    \
             element_is_contig = true;                                   \
         else                                                            \
             element_is_contig = false;                                  \
                                                                         \
         idx = 0;                                                        \
         if (element_is_contig) {                                        \
-            TYPE *z = (TYPE *) buf + iov_offset;                        \
-            int real_count = YAKSU_MIN(max_iov_len, count - iov_offset); \
+            const char *z = (const char *) buf + (iov_offset * sizeof(TYPE)); \
+            uintptr_t real_count = YAKSU_MIN(max_iov_len, count - iov_offset); \
             for (int x = 0; x < real_count; x++) {                      \
-                iov[x].iov_base = z;                                    \
+                iov[x].iov_base = (void *) z;                           \
                 iov[x].iov_len = sizeof(TYPE1) + sizeof(TYPE2);         \
-                z++;                                                    \
+                z += sizeof(TYPE);                                      \
                 (idx)++;                                                \
             }                                                           \
         } else {                                                        \
             assert(iov_offset % 2 == 0);                                \
-            TYPE *z = (TYPE *) buf + iov_offset / 2;                    \
-            int real_count = YAKSU_MIN(max_iov_len - 1, count * 2 - iov_offset); \
+            const char *z = (const char *) buf + (iov_offset * sizeof(TYPE) / 2); \
+            uintptr_t real_count = YAKSU_MIN(max_iov_len - 1, count * 2 - iov_offset); \
             for (int x = 0; x < real_count; x += 2) {                   \
-                iov[x].iov_base = z;                                    \
+                iov[x].iov_base = (void *) z;                           \
                 iov[x].iov_len = sizeof(TYPE1);                         \
-                iov[x+1].iov_base = &z->y;                              \
+                iov[x+1].iov_base = (void *) (z + offset);              \
                 iov[x+1].iov_len = sizeof(TYPE2);                       \
-                z++;                                                    \
+                z += sizeof(TYPE);                                      \
                 (idx) += 2;                                             \
             }                                                           \
         }                                                               \

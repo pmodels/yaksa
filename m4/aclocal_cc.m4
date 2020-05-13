@@ -534,14 +534,19 @@ if test "$enable_strict_done" != "yes" ; then
         -Wold-style-definition
         -Wno-multichar
         -Wno-deprecated-declarations
-        -Wpacked
         -Wnested-externs
         -Winvalid-pch
         -Wno-pointer-sign
         -Wvariadic-macros
-        -Wno-format-zero-length
-	-Wno-type-limits
+        -Wtype-limits
         -Werror-implicit-function-declaration
+        -Wstack-usage=262144
+        -Wredundant-decls
+        -Waggregate-return
+        -Werror-implicit-function-declaration
+        -Wcast-align
+        -Wpacked
+        -Wshorten-64-to-32
     "
 
     enable_c89=no
@@ -585,14 +590,6 @@ if test "$enable_strict_done" != "yes" ; then
 		enable_strict_done="yes"
 		enable_opt=no
 		;;
-             extra)
-                pac_common_strict_flags="$pac_common_strict_flags
-                    -Wredundant-decls
-                    -Waggregate-return
-                    -Werror-implicit-function-declaration
-                    -Wcast-align
-                    -Wshorten-64-to-32"
-                ;;
 	     all|yes)
 		enable_strict_done="yes"
 		enable_c99=yes
