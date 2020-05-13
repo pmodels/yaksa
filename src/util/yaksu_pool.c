@@ -18,22 +18,22 @@ typedef struct pool_elem {
 
 typedef struct pool_head {
     uintptr_t elemsize;
-    uintptr_t elems_in_chunk;
-    uintptr_t maxelems;
+    unsigned int elems_in_chunk;
+    unsigned int maxelems;
 
     yaksu_malloc_fn malloc_fn;
     yaksu_free_fn free_fn;
 
     pthread_mutex_t mutex;
 
-    uintptr_t num_pool_elems;
-    uintptr_t max_pool_elems;
+    unsigned int num_pool_elems;
+    unsigned int max_pool_elems;
     pool_elem_s *pool_elems;
 } pool_head_s;
 
 static pthread_mutex_t global_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-int yaksu_pool_alloc(uintptr_t elemsize, uintptr_t elems_in_chunk, uintptr_t maxelems,
+int yaksu_pool_alloc(uintptr_t elemsize, unsigned int elems_in_chunk, unsigned int maxelems,
                      yaksu_malloc_fn malloc_fn, yaksu_free_fn free_fn, yaksu_pool_s * pool)
 {
     int rc = YAKSA_SUCCESS;
@@ -72,7 +72,7 @@ int yaksu_pool_free(yaksu_pool_s pool)
     int count = 0;
     for (pool_elem_s * tmp = pool_head->pool_elems; tmp;) {
         pool_elem_s *next = tmp->next;
-        for (int i = 0; i < pool_head->elems_in_chunk; i++)
+        for (unsigned int i = 0; i < pool_head->elems_in_chunk; i++)
             if (tmp->elems[i])
                 count++;
 
@@ -94,7 +94,7 @@ int yaksu_pool_free(yaksu_pool_s pool)
     return rc;
 }
 
-int yaksu_pool_elem_alloc(yaksu_pool_s pool, void **elem, int *elem_idx)
+int yaksu_pool_elem_alloc(yaksu_pool_s pool, void **elem, unsigned int *elem_idx)
 {
     int rc = YAKSA_SUCCESS;
     pool_head_s *pool_head = (pool_head_s *) pool;
@@ -106,7 +106,7 @@ int yaksu_pool_elem_alloc(yaksu_pool_s pool, void **elem, int *elem_idx)
     /* try to find an available type */
     idx = 0;
     for (pool_elem_s * tmp = pool_head->pool_elems; tmp; tmp = tmp->next) {
-        for (int i = 0; i < pool_head->elems_in_chunk; i++) {
+        for (unsigned int i = 0; i < pool_head->elems_in_chunk; i++) {
             if (tmp->elems[i] == NULL) {
                 tmp->elems[i] = (char *) tmp->slab + i * pool_head->elemsize;
                 YAKSU_ERR_CHKANDJUMP(!tmp->elems[i], rc, YAKSA_ERR__OUT_OF_MEM, fn_fail);
@@ -166,7 +166,7 @@ int yaksu_pool_elem_alloc(yaksu_pool_s pool, void **elem, int *elem_idx)
     goto fn_exit;
 }
 
-int yaksu_pool_elem_free(yaksu_pool_s pool, int idx)
+int yaksu_pool_elem_free(yaksu_pool_s pool, unsigned int idx)
 {
     int rc = YAKSA_SUCCESS;
     pool_head_s *pool_head = (pool_head_s *) pool;
@@ -186,11 +186,11 @@ int yaksu_pool_elem_free(yaksu_pool_s pool, int idx)
     return rc;
 }
 
-int yaksu_pool_elem_get(yaksu_pool_s pool, int elem_idx, void **elem)
+int yaksu_pool_elem_get(yaksu_pool_s pool, unsigned int elem_idx, void **elem)
 {
     int rc = YAKSA_SUCCESS;
     pool_head_s *pool_head = (pool_head_s *) pool;
-    int idx = elem_idx;
+    unsigned int idx = elem_idx;
 
     pool_elem_s *tmp = pool_head->pool_elems;
     while (idx >= pool_head->elems_in_chunk) {

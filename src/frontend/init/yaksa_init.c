@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdint.h>
+#include <limits.h>
 
 #define INIT_BUILTIN(c_type, TYPE, rc, fn_fail)                         \
     do {                                                                \
@@ -95,7 +96,7 @@ int yaksa_init(yaksa_init_attr_t attr)
     int rc = YAKSA_SUCCESS;
 
     /* initialize the type pool */
-    rc = yaksu_pool_alloc(sizeof(yaksi_type_s), CHUNK_SIZE, UINTPTR_MAX, malloc, free,
+    rc = yaksu_pool_alloc(sizeof(yaksi_type_s), CHUNK_SIZE, UINT_MAX, malloc, free,
                           &yaksi_global.type_pool);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
@@ -112,7 +113,7 @@ int yaksa_init(yaksa_init_attr_t attr)
     }
 
     /* initialize the request pool */
-    rc = yaksu_pool_alloc(sizeof(yaksi_request_s), CHUNK_SIZE, UINTPTR_MAX, malloc, free,
+    rc = yaksu_pool_alloc(sizeof(yaksi_request_s), CHUNK_SIZE, UINT_MAX, malloc, free,
                           &yaksi_global.request_pool);
     YAKSU_ERR_CHECK(rc, fn_fail);
 

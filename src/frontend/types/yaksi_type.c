@@ -9,7 +9,7 @@
 int yaksi_type_alloc(struct yaksi_type_s **type)
 {
     int rc = YAKSA_SUCCESS;
-    int idx;
+    unsigned int idx;
 
     rc = yaksu_pool_elem_alloc(yaksi_global.type_pool, (void **) type, &idx);
     YAKSU_ERR_CHECK(rc, fn_fail);
