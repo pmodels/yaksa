@@ -20,10 +20,15 @@ error() {
 
 
 ########################################################################
-## Parse user arguments
+## Parse user environment and arguments
 ########################################################################
 
 genpup_args=
+
+if test -n "$YAKSA_AUTOGEN_PUP_NESTING" ; then
+    genpup_args=$YAKSA_AUTOGEN_PUP_NESTING
+fi
+
 for arg in "$@" ; do
     case $arg in
         -pup-max-nesting=*|--pup-max-nesting=*)
@@ -35,7 +40,6 @@ for arg in "$@" ; do
             ;;
     esac
 done
-
 
 ########################################################################
 ## Generating required files
