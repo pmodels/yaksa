@@ -96,6 +96,10 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
     }
 
 
+    /* if we are here, one of the GPU backends should have claimed the
+     * buffers */
+    assert(id != YAKSURI_GPUDRIVER_ID__UNSET);
+
     /* if the GPU backend cannot support this type, return */
     bool is_supported;
     rc = yaksuri_global.gpudriver[id].info->pup_is_supported(type, &is_supported);
@@ -228,6 +232,10 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
         goto fn_exit;
     }
 
+
+    /* if we are here, one of the GPU backends should have claimed the
+     * buffers */
+    assert(id != YAKSURI_GPUDRIVER_ID__UNSET);
 
     /* if the GPU backend cannot support this type, return */
     bool is_supported;
