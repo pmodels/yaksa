@@ -13,6 +13,13 @@ int yaksi_type_create_hvector(int count, int blocklength, intptr_t stride, yaksi
 {
     int rc = YAKSA_SUCCESS;
 
+    /* shortcut for contig types */
+    if (count == 1) {
+        rc = yaksi_type_create_contig(blocklength, intype, newtype);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+        goto fn_exit;
+    }
+
     yaksi_type_s *outtype;
     rc = yaksi_type_alloc(&outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);

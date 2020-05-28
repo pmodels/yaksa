@@ -12,30 +12,8 @@ int yaksi_type_create_dup(yaksi_type_s * intype, yaksi_type_s ** newtype)
 {
     int rc = YAKSA_SUCCESS;
 
-    yaksi_type_s *outtype;
-    rc = yaksi_type_alloc(&outtype);
-    YAKSU_ERR_CHECK(rc, fn_fail);
-
     yaksu_atomic_incr(&intype->refcount);
-
-    outtype->kind = YAKSI_TYPE_KIND__DUP;
-    outtype->tree_depth = intype->tree_depth + 1;
-    outtype->size = intype->size;
-    outtype->alignment = intype->alignment;
-
-    outtype->lb = intype->lb;
-    outtype->ub = intype->ub;
-    outtype->true_lb = intype->true_lb;
-    outtype->true_ub = intype->true_ub;
-    outtype->extent = outtype->ub - outtype->lb;
-
-    outtype->is_contig = intype->is_contig;
-    outtype->num_contig = intype->num_contig;
-
-    outtype->u.dup.child = intype;
-
-    yaksur_type_create_hook(outtype);
-    *newtype = outtype;
+    *newtype = intype;
 
   fn_exit:
     return rc;

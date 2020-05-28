@@ -12,6 +12,13 @@ int yaksi_type_create_contig(int count, yaksi_type_s * intype, yaksi_type_s ** n
 {
     int rc = YAKSA_SUCCESS;
 
+    /* shortcut for dup types */
+    if (count == 1) {
+        rc = yaksi_type_create_dup(intype, newtype);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+        goto fn_exit;
+    }
+
     yaksi_type_s *outtype;
     rc = yaksi_type_alloc(&outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);

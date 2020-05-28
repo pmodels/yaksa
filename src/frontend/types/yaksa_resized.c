@@ -13,6 +13,12 @@ int yaksi_type_create_resized(yaksi_type_s * intype, intptr_t lb, uintptr_t exte
 {
     int rc = YAKSA_SUCCESS;
 
+    if (lb == intype->lb && extent == intype->extent) {
+        rc = yaksi_type_create_dup(intype, newtype);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+        goto fn_exit;
+    }
+
     yaksi_type_s *outtype;
     rc = yaksi_type_alloc(&outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
