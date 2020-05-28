@@ -59,9 +59,21 @@ AC_ARG_WITH([cuda-sm],
 PAC_SET_HEADER_LIB_PATH([cuda])
 PAC_CHECK_HEADER_LIB([cuda_runtime_api.h],[cudart],[cudaStreamSynchronize],[have_cuda=yes],[have_cuda=no])
 if test "${have_cuda}" = "yes" ; then
-    AC_DEFINE([HAVE_CUDA],[1],[Define is CUDA is available])
-    AS_IF([test -n "${with_cuda}"],[NVCC=${with_cuda}/bin/nvcc],[NVCC=nvcc])
-    AC_SUBST(NVCC)
+    AC_MSG_CHECKING([whether nvcc works])
+    cat>conftest.cu<<EOF
+    __global__ void foo(int x) {}
+EOF
+    ${with_cuda}/bin/nvcc -c conftest.cu 2> /dev/null
+    if test "$?" = "0" ; then
+        AC_DEFINE([HAVE_CUDA],[1],[Define is CUDA is available])
+        AS_IF([test -n "${with_cuda}"],[NVCC=${with_cuda}/bin/nvcc],[NVCC=nvcc])
+        AC_SUBST(NVCC)
+        AC_MSG_RESULT([yes])
+    else
+        have_cuda=no
+        AC_MSG_RESULT([no])
+    fi
+    rm -f conftest.*
 fi
 AM_CONDITIONAL([BUILD_CUDA_BACKEND], [test x${have_cuda} = xyes])
 AM_CONDITIONAL([BUILD_CUDA_TESTS], [test x${have_cuda} = xyes])
