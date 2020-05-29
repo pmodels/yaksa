@@ -103,13 +103,6 @@ def hindexed(suffix, b, blklen, last):
     else:
         s += " + array_of_displs%d[j%d] / sizeof(%s) + k%d" % (suffix, suffix, b, suffix)
 
-## dup routines
-def dup_decl(nesting, dtp, b):
-    yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent / sizeof(%s);\n" % (nesting, dtp, b))
-
-def dup(suffix, b, blklen, last):
-    pass
-
 ## contig routines
 def contig_decl(nesting, dtp, b):
     yutils.display(OUTFILE, "int count%d = %s->u.contig.count;\n" % (nesting, dtp))
@@ -214,26 +207,50 @@ if __name__ == '__main__':
         print("===> ERROR: pup-max-nesting must be positive")
         sys.exit(1)
 
-    ##### generate the list of derived datatype arrays
-    darraylist = [ ]
-    yutils.generate_darrays(gencomm.derived_types, darraylist, args.pup_max_nesting)
-
-    ##### generate the core pack/unpack kernels
+    ##### generate the core pack/unpack kernels (single level)
     for b in builtin_types:
-        filename = "src/backend/seq/pup/yaksuri_seqi_pup_%s.c" % b.replace(" ","_")
-        yutils.copyright_c(filename)
-        OUTFILE = open(filename, "a")
-        yutils.display(OUTFILE, "#include <string.h>\n")
-        yutils.display(OUTFILE, "#include <stdint.h>\n")
-        yutils.display(OUTFILE, "#include <wchar.h>\n")
-        yutils.display(OUTFILE, "#include \"yaksuri_seqi_pup.h\"\n")
-        yutils.display(OUTFILE, "\n")
+        for d in gencomm.derived_types:
+            filename = "src/backend/seq/pup/yaksuri_seqi_pup_%s_%s.c" % (d, b.replace(" ","_"))
+            yutils.copyright_c(filename)
+            OUTFILE = open(filename, "a")
+            yutils.display(OUTFILE, "#include <string.h>\n")
+            yutils.display(OUTFILE, "#include <stdint.h>\n")
+            yutils.display(OUTFILE, "#include <wchar.h>\n")
+            yutils.display(OUTFILE, "#include \"yaksuri_seqi_pup.h\"\n")
+            yutils.display(OUTFILE, "\n")
 
-        for darray in darraylist:
+            emptylist = [ ]
+            emptylist.append(d)
             for blklen in blklens:
-                generate_kernels(b, darray, blklen)
+                generate_kernels(b, emptylist, blklen)
+            emptylist.pop()
 
-        OUTFILE.close()
+            OUTFILE.close()
+
+    ##### generate the core pack/unpack kernels (more than one level)
+    darraylist = [ ]
+    yutils.generate_darrays(gencomm.derived_types, darraylist, args.pup_max_nesting - 2)
+    for b in builtin_types:
+        for d1 in gencomm.derived_types:
+            for d2 in gencomm.derived_types:
+                filename = "src/backend/seq/pup/yaksuri_seqi_pup_%s_%s_%s.c" % (d1, d2, b.replace(" ","_"))
+                yutils.copyright_c(filename)
+                OUTFILE = open(filename, "a")
+                yutils.display(OUTFILE, "#include <string.h>\n")
+                yutils.display(OUTFILE, "#include <stdint.h>\n")
+                yutils.display(OUTFILE, "#include <wchar.h>\n")
+                yutils.display(OUTFILE, "#include \"yaksuri_seqi_pup.h\"\n")
+                yutils.display(OUTFILE, "\n")
+
+                for darray in darraylist:
+                    darray.append(d1)
+                    darray.append(d2)
+                    for blklen in blklens:
+                        generate_kernels(b, darray, blklen)
+                    darray.pop()
+                    darray.pop()
+
+                OUTFILE.close()
 
     ##### generate the core pack/unpack kernel declarations
     filename = "src/backend/seq/pup/yaksuri_seqi_pup.h"
@@ -247,12 +264,18 @@ if __name__ == '__main__':
     yutils.display(OUTFILE, "#include \"yaksi.h\"\n")
     yutils.display(OUTFILE, "\n")
 
+    darraylist = [ ]
+    yutils.generate_darrays(gencomm.derived_types, darraylist, args.pup_max_nesting)
     for b in builtin_types:
         for darray in darraylist:
             for blklen in blklens:
+                # we don't need pup kernels for basic types
+                if (len(darray) == 0):
+                    continue
+
                 # individual blocklength optimization is only for
                 # hvector and blkhindx
-                if (len(darray) and darray[-1] != "hvector" and darray[-1] != "blkhindx" \
+                if (darray[-1] != "hvector" and darray[-1] != "blkhindx" \
                     and blklen != "generic"):
                     continue
 
@@ -270,6 +293,24 @@ if __name__ == '__main__':
                     yutils.display(OUTFILE, "(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type);\n")
 
     yutils.display(OUTFILE, "#endif  /* YAKSURI_SEQI_PUP_H_INCLUDED */\n")
+    OUTFILE.close()
+
+    ##### generate the pup makefile
+    filename = "src/backend/seq/pup/Makefile.pup.mk"
+    yutils.copyright_makefile(filename)
+    OUTFILE = open(filename, "a")
+    yutils.display(OUTFILE, "libyaksa_la_SOURCES += \\\n")
+    for b in builtin_types:
+        for d1 in gencomm.derived_types:
+            yutils.display(OUTFILE, "\tsrc/backend/seq/pup/yaksuri_seqi_pup_%s_%s.c \\\n" % \
+                           (d1, b.replace(" ","_")))
+            for d2 in gencomm.derived_types:
+                yutils.display(OUTFILE, "\tsrc/backend/seq/pup/yaksuri_seqi_pup_%s_%s_%s.c \\\n" % \
+                               (d1, d2, b.replace(" ","_")))
+    yutils.display(OUTFILE, "\tsrc/backend/seq/pup/yaksuri_seq_pup.c\n")
+    yutils.display(OUTFILE, "\n")
+    yutils.display(OUTFILE, "noinst_HEADERS += \\\n")
+    yutils.display(OUTFILE, "\tsrc/backend/seq/pup/yaksuri_seqi_pup.h\n")
     OUTFILE.close()
 
     ##### generate the switching logic to select pup functions

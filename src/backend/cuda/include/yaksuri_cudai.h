@@ -53,9 +53,6 @@ typedef struct yaksuri_cudai_md_s {
         } contig;
         struct {
             struct yaksuri_cudai_md_s *child;
-        } dup;
-        struct {
-            struct yaksuri_cudai_md_s *child;
         } resized;
         struct {
             int count;

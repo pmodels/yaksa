@@ -18,9 +18,6 @@ static uintptr_t get_num_elements(yaksi_type_s * type)
         case YAKSI_TYPE_KIND__CONTIG:
             return type->u.contig.count * get_num_elements(type->u.contig.child);
 
-        case YAKSI_TYPE_KIND__DUP:
-            return get_num_elements(type->u.dup.child);
-
         case YAKSI_TYPE_KIND__RESIZED:
             return get_num_elements(type->u.resized.child);
 
