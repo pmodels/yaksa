@@ -214,7 +214,7 @@ def populate_pupfns(pup_max_nesting, backend, blklens, builtin_types, builtin_ma
         OUTFILE.close()
 
     ##### generate the Makefile for the pup function selection functions
-    filename = "src/backend/%s/pup/Makefile.pup.mk" % backend
+    filename = "src/backend/%s/pup/Makefile.populate_pupfns.mk" % backend
     yutils.copyright_makefile(filename)
     OUTFILE = open(filename, "a")
     yutils.display(OUTFILE, "libyaksa_la_SOURCES += \\\n")
@@ -225,8 +225,7 @@ def populate_pupfns(pup_max_nesting, backend, blklens, builtin_types, builtin_ma
     yutils.display(OUTFILE, "\tsrc/backend/%s/pup/yaksuri_%si_populate_pupfns.c\n" % (backend, backend))
     yutils.display(OUTFILE, "\n")
     yutils.display(OUTFILE, "noinst_HEADERS += \\\n")
-    yutils.display(OUTFILE, "\tsrc/backend/%s/pup/yaksuri_%si_populate_pupfns.h \\\n" % (backend, backend))
-    yutils.display(OUTFILE, "\tsrc/backend/%s/pup/yaksuri_%si_pup.h\n" % (backend, backend))
+    yutils.display(OUTFILE, "\tsrc/backend/%s/pup/yaksuri_%si_populate_pupfns.h\n" % (backend, backend))
     OUTFILE.close()
 
     ##### generate the header file for the pup function selection functions
