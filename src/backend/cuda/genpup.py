@@ -126,6 +126,10 @@ def generate_kernels(b, darray):
     global s
     global idx
 
+    # we don't need pup kernels for basic types
+    if (len(darray) == 0):
+        return
+
     for func in "pack","unpack":
         ##### figure out the function name to use
         funcprefix = "%s_" % func
@@ -134,89 +138,88 @@ def generate_kernels(b, darray):
         funcprefix = funcprefix + b.replace(" ", "_")
 
         ##### generate the CUDA kernel
-        if (len(darray)):
-            yutils.display(OUTFILE, "__global__ void yaksuri_cudai_kernel_%s(const void *inbuf, void *outbuf, uintptr_t count, const yaksuri_cudai_md_s *__restrict__ md)\n" % funcprefix)
-            yutils.display(OUTFILE, "{\n")
-            yutils.display(OUTFILE, "const %s *__restrict__ sbuf = (const %s *) inbuf;\n" % (b, b));
-            yutils.display(OUTFILE, "%s *__restrict__ dbuf = (%s *) outbuf;\n" % (b, b));
-            yutils.display(OUTFILE, "uintptr_t extent = md->extent / sizeof(%s);\n" % b)
-            yutils.display(OUTFILE, "uintptr_t idx = blockIdx.x * blockDim.x + threadIdx.x;\n")
-            yutils.display(OUTFILE, "uintptr_t res = idx;\n")
-            yutils.display(OUTFILE, "uintptr_t inner_elements = md->num_elements;\n")
-            yutils.display(OUTFILE, "\n")
+        yutils.display(OUTFILE, "__global__ void yaksuri_cudai_kernel_%s(const void *inbuf, void *outbuf, uintptr_t count, const yaksuri_cudai_md_s *__restrict__ md)\n" % funcprefix)
+        yutils.display(OUTFILE, "{\n")
+        yutils.display(OUTFILE, "const %s *__restrict__ sbuf = (const %s *) inbuf;\n" % (b, b));
+        yutils.display(OUTFILE, "%s *__restrict__ dbuf = (%s *) outbuf;\n" % (b, b));
+        yutils.display(OUTFILE, "uintptr_t extent = md->extent / sizeof(%s);\n" % b)
+        yutils.display(OUTFILE, "uintptr_t idx = blockIdx.x * blockDim.x + threadIdx.x;\n")
+        yutils.display(OUTFILE, "uintptr_t res = idx;\n")
+        yutils.display(OUTFILE, "uintptr_t inner_elements = md->num_elements;\n")
+        yutils.display(OUTFILE, "\n")
 
-            yutils.display(OUTFILE, "if (idx >= (count * inner_elements))\n")
-            yutils.display(OUTFILE, "    return;\n")
-            yutils.display(OUTFILE, "\n")
+        yutils.display(OUTFILE, "if (idx >= (count * inner_elements))\n")
+        yutils.display(OUTFILE, "    return;\n")
+        yutils.display(OUTFILE, "\n")
 
-            # copy loop
-            idx = 0
-            md = "md"
-            for d in darray:
-                if (d == "hvector" or d == "blkhindx" or d == "hindexed" or \
-                    d == "contig"):
-                    yutils.display(OUTFILE, "uintptr_t x%d = res / inner_elements;\n" % idx)
-                    idx = idx + 1
-                    yutils.display(OUTFILE, "res %= inner_elements;\n")
-                    yutils.display(OUTFILE, "inner_elements /= %s->u.%s.count;\n" % (md, d))
-                    yutils.display(OUTFILE, "\n")
+        # copy loop
+        idx = 0
+        md = "md"
+        for d in darray:
+            if (d == "hvector" or d == "blkhindx" or d == "hindexed" or \
+                d == "contig"):
+                yutils.display(OUTFILE, "uintptr_t x%d = res / inner_elements;\n" % idx)
+                idx = idx + 1
+                yutils.display(OUTFILE, "res %= inner_elements;\n")
+                yutils.display(OUTFILE, "inner_elements /= %s->u.%s.count;\n" % (md, d))
+                yutils.display(OUTFILE, "\n")
 
-                if (d == "hvector" or d == "blkhindx"):
-                    yutils.display(OUTFILE, "uintptr_t x%d = res / inner_elements;\n" % idx)
-                    idx = idx + 1
-                    yutils.display(OUTFILE, "res %= inner_elements;\n")
-                    yutils.display(OUTFILE, "inner_elements /= %s->u.%s.blocklength;\n" % (md, d))
-                elif (d == "hindexed"):
-                    yutils.display(OUTFILE, "uintptr_t x%d;\n" % idx)
-                    yutils.display(OUTFILE, "for (int i = 0; i < %s->u.%s.count; i++) {\n" % (md, d))
-                    yutils.display(OUTFILE, "    uintptr_t in_elems = %s->u.%s.array_of_blocklengths[i] *\n" % (md, d))
-                    yutils.display(OUTFILE, "                         %s->u.%s.child->num_elements;\n" % (md, d))
-                    yutils.display(OUTFILE, "    if (res < in_elems) {\n")
-                    yutils.display(OUTFILE, "        x%d = i;\n" % idx)
-                    yutils.display(OUTFILE, "        res %= in_elems;\n")
-                    yutils.display(OUTFILE, "        inner_elements = %s->u.%s.child->num_elements;\n" % (md, d))
-                    yutils.display(OUTFILE, "        break;\n")
-                    yutils.display(OUTFILE, "    } else {\n")
-                    yutils.display(OUTFILE, "        res -= in_elems;\n")
-                    yutils.display(OUTFILE, "    }\n")
-                    yutils.display(OUTFILE, "}\n")
-                    idx = idx + 1
-                    yutils.display(OUTFILE, "\n")
+            if (d == "hvector" or d == "blkhindx"):
+                yutils.display(OUTFILE, "uintptr_t x%d = res / inner_elements;\n" % idx)
+                idx = idx + 1
+                yutils.display(OUTFILE, "res %= inner_elements;\n")
+                yutils.display(OUTFILE, "inner_elements /= %s->u.%s.blocklength;\n" % (md, d))
+            elif (d == "hindexed"):
+                yutils.display(OUTFILE, "uintptr_t x%d;\n" % idx)
+                yutils.display(OUTFILE, "for (int i = 0; i < %s->u.%s.count; i++) {\n" % (md, d))
+                yutils.display(OUTFILE, "    uintptr_t in_elems = %s->u.%s.array_of_blocklengths[i] *\n" % (md, d))
+                yutils.display(OUTFILE, "                         %s->u.%s.child->num_elements;\n" % (md, d))
+                yutils.display(OUTFILE, "    if (res < in_elems) {\n")
+                yutils.display(OUTFILE, "        x%d = i;\n" % idx)
+                yutils.display(OUTFILE, "        res %= in_elems;\n")
+                yutils.display(OUTFILE, "        inner_elements = %s->u.%s.child->num_elements;\n" % (md, d))
+                yutils.display(OUTFILE, "        break;\n")
+                yutils.display(OUTFILE, "    } else {\n")
+                yutils.display(OUTFILE, "        res -= in_elems;\n")
+                yutils.display(OUTFILE, "    }\n")
+                yutils.display(OUTFILE, "}\n")
+                idx = idx + 1
+                yutils.display(OUTFILE, "\n")
 
-                md = "%s->u.%s.child" % (md, d)
+            md = "%s->u.%s.child" % (md, d)
 
-            yutils.display(OUTFILE, "uintptr_t x%d = res;\n" % idx)
-            yutils.display(OUTFILE, "\n")
+        yutils.display(OUTFILE, "uintptr_t x%d = res;\n" % idx)
+        yutils.display(OUTFILE, "\n")
 
-            dtp = "md"
-            s = "x0 * extent"
-            idx = 1
-            x = 1
-            need_extent = False
-            for d in darray:
-                if (x == len(darray)):
-                    last = 1
-                else:
-                    last = 0
-                getattr(sys.modules[__name__], d)(x, dtp, b, last)
-                x = x + 1
-                dtp = dtp + "->u.%s.child" % d
-
-            if (func == "pack"):
-                yutils.display(OUTFILE, "dbuf[idx] = sbuf[%s];\n" % s)
+        dtp = "md"
+        s = "x0 * extent"
+        idx = 1
+        x = 1
+        need_extent = False
+        for d in darray:
+            if (x == len(darray)):
+                last = 1
             else:
-                yutils.display(OUTFILE, "dbuf[%s] = sbuf[idx];\n" % s)
+                last = 0
+            getattr(sys.modules[__name__], d)(x, dtp, b, last)
+            x = x + 1
+            dtp = dtp + "->u.%s.child" % d
 
-            yutils.display(OUTFILE, "}\n\n")
+        if (func == "pack"):
+            yutils.display(OUTFILE, "dbuf[idx] = sbuf[%s];\n" % s)
+        else:
+            yutils.display(OUTFILE, "dbuf[%s] = sbuf[idx];\n" % s)
 
-            # generate the host function
-            yutils.display(OUTFILE, "void yaksuri_cudai_%s(const void *inbuf, void *outbuf, uintptr_t count, yaksuri_cudai_md_s *md, int n_threads, int n_blocks_x, int n_blocks_y, int n_blocks_z, int device)\n" % funcprefix)
-            yutils.display(OUTFILE, "{\n")
-            yutils.display(OUTFILE, "void *args[] = { &inbuf, &outbuf, &count, &md };\n")
-            yutils.display(OUTFILE, "cudaError_t cerr = cudaLaunchKernel((const void *) yaksuri_cudai_kernel_%s,\n" % funcprefix)
-            yutils.display(OUTFILE, "    dim3(n_blocks_x, n_blocks_y, n_blocks_z), dim3(n_threads), args, 0, yaksuri_cudai_global.stream[device]);\n")
-            yutils.display(OUTFILE, "YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
-            yutils.display(OUTFILE, "}\n\n")
+        yutils.display(OUTFILE, "}\n\n")
+
+        # generate the host function
+        yutils.display(OUTFILE, "void yaksuri_cudai_%s(const void *inbuf, void *outbuf, uintptr_t count, yaksuri_cudai_md_s *md, int n_threads, int n_blocks_x, int n_blocks_y, int n_blocks_z, int device)\n" % funcprefix)
+        yutils.display(OUTFILE, "{\n")
+        yutils.display(OUTFILE, "void *args[] = { &inbuf, &outbuf, &count, &md };\n")
+        yutils.display(OUTFILE, "cudaError_t cerr = cudaLaunchKernel((const void *) yaksuri_cudai_kernel_%s,\n" % funcprefix)
+        yutils.display(OUTFILE, "    dim3(n_blocks_x, n_blocks_y, n_blocks_z), dim3(n_threads), args, 0, yaksuri_cudai_global.stream[device]);\n")
+        yutils.display(OUTFILE, "YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
+        yutils.display(OUTFILE, "}\n\n")
 
 
 ########################################################################################
