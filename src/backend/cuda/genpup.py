@@ -279,6 +279,10 @@ if __name__ == '__main__':
 
     for b in builtin_types:
         for darray in darraylist:
+            # we don't need pup kernels for basic types
+            if (len(darray) == 0):
+                continue
+
             for func in "pack","unpack":
                 ##### figure out the function name to use
                 s = "void yaksuri_cudai_%s_" % func

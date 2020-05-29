@@ -250,9 +250,13 @@ if __name__ == '__main__':
     for b in builtin_types:
         for darray in darraylist:
             for blklen in blklens:
+                # we don't need pup kernels for basic types
+                if (len(darray) == 0):
+                    continue
+
                 # individual blocklength optimization is only for
                 # hvector and blkhindx
-                if (len(darray) and darray[-1] != "hvector" and darray[-1] != "blkhindx" \
+                if (darray[-1] != "hvector" and darray[-1] != "blkhindx" \
                     and blklen != "generic"):
                     continue
 
