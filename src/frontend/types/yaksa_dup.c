@@ -15,10 +15,7 @@ int yaksi_type_create_dup(yaksi_type_s * intype, yaksi_type_s ** newtype)
     yaksu_atomic_incr(&intype->refcount);
     *newtype = intype;
 
-  fn_exit:
     return rc;
-  fn_fail:
-    goto fn_exit;
 }
 
 int yaksa_type_create_dup(yaksa_type_t oldtype, yaksa_type_t * newtype)
