@@ -91,13 +91,6 @@ def hindexed(suffix, dtp, b, last):
         need_extent = False
     idx = idx + 2
 
-## dup routines
-def dup(suffix, dtp, b, last):
-    global need_extent
-    if (need_extent == True):
-        yutils.display(OUTFILE, "uintptr_t extent%d = %s->extent / sizeof(%s);\n" % (suffix, dtp, b))
-    need_extent = False
-
 ## contig routines
 def contig(suffix, dtp, b, last):
     global s

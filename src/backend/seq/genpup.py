@@ -103,13 +103,6 @@ def hindexed(suffix, b, blklen, last):
     else:
         s += " + array_of_displs%d[j%d] / sizeof(%s) + k%d" % (suffix, suffix, b, suffix)
 
-## dup routines
-def dup_decl(nesting, dtp, b):
-    yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent / sizeof(%s);\n" % (nesting, dtp, b))
-
-def dup(suffix, b, blklen, last):
-    pass
-
 ## contig routines
 def contig_decl(nesting, dtp, b):
     yutils.display(OUTFILE, "int count%d = %s->u.contig.count;\n" % (nesting, dtp))

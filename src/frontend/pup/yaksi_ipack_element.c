@@ -493,12 +493,6 @@ int yaksi_ipack_element(const void *inbuf, yaksi_type_s * type, uintptr_t inoffs
                 break;
             }
 
-        case YAKSI_TYPE_KIND__DUP:
-            rc = yaksi_ipack_element(inbuf, type->u.dup.child, inoffset, outbuf,
-                                     max_pack_bytes, actual_pack_bytes, info, request);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-            break;
-
         default:
             assert(0);
     }

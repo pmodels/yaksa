@@ -10,7 +10,7 @@ import yutils
 
 ## loop through the derived and basic types to generate individual
 ## pack functions
-derived_types = [ "hvector", "blkhindx", "hindexed", "dup", "contig", "resized" ]
+derived_types = [ "hvector", "blkhindx", "hindexed", "contig", "resized" ]
 
 
 ########################################################################################

@@ -500,12 +500,6 @@ int yaksi_iunpack_element(const void *inbuf, uintptr_t insize, void *outbuf, yak
                 break;
             }
 
-        case YAKSI_TYPE_KIND__DUP:
-            rc = yaksi_iunpack_element(inbuf, insize, outbuf, type->u.dup.child, outoffset,
-                                       actual_unpack_bytes, info, request);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-            break;
-
         default:
             assert(0);
     }

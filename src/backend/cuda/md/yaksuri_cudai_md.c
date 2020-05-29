@@ -42,12 +42,6 @@ int yaksuri_cudai_md_alloc(yaksi_type_s * type)
         case YAKSI_TYPE_KIND__BUILTIN:
             break;
 
-        case YAKSI_TYPE_KIND__DUP:
-            rc = yaksuri_cudai_md_alloc(type->u.dup.child);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-            cuda->md->u.dup.child = type_to_md(type->u.dup.child);
-            break;
-
         case YAKSI_TYPE_KIND__RESIZED:
             rc = yaksuri_cudai_md_alloc(type->u.resized.child);
             YAKSU_ERR_CHECK(rc, fn_fail);

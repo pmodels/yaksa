@@ -195,11 +195,6 @@ static inline int unpack_backend(const void *inbuf, void *outbuf, uintptr_t coun
             }
             break;
 
-        case YAKSI_TYPE_KIND__DUP:
-            rc = yaksi_iunpack_backend(inbuf, outbuf, count, type->u.dup.child, info, request);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-            break;
-
         default:
             assert(0);
     }
