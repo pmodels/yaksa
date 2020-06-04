@@ -77,6 +77,7 @@ int yaksu_pool_free(yaksu_pool_s pool)
                 count++;
 
         pool_head->free_fn(tmp->slab);
+        free(tmp->elems);
         free(tmp);
         tmp = next;
     }

@@ -178,8 +178,6 @@ int yaksa_init(yaksa_init_attr_t attr)
 
 
     /* special initialzation for the NULL type */
-    INIT_BUILTIN(uint8_t, NULL, rc, fn_fail);
-
     yaksi_type_s *null_type;
     rc = yaksi_type_get(YAKSA_TYPE__NULL, &null_type);
     YAKSU_ERR_CHECK(rc, fn_fail);
