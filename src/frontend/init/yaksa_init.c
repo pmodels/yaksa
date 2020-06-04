@@ -226,7 +226,7 @@ int yaksa_finalize(void)
         rc = yaksi_type_get(i, &type);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
-        rc = yaksi_type_dealloc(type);
+        rc = yaksi_type_free(type);
         YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
