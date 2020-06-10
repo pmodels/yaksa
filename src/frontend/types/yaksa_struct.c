@@ -114,10 +114,11 @@ int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
     outtype->u.str.count = count;
     outtype->u.str.array_of_blocklengths = (int *) malloc(count * sizeof(intptr_t));
     outtype->u.str.array_of_displs = (intptr_t *) malloc(count * sizeof(intptr_t));
+    outtype->u.str.array_of_types = (yaksi_type_s **) malloc(count * sizeof(yaksi_type_s *));
     for (int i = 0; i < count; i++) {
         outtype->u.str.array_of_blocklengths[i] = array_of_blocklengths[i];
         outtype->u.str.array_of_displs[i] = array_of_displs[i];
-        outtype->u.str.array_of_types = array_of_intypes;
+        outtype->u.str.array_of_types[i] = array_of_intypes[i];
     }
 
     yaksur_type_create_hook(outtype);
@@ -164,6 +165,7 @@ int yaksa_type_create_struct(int count, const int *array_of_blocklengths,
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     *newtype = outtype->id;
+    free(array_of_intypes);
 
   fn_exit:
     return rc;
