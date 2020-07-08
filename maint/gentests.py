@@ -15,7 +15,7 @@ iters = {
     1075: 128,
     65536: 32,
 }
-types = [ "int", "short_int", "int:3,double:2" ]
+types = [ "int", "short_int", "int:3+double:2" ]
 seed = 1
 
 ##### simple tests generator
