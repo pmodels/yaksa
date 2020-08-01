@@ -100,7 +100,7 @@ fi
 
 filetype_list="\.c$|\.h$|\.c\.in$|\.h\.in$|\.cpp$|\.cpp.in$"
 
-ignore_list="maint/"
+ignore_list="maint/|src/external/"
 
 filelist=""
 
