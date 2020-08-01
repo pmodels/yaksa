@@ -44,10 +44,7 @@ static int get_thread_block_dims(uintptr_t count, yaksi_type_s * type, unsigned 
             (unsigned int) (YAKSU_CEIL(n_blocks, (uintptr_t) (*n_blocks_x) * (*n_blocks_y)));
     }
 
-  fn_exit:
     return rc;
-  fn_fail:
-    goto fn_exit;
 }
 
 int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, bool * is_supported)
@@ -60,10 +57,7 @@ int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, bool * is_supported)
     else
         *is_supported = false;
 
-  fn_exit:
     return rc;
-  fn_fail:
-    goto fn_exit;
 }
 
 int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,

@@ -40,10 +40,14 @@ int yaksi_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t o
      * In the common case, we expect to execute only step 3.
      */
 
-    const char *sbuf = (const char *) inbuf;
-    char *dbuf = (char *) outbuf;
-    uintptr_t remoffset = outoffset;
-    uintptr_t rem_unpack_bytes = YAKSU_MIN(insize, outcount * type->size - outoffset);
+    const char *sbuf;
+    sbuf = (const char *) inbuf;
+    char *dbuf;
+    dbuf = (char *) outbuf;
+    uintptr_t remoffset;
+    remoffset = outoffset;
+    uintptr_t rem_unpack_bytes;
+    rem_unpack_bytes = YAKSU_MIN(insize, outcount * type->size - outoffset);
 
     /* step 1: skip the first few elements */
     if (remoffset) {
@@ -80,7 +84,8 @@ int yaksi_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t o
 
 
     /* step 3: perform a full unpack of the next few elements */
-    uintptr_t numelems = rem_unpack_bytes / type->size;
+    uintptr_t numelems;
+    numelems = rem_unpack_bytes / type->size;
     if (numelems) {
         rc = yaksi_iunpack_backend(sbuf, dbuf, numelems, type, info, request);
         YAKSU_ERR_CHECK(rc, fn_fail);

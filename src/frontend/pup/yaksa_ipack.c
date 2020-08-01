@@ -35,13 +35,13 @@ int yaksa_ipack(const void *inbuf, uintptr_t incount, yaksa_type_t type, uintptr
     rc = yaksi_request_create(&yaksi_request);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    yaksi_info_s *yaksi_info = (yaksi_info_s *) info;
+    yaksi_info_s *yaksi_info;
+    yaksi_info = (yaksi_info_s *) info;
     rc = yaksi_ipack(inbuf, incount, yaksi_type, inoffset, outbuf, max_pack_bytes,
                      actual_pack_bytes, yaksi_info, yaksi_request);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    int cc = yaksu_atomic_load(&yaksi_request->cc);
-    if (cc) {
+    if (yaksu_atomic_load(&yaksi_request->cc)) {
         *request = yaksi_request->id;
     } else {
         rc = yaksi_request_free(yaksi_request);

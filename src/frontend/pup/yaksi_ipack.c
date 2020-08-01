@@ -77,7 +77,8 @@ int yaksi_ipack(const void *inbuf, uintptr_t incount, yaksi_type_s * type, uintp
 
 
     /* step 3: perform a full pack of the next few elements */
-    uintptr_t numelems = rem_pack_bytes / type->size;
+    uintptr_t numelems;
+    numelems = rem_pack_bytes / type->size;
     if (numelems) {
         rc = yaksi_ipack_backend(sbuf, dbuf, numelems, type, info, request);
         YAKSU_ERR_CHECK(rc, fn_fail);

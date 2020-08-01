@@ -40,7 +40,8 @@ int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
         yaksu_atomic_incr(&array_of_intypes[i]->refcount);
     }
 
-    int is_set = 0;
+    int is_set;
+    is_set = 0;
     outtype->alignment = 0;
     for (int idx = 0; idx < count; idx++) {
         if (array_of_blocklengths[idx] == 0)
@@ -75,7 +76,8 @@ int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
 
     /* adjust ub based on alignment */
     assert(outtype->alignment);
-    uintptr_t diff = (outtype->ub - outtype->lb) % outtype->alignment;
+    uintptr_t diff;
+    diff = (outtype->ub - outtype->lb) % outtype->alignment;
     if (diff) {
         outtype->ub += outtype->alignment - diff;
     }
@@ -138,7 +140,8 @@ int yaksa_type_create_struct(int count, const int *array_of_blocklengths,
 
     assert(yaksi_global.is_initialized);
 
-    uintptr_t total_size = 0;
+    uintptr_t total_size;
+    total_size = 0;
     for (int i = 0; i < count; i++) {
         yaksi_type_s *type;
         rc = yaksi_type_get(array_of_types[i], &type);
@@ -152,7 +155,8 @@ int yaksa_type_create_struct(int count, const int *array_of_blocklengths,
     }
 
     assert(count > 0);
-    yaksi_type_s **array_of_intypes = (yaksi_type_s **) malloc(count * sizeof(yaksi_type_s *));
+    yaksi_type_s **array_of_intypes;
+    array_of_intypes = (yaksi_type_s **) malloc(count * sizeof(yaksi_type_s *));
 
     for (int i = 0; i < count; i++) {
         rc = yaksi_type_get(array_of_types[i], &array_of_intypes[i]);

@@ -38,10 +38,7 @@ static void *cuda_gpu_malloc(uintptr_t size, int device)
     cerr = cudaSetDevice(cur_device);
     YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
 
-  fn_exit:
     return ptr;
-  fn_fail:
-    return NULL;
 }
 
 static void cuda_host_free(void *ptr)
