@@ -41,8 +41,8 @@ struct yaksi_request_s;
 
 /* global variables */
 typedef struct {
-    yaksu_pool_s type_pool;
-    yaksu_pool_s request_pool;
+    yaksu_buffer_pool_s type_pool;
+    yaksu_buffer_pool_s request_pool;
     int is_initialized;
 } yaksi_global_s;
 extern yaksi_global_s yaksi_global;

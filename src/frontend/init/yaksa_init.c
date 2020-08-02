@@ -96,8 +96,8 @@ int yaksa_init(yaksa_init_attr_t attr)
     int rc = YAKSA_SUCCESS;
 
     /* initialize the type pool */
-    rc = yaksu_pool_alloc(sizeof(yaksi_type_s), CHUNK_SIZE, UINT_MAX, malloc, free,
-                          &yaksi_global.type_pool);
+    rc = yaksu_buffer_pool_alloc(sizeof(yaksi_type_s), CHUNK_SIZE, UINT_MAX, malloc, free,
+                                 &yaksi_global.type_pool);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     /* these are the first set of allocations for our builtin
@@ -113,8 +113,8 @@ int yaksa_init(yaksa_init_attr_t attr)
     }
 
     /* initialize the request pool */
-    rc = yaksu_pool_alloc(sizeof(yaksi_request_s), CHUNK_SIZE, UINT_MAX, malloc, free,
-                          &yaksi_global.request_pool);
+    rc = yaksu_buffer_pool_alloc(sizeof(yaksi_request_s), CHUNK_SIZE, UINT_MAX, malloc, free,
+                                 &yaksi_global.request_pool);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     /* these are the first set of allocations for our builtin
@@ -228,7 +228,7 @@ int yaksa_finalize(void)
         YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
-    rc = yaksu_pool_free(yaksi_global.type_pool);
+    rc = yaksu_buffer_pool_free(yaksi_global.type_pool);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
 
@@ -243,7 +243,7 @@ int yaksa_finalize(void)
         YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
-    rc = yaksu_pool_free(yaksi_global.request_pool);
+    rc = yaksu_buffer_pool_free(yaksi_global.request_pool);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:

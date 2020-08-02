@@ -73,8 +73,9 @@ typedef struct pool_head {
 
 static pthread_mutex_t global_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-int yaksu_pool_alloc(uintptr_t elemsize, unsigned int elems_in_chunk, unsigned int maxelems,
-                     yaksu_malloc_fn malloc_fn, yaksu_free_fn free_fn, yaksu_pool_s * pool)
+int yaksu_buffer_pool_alloc(uintptr_t elemsize, unsigned int elems_in_chunk, unsigned int maxelems,
+                            yaksu_malloc_fn malloc_fn, yaksu_free_fn free_fn,
+                            yaksu_buffer_pool_s * pool)
 {
     int rc = YAKSA_SUCCESS;
     pool_head_s *pool_head;
@@ -104,7 +105,7 @@ int yaksu_pool_alloc(uintptr_t elemsize, unsigned int elems_in_chunk, unsigned i
     return rc;
 }
 
-int yaksu_pool_free(yaksu_pool_s pool)
+int yaksu_buffer_pool_free(yaksu_buffer_pool_s pool)
 {
     int rc = YAKSA_SUCCESS;
     pool_head_s *pool_head = (pool_head_s *) pool;
@@ -141,7 +142,7 @@ int yaksu_pool_free(yaksu_pool_s pool)
     return rc;
 }
 
-int yaksu_pool_elem_alloc(yaksu_pool_s pool, void **elem, unsigned int *elem_idx)
+int yaksu_buffer_pool_elem_alloc(yaksu_buffer_pool_s pool, void **elem, unsigned int *elem_idx)
 {
     int rc = YAKSA_SUCCESS;
     pool_head_s *pool_head = (pool_head_s *) pool;
@@ -203,7 +204,7 @@ int yaksu_pool_elem_alloc(yaksu_pool_s pool, void **elem, unsigned int *elem_idx
     goto fn_exit;
 }
 
-int yaksu_pool_elem_free(yaksu_pool_s pool, unsigned int idx)
+int yaksu_buffer_pool_elem_free(yaksu_buffer_pool_s pool, unsigned int idx)
 {
     int rc = YAKSA_SUCCESS;
     pool_head_s *pool_head = (pool_head_s *) pool;
@@ -224,7 +225,7 @@ int yaksu_pool_elem_free(yaksu_pool_s pool, unsigned int idx)
     return rc;
 }
 
-int yaksu_pool_elem_get(yaksu_pool_s pool, unsigned int idx, void **elem)
+int yaksu_buffer_pool_elem_get(yaksu_buffer_pool_s pool, unsigned int idx, void **elem)
 {
     int rc = YAKSA_SUCCESS;
     pool_head_s *pool_head = (pool_head_s *) pool;
