@@ -70,16 +70,16 @@ int yaksu_pool_free(yaksu_pool_s pool)
     pthread_mutex_lock(&global_mutex);
 
     int count = 0;
-    for (chunk_s * tmp = pool_head->chunks; tmp;) {
-        chunk_s *next = tmp->next;
+    for (chunk_s * chunk = pool_head->chunks; chunk;) {
+        chunk_s *next = chunk->next;
         for (unsigned int i = 0; i < pool_head->elems_in_chunk; i++)
-            if (tmp->elems[i])
+            if (chunk->elems[i])
                 count++;
 
-        pool_head->free_fn(tmp->slab);
-        free(tmp->elems);
-        free(tmp);
-        tmp = next;
+        pool_head->free_fn(chunk->slab);
+        free(chunk->elems);
+        free(chunk);
+        chunk = next;
     }
 
     /* free self */
@@ -106,13 +106,13 @@ int yaksu_pool_elem_alloc(yaksu_pool_s pool, void **elem, unsigned int *elem_idx
 
     /* try to find an available type */
     idx = 0;
-    for (chunk_s * tmp = pool_head->chunks; tmp; tmp = tmp->next) {
+    for (chunk_s * chunk = pool_head->chunks; chunk; chunk = chunk->next) {
         for (unsigned int i = 0; i < pool_head->elems_in_chunk; i++) {
-            if (tmp->elems[i] == NULL) {
-                tmp->elems[i] = (char *) tmp->slab + i * pool_head->elemsize;
-                YAKSU_ERR_CHKANDJUMP(!tmp->elems[i], rc, YAKSA_ERR__OUT_OF_MEM, fn_fail);
+            if (chunk->elems[i] == NULL) {
+                chunk->elems[i] = (char *) chunk->slab + i * pool_head->elemsize;
+                YAKSU_ERR_CHKANDJUMP(!chunk->elems[i], rc, YAKSA_ERR__OUT_OF_MEM, fn_fail);
                 *elem_idx = idx;
-                *elem = tmp->elems[i];
+                *elem = chunk->elems[i];
                 goto fn_exit;
             }
             idx++;
@@ -143,12 +143,12 @@ int yaksu_pool_elem_alloc(yaksu_pool_s pool, void **elem, unsigned int *elem_idx
     if (pool_head->chunks == NULL) {
         pool_head->chunks = new;
     } else {
-        chunk_s *tmp;
+        chunk_s *chunk;
         idx += pool_head->elems_in_chunk;
-        for (tmp = pool_head->chunks; tmp->next; tmp = tmp->next) {
+        for (chunk = pool_head->chunks; chunk->next; chunk = chunk->next) {
             idx += pool_head->elems_in_chunk;
         }
-        tmp->next = new;
+        chunk->next = new;
     }
 
     new->elems[0] = new->slab;
@@ -174,14 +174,14 @@ int yaksu_pool_elem_free(yaksu_pool_s pool, unsigned int idx)
 
     pthread_mutex_lock(&pool_head->mutex);
 
-    chunk_s *tmp = pool_head->chunks;
+    chunk_s *chunk = pool_head->chunks;
     while (idx >= pool_head->elems_in_chunk) {
-        assert(tmp->next);
-        tmp = tmp->next;
+        assert(chunk->next);
+        chunk = chunk->next;
         idx -= pool_head->elems_in_chunk;
     }
 
-    tmp->elems[idx] = NULL;
+    chunk->elems[idx] = NULL;
 
     pthread_mutex_unlock(&pool_head->mutex);
     return rc;
@@ -193,14 +193,14 @@ int yaksu_pool_elem_get(yaksu_pool_s pool, unsigned int elem_idx, void **elem)
     pool_head_s *pool_head = (pool_head_s *) pool;
     unsigned int idx = elem_idx;
 
-    chunk_s *tmp = pool_head->chunks;
+    chunk_s *chunk = pool_head->chunks;
     while (idx >= pool_head->elems_in_chunk) {
-        assert(tmp->next);
-        tmp = tmp->next;
+        assert(chunk->next);
+        chunk = chunk->next;
         idx -= pool_head->elems_in_chunk;
     }
 
-    *elem = tmp->elems[idx];
+    *elem = chunk->elems[idx];
 
     return rc;
 }
