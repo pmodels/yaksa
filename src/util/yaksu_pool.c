@@ -53,7 +53,7 @@ int yaksu_pool_alloc(uintptr_t elemsize, unsigned int elems_in_chunk, unsigned i
     pthread_mutex_init(&pool_head->mutex, NULL);
 
     pool_head->current_num_chunks = 0;
-    pool_head->max_num_chunks = maxelems / elems_in_chunk;
+    pool_head->max_num_chunks = (maxelems / elems_in_chunk) + ! !(maxelems % elems_in_chunk);
     pool_head->chunks = NULL;
 
     *pool = (void *) pool_head;
