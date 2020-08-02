@@ -10,11 +10,11 @@
 #include <stdint.h>
 #include <string.h>
 
-typedef struct pool_elem {
+typedef struct chunk {
     void **elems;
     void *slab;
-    struct pool_elem *next;
-} pool_elem_s;
+    struct chunk *next;
+} chunk_s;
 
 typedef struct pool_head {
     uintptr_t elemsize;
@@ -26,9 +26,9 @@ typedef struct pool_head {
 
     pthread_mutex_t mutex;
 
-    unsigned int num_pool_elems;
-    unsigned int max_pool_elems;
-    pool_elem_s *pool_elems;
+    unsigned int current_num_chunks;
+    unsigned int max_num_chunks;
+    chunk_s *chunks;
 } pool_head_s;
 
 static pthread_mutex_t global_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -52,9 +52,9 @@ int yaksu_pool_alloc(uintptr_t elemsize, unsigned int elems_in_chunk, unsigned i
 
     pthread_mutex_init(&pool_head->mutex, NULL);
 
-    pool_head->num_pool_elems = 0;
-    pool_head->max_pool_elems = maxelems / elems_in_chunk;
-    pool_head->pool_elems = NULL;
+    pool_head->current_num_chunks = 0;
+    pool_head->max_num_chunks = maxelems / elems_in_chunk;
+    pool_head->chunks = NULL;
 
     *pool = (void *) pool_head;
 
@@ -70,8 +70,8 @@ int yaksu_pool_free(yaksu_pool_s pool)
     pthread_mutex_lock(&global_mutex);
 
     int count = 0;
-    for (pool_elem_s * tmp = pool_head->pool_elems; tmp;) {
-        pool_elem_s *next = tmp->next;
+    for (chunk_s * tmp = pool_head->chunks; tmp;) {
+        chunk_s *next = tmp->next;
         for (unsigned int i = 0; i < pool_head->elems_in_chunk; i++)
             if (tmp->elems[i])
                 count++;
@@ -100,13 +100,13 @@ int yaksu_pool_elem_alloc(yaksu_pool_s pool, void **elem, unsigned int *elem_idx
     int rc = YAKSA_SUCCESS;
     pool_head_s *pool_head = (pool_head_s *) pool;
     int idx;
-    pool_elem_s *new = NULL;
+    chunk_s *new = NULL;
 
     pthread_mutex_lock(&pool_head->mutex);
 
     /* try to find an available type */
     idx = 0;
-    for (pool_elem_s * tmp = pool_head->pool_elems; tmp; tmp = tmp->next) {
+    for (chunk_s * tmp = pool_head->chunks; tmp; tmp = tmp->next) {
         for (unsigned int i = 0; i < pool_head->elems_in_chunk; i++) {
             if (tmp->elems[i] == NULL) {
                 tmp->elems[i] = (char *) tmp->slab + i * pool_head->elemsize;
@@ -120,13 +120,13 @@ int yaksu_pool_elem_alloc(yaksu_pool_s pool, void **elem, unsigned int *elem_idx
     }
 
     /* no empty slot available; see if we can allocate more chunks */
-    assert(pool_head->num_pool_elems <= pool_head->max_pool_elems);
-    if (pool_head->num_pool_elems == pool_head->max_pool_elems)
+    assert(pool_head->current_num_chunks <= pool_head->max_num_chunks);
+    if (pool_head->current_num_chunks == pool_head->max_num_chunks)
         goto fn_exit;
 
     /* allocate another chunk */
     idx = 0;
-    new = (pool_elem_s *) malloc(sizeof(pool_elem_s));
+    new = (chunk_s *) malloc(sizeof(chunk_s));
     YAKSU_ERR_CHKANDJUMP(!new, rc, YAKSA_ERR__OUT_OF_MEM, fn_fail);
 
     new->slab = pool_head->malloc_fn(pool_head->elems_in_chunk * pool_head->elemsize);
@@ -138,14 +138,14 @@ int yaksu_pool_elem_alloc(yaksu_pool_s pool, void **elem, unsigned int *elem_idx
     memset(new->elems, 0, pool_head->elems_in_chunk * sizeof(void *));
     new->next = NULL;
 
-    pool_head->num_pool_elems++;
+    pool_head->current_num_chunks++;
 
-    if (pool_head->pool_elems == NULL) {
-        pool_head->pool_elems = new;
+    if (pool_head->chunks == NULL) {
+        pool_head->chunks = new;
     } else {
-        pool_elem_s *tmp;
+        chunk_s *tmp;
         idx += pool_head->elems_in_chunk;
-        for (tmp = pool_head->pool_elems; tmp->next; tmp = tmp->next) {
+        for (tmp = pool_head->chunks; tmp->next; tmp = tmp->next) {
             idx += pool_head->elems_in_chunk;
         }
         tmp->next = new;
@@ -174,7 +174,7 @@ int yaksu_pool_elem_free(yaksu_pool_s pool, unsigned int idx)
 
     pthread_mutex_lock(&pool_head->mutex);
 
-    pool_elem_s *tmp = pool_head->pool_elems;
+    chunk_s *tmp = pool_head->chunks;
     while (idx >= pool_head->elems_in_chunk) {
         assert(tmp->next);
         tmp = tmp->next;
@@ -193,7 +193,7 @@ int yaksu_pool_elem_get(yaksu_pool_s pool, unsigned int elem_idx, void **elem)
     pool_head_s *pool_head = (pool_head_s *) pool;
     unsigned int idx = elem_idx;
 
-    pool_elem_s *tmp = pool_head->pool_elems;
+    chunk_s *tmp = pool_head->chunks;
     while (idx >= pool_head->elems_in_chunk) {
         assert(tmp->next);
         tmp = tmp->next;
