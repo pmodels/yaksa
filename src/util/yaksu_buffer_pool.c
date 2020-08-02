@@ -115,7 +115,7 @@ int yaksu_buffer_pool_free(yaksu_buffer_pool_s pool)
     /* throw a warning if the used hashmap is not empty */
     int count = HASH_COUNT(pool_head->used_elems);
     if (count) {
-        fprintf(stderr, "[WARNING] yaksa: %d leaked handles\n", count);
+        fprintf(stderr, "[WARNING] yaksa: %d leaked buffer pool objects\n", count);
         fflush(stderr);
     }
 
