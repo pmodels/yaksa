@@ -5,17 +5,14 @@
 
 #include "yaksi.h"
 #include "yaksu.h"
+#include <assert.h>
 
-int yaksi_type_alloc(struct yaksi_type_s **type)
+int yaksi_type_handle_alloc(yaksi_type_s * type, uint32_t * handle)
 {
     int rc = YAKSA_SUCCESS;
-    unsigned int idx;
 
-    rc = yaksu_buffer_pool_elem_alloc(yaksi_global.type_pool, (void **) type, &idx);
+    rc = yaksu_handle_pool_elem_alloc(yaksi_global.type_handle_pool, handle, type);
     YAKSU_ERR_CHECK(rc, fn_fail);
-
-    (*type)->id = (yaksa_type_t) idx;
-    yaksu_atomic_store(&(*type)->refcount, 1);
 
   fn_exit:
     return rc;
@@ -23,11 +20,14 @@ int yaksi_type_alloc(struct yaksi_type_s **type)
     goto fn_exit;
 }
 
-int yaksi_type_dealloc(struct yaksi_type_s *type)
+int yaksi_type_handle_dealloc(uint32_t handle, yaksi_type_s ** type)
 {
     int rc = YAKSA_SUCCESS;
 
-    rc = yaksu_buffer_pool_elem_free(yaksi_global.type_pool, type->id);
+    rc = yaksu_handle_pool_elem_get(yaksi_global.type_handle_pool, handle, (const void **) type);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    rc = yaksu_handle_pool_elem_free(yaksi_global.type_handle_pool, handle);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
@@ -39,8 +39,9 @@ int yaksi_type_dealloc(struct yaksi_type_s *type)
 int yaksi_type_get(yaksa_type_t type, struct yaksi_type_s **yaksi_type)
 {
     int rc = YAKSA_SUCCESS;
+    uint32_t id = (uint32_t) ((type << 32) >> 32);
 
-    rc = yaksu_buffer_pool_elem_get(yaksi_global.type_pool, (int) type, (void **) yaksi_type);
+    rc = yaksu_handle_pool_elem_get(yaksi_global.type_handle_pool, id, (const void **) yaksi_type);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:

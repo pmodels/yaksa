@@ -29,57 +29,53 @@
  * @{
  */
 
+typedef uint64_t yaksa_type_t;
+
 /**
  * \brief yaksa builtin datatypes
  */
-typedef enum {
-    YAKSA_TYPE__NULL = 0,
+/* generic */
+#define YAKSA_TYPE__NULL                              ((yaksa_type_t) 0)
+#define YAKSA_TYPE__BYTE                              ((yaksa_type_t) 1)
 
-    /* char types */
-    YAKSA_TYPE__CHAR,
-    YAKSA_TYPE__UNSIGNED_CHAR,
-    YAKSA_TYPE__WCHAR_T,
+/* char types */
+#define YAKSA_TYPE__CHAR                              ((yaksa_type_t) 2)
+#define YAKSA_TYPE__UNSIGNED_CHAR                     ((yaksa_type_t) 3)
+#define YAKSA_TYPE__WCHAR_T                           ((yaksa_type_t) 4)
 
-    /* int types */
-    YAKSA_TYPE__INT,
-    YAKSA_TYPE__UNSIGNED,
-    YAKSA_TYPE__SHORT,
-    YAKSA_TYPE__UNSIGNED_SHORT,
-    YAKSA_TYPE__LONG,
-    YAKSA_TYPE__UNSIGNED_LONG,
-    YAKSA_TYPE__LONG_LONG,
-    YAKSA_TYPE__UNSIGNED_LONG_LONG,
-    YAKSA_TYPE__INT8_T,
-    YAKSA_TYPE__INT16_T,
-    YAKSA_TYPE__INT32_T,
-    YAKSA_TYPE__INT64_T,
-    YAKSA_TYPE__UINT8_T,
-    YAKSA_TYPE__UINT16_T,
-    YAKSA_TYPE__UINT32_T,
-    YAKSA_TYPE__UINT64_T,
+/* int types */
+#define YAKSA_TYPE__INT                               ((yaksa_type_t) 5)
+#define YAKSA_TYPE__UNSIGNED                          ((yaksa_type_t) 6)
+#define YAKSA_TYPE__SHORT                             ((yaksa_type_t) 7)
+#define YAKSA_TYPE__UNSIGNED_SHORT                    ((yaksa_type_t) 8)
+#define YAKSA_TYPE__LONG                              ((yaksa_type_t) 9)
+#define YAKSA_TYPE__UNSIGNED_LONG                     ((yaksa_type_t) 10)
+#define YAKSA_TYPE__LONG_LONG                         ((yaksa_type_t) 11)
+#define YAKSA_TYPE__UNSIGNED_LONG_LONG                ((yaksa_type_t) 12)
+#define YAKSA_TYPE__INT8_T                            ((yaksa_type_t) 13)
+#define YAKSA_TYPE__INT16_T                           ((yaksa_type_t) 14)
+#define YAKSA_TYPE__INT32_T                           ((yaksa_type_t) 15)
+#define YAKSA_TYPE__INT64_T                           ((yaksa_type_t) 16)
+#define YAKSA_TYPE__UINT8_T                           ((yaksa_type_t) 17)
+#define YAKSA_TYPE__UINT16_T                          ((yaksa_type_t) 18)
+#define YAKSA_TYPE__UINT32_T                          ((yaksa_type_t) 19)
+#define YAKSA_TYPE__UINT64_T                          ((yaksa_type_t) 20)
 
-    /* float types */
-    YAKSA_TYPE__FLOAT,
-    YAKSA_TYPE__DOUBLE,
-    YAKSA_TYPE__LONG_DOUBLE,
-    YAKSA_TYPE__C_COMPLEX,
-    YAKSA_TYPE__C_DOUBLE_COMPLEX,
-    YAKSA_TYPE__C_LONG_DOUBLE_COMPLEX,
+/* float types */
+#define YAKSA_TYPE__FLOAT                             ((yaksa_type_t) 21)
+#define YAKSA_TYPE__DOUBLE                            ((yaksa_type_t) 22)
+#define YAKSA_TYPE__LONG_DOUBLE                       ((yaksa_type_t) 23)
 
-    /* pair types */
-    YAKSA_TYPE__FLOAT_INT,
-    YAKSA_TYPE__DOUBLE_INT,
-    YAKSA_TYPE__LONG_INT,
-    YAKSA_TYPE__2INT,
-    YAKSA_TYPE__SHORT_INT,
-    YAKSA_TYPE__LONG_DOUBLE_INT,
-
-    /* generic */
-    YAKSA_TYPE__BYTE,
-
-    /* terminal */
-    YAKSI_TYPE__LAST,
-} yaksa_type_t;
+/* pair types */
+#define YAKSA_TYPE__C_COMPLEX                         ((yaksa_type_t) 24)
+#define YAKSA_TYPE__C_DOUBLE_COMPLEX                  ((yaksa_type_t) 25)
+#define YAKSA_TYPE__C_LONG_DOUBLE_COMPLEX             ((yaksa_type_t) 26)
+#define YAKSA_TYPE__FLOAT_INT                         ((yaksa_type_t) 27)
+#define YAKSA_TYPE__DOUBLE_INT                        ((yaksa_type_t) 28)
+#define YAKSA_TYPE__LONG_INT                          ((yaksa_type_t) 29)
+#define YAKSA_TYPE__2INT                              ((yaksa_type_t) 30)
+#define YAKSA_TYPE__SHORT_INT                         ((yaksa_type_t) 31)
+#define YAKSA_TYPE__LONG_DOUBLE_INT                   ((yaksa_type_t) 32)
 
 /*! @} */
 
@@ -88,15 +84,12 @@ typedef enum {
  * @{
  */
 
+typedef uint64_t yaksa_request_t;
+
 /**
  * \brief yaksa predefined requests
  */
-typedef enum {
-    YAKSA_REQUEST__NULL = 0,
-
-    /* terminal */
-    YAKSI_REQUEST__LAST,
-} yaksa_request_t;
+#define YAKSA_REQUEST__NULL                           ((yaksa_request_t) 0)
 
 /*! @} */
 

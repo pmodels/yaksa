@@ -43,7 +43,7 @@ static inline int pack_backend(const void *inbuf, void *outbuf, uintptr_t count,
     switch (type->kind) {
         case YAKSI_TYPE_KIND__BUILTIN:
             assert(!type->is_contig);
-            switch (type->id) {
+            switch (type->u.builtin.handle) {
                 case YAKSA_TYPE__FLOAT_INT:
                     BUILTIN_PAIRTYPE_PACK(yaksi_float_int_s, FLOAT, INT, inbuf, count, outbuf,
                                           info, request);

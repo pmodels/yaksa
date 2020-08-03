@@ -16,8 +16,9 @@ int yaksi_type_free(yaksi_type_s * type)
     int ret = yaksu_atomic_decr(&type->refcount);
     assert(ret >= 1);
 
-    if (ret > 1)
+    if (ret > 1) {
         goto fn_exit;
+    }
 
     rc = yaksur_type_free_hook(type);
     YAKSU_ERR_CHECK(rc, fn_fail);
@@ -76,7 +77,7 @@ int yaksi_type_free(yaksi_type_s * type)
             break;
     }
 
-    yaksi_type_dealloc(type);
+    free(type);
 
   fn_exit:
     return rc;
@@ -94,7 +95,9 @@ int yaksa_type_free(yaksa_type_t type)
     if (type == YAKSA_TYPE__NULL)
         goto fn_exit;
 
-    rc = yaksi_type_get(type, &yaksi_type);
+    uint32_t id;
+    id = (uint32_t) ((type << 32) >> 32);
+    rc = yaksi_type_handle_dealloc(id, &yaksi_type);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     rc = yaksi_type_free(yaksi_type);

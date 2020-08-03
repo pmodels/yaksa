@@ -5,20 +5,25 @@
 
 #include "yaksi.h"
 #include "yaksu.h"
+#include <assert.h>
 
 int yaksi_request_create(yaksi_request_s ** request)
 {
     int rc = YAKSA_SUCCESS;
-    unsigned int idx;
+    yaksi_request_s *req;
 
-    rc = yaksu_buffer_pool_elem_alloc(yaksi_global.request_pool, (void **) request, &idx);
+    req = (yaksi_request_s *) malloc(sizeof(yaksi_request_s));
+    YAKSU_ERR_CHKANDJUMP(!req, rc, YAKSA_ERR__OUT_OF_MEM, fn_fail);
+
+    rc = yaksu_handle_pool_elem_alloc(yaksi_global.request_handle_pool, &req->id, req);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    (*request)->id = (yaksa_request_t) idx;
-    yaksu_atomic_store(&(*request)->cc, 0);
+    yaksu_atomic_store(&req->cc, 0);
 
-    rc = yaksur_request_create_hook(*request);
+    rc = yaksur_request_create_hook(req);
     YAKSU_ERR_CHECK(rc, fn_fail);
+
+    *request = req;
 
   fn_exit:
     return rc;
@@ -33,7 +38,7 @@ int yaksi_request_free(yaksi_request_s * request)
     rc = yaksur_request_free_hook(request);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    rc = yaksu_buffer_pool_elem_free(yaksi_global.request_pool, request->id);
+    rc = yaksu_handle_pool_elem_free(yaksi_global.request_handle_pool, request->id);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
@@ -45,9 +50,10 @@ int yaksi_request_free(yaksi_request_s * request)
 int yaksi_request_get(yaksa_request_t request, struct yaksi_request_s **yaksi_request)
 {
     int rc = YAKSA_SUCCESS;
+    uint32_t id = (uint32_t) ((request << 32) >> 32);
 
-    rc = yaksu_buffer_pool_elem_get(yaksi_global.request_pool, (int) request,
-                                    (void **) yaksi_request);
+    rc = yaksu_handle_pool_elem_get(yaksi_global.request_handle_pool, id,
+                                    (const void **) yaksi_request);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:

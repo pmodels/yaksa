@@ -36,7 +36,6 @@
  */
 
 typedef struct elem {
-    int id;
     void *buf;
 
     /* for the free list */
@@ -142,7 +141,7 @@ int yaksu_buffer_pool_free(yaksu_buffer_pool_s pool)
     return rc;
 }
 
-int yaksu_buffer_pool_elem_alloc(yaksu_buffer_pool_s pool, void **elem, unsigned int *elem_idx)
+int yaksu_buffer_pool_elem_alloc(yaksu_buffer_pool_s pool, void **elem)
 {
     int rc = YAKSA_SUCCESS;
     pool_head_s *pool_head = (pool_head_s *) pool;
@@ -173,7 +172,6 @@ int yaksu_buffer_pool_elem_alloc(yaksu_buffer_pool_s pool, void **elem, unsigned
             YAKSU_ERR_CHKANDJUMP(!el, rc, YAKSA_ERR__OUT_OF_MEM, fn_fail);
 
             el->buf = (char *) chunk->slab + (i * pool_head->elemsize);
-            el->id = pool_head->current_num_chunks * pool_head->elems_in_chunk + i;
             DL_APPEND(pool_head->free_elems, el);
         }
 
@@ -188,9 +186,8 @@ int yaksu_buffer_pool_elem_alloc(yaksu_buffer_pool_s pool, void **elem, unsigned
     elem_s *el;
     el = pool_head->free_elems;
     DL_DELETE(pool_head->free_elems, el);
-    HASH_ADD_INT(pool_head->used_elems, id, el);
+    HASH_ADD_PTR(pool_head->used_elems, buf, el);
 
-    *elem_idx = el->id;
     *elem = el->buf;
 
   fn_exit:
@@ -204,7 +201,7 @@ int yaksu_buffer_pool_elem_alloc(yaksu_buffer_pool_s pool, void **elem, unsigned
     goto fn_exit;
 }
 
-int yaksu_buffer_pool_elem_free(yaksu_buffer_pool_s pool, unsigned int idx)
+int yaksu_buffer_pool_elem_free(yaksu_buffer_pool_s pool, void *elem)
 {
     int rc = YAKSA_SUCCESS;
     pool_head_s *pool_head = (pool_head_s *) pool;
@@ -213,7 +210,7 @@ int yaksu_buffer_pool_elem_free(yaksu_buffer_pool_s pool, unsigned int idx)
 
     /* find the element in the used hashmap */
     elem_s *el;
-    HASH_FIND_INT(pool_head->used_elems, &idx, el);
+    HASH_FIND_PTR(pool_head->used_elems, &elem, el);
     assert(el);
 
     /* delete the element from the used hashmap and add it to the free
@@ -222,19 +219,5 @@ int yaksu_buffer_pool_elem_free(yaksu_buffer_pool_s pool, unsigned int idx)
     DL_PREPEND(pool_head->free_elems, el);
 
     pthread_mutex_unlock(&pool_head->mutex);
-    return rc;
-}
-
-int yaksu_buffer_pool_elem_get(yaksu_buffer_pool_s pool, unsigned int idx, void **elem)
-{
-    int rc = YAKSA_SUCCESS;
-    pool_head_s *pool_head = (pool_head_s *) pool;
-
-    elem_s *el = NULL;
-    HASH_FIND_INT(pool_head->used_elems, &idx, el);
-    assert(el);
-
-    *elem = el->buf;
-
     return rc;
 }
