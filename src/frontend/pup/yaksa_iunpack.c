@@ -33,17 +33,18 @@ int yaksa_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t o
         goto fn_exit;
     }
 
-    yaksi_request_s *yaksi_request = NULL;
+    yaksi_request_s *yaksi_request;
+    yaksi_request = NULL;
     rc = yaksi_request_create(&yaksi_request);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    yaksi_info_s *yaksi_info = (yaksi_info_s *) info;
+    yaksi_info_s *yaksi_info;
+    yaksi_info = (yaksi_info_s *) info;
     rc = yaksi_iunpack(inbuf, insize, outbuf, outcount, yaksi_type, outoffset, actual_unpack_bytes,
                        yaksi_info, yaksi_request);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    int cc = yaksu_atomic_load(&yaksi_request->cc);
-    if (cc) {
+    if (yaksu_atomic_load(&yaksi_request->cc)) {
         *request = yaksi_request->id;
     } else {
         rc = yaksi_request_free(yaksi_request);

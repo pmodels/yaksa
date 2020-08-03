@@ -42,7 +42,8 @@ int yaksi_type_create_hindexed(int count, const int *array_of_blocklengths,
         outtype->size += intype->size * array_of_blocklengths[i];
     outtype->alignment = intype->alignment;
 
-    int is_set = 0;
+    int is_set;
+    is_set = 0;
     for (int idx = 0; idx < count; idx++) {
         if (array_of_blocklengths[idx] == 0)
             continue;
@@ -130,7 +131,8 @@ int yaksa_type_create_hindexed(int count, const int *array_of_blocklengths,
     rc = yaksi_type_get(oldtype, &intype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    uintptr_t total_size = 0;
+    uintptr_t total_size;
+    total_size = 0;
     for (int i = 0; i < count; i++) {
         total_size += intype->size * array_of_blocklengths[i];
     }
@@ -165,7 +167,8 @@ int yaksa_type_create_indexed(int count, const int *array_of_blocklengths,
     rc = yaksi_type_get(oldtype, &intype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    uintptr_t total_size = 0;
+    uintptr_t total_size;
+    total_size = 0;
     for (int i = 0; i < count; i++) {
         total_size += intype->size * array_of_blocklengths[i];
     }

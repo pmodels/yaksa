@@ -32,7 +32,8 @@ int yaksi_type_create_subarray(int ndims, const int *array_of_sizes, const int *
     /* handle the first dimension separately because it really is a
      * contig, rather than a vector */
 
-    intptr_t stride = intype->extent;
+    intptr_t stride;
+    stride = intype->extent;
 
     yaksi_type_s *current, *next;
     if (order == YAKSA_SUBARRAY_ORDER__C) {
@@ -65,7 +66,8 @@ int yaksi_type_create_subarray(int ndims, const int *array_of_sizes, const int *
         }
     }
 
-    uintptr_t extent = intype->extent;
+    uintptr_t extent;
+    extent = intype->extent;
     for (int i = 0; i < ndims; i++)
         extent *= array_of_sizes[i];
 

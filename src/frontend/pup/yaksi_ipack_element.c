@@ -77,7 +77,8 @@ static int pack_sub_hvector(const void *inbuf, yaksi_type_s * type, uintptr_t in
 
 
     /* step 3: perform a full pack of the next few blocks */
-    uintptr_t numblocks = rem_pack_bytes / bytes_in_block;
+    uintptr_t numblocks;
+    numblocks = rem_pack_bytes / bytes_in_block;
     for (int i = 0; i < numblocks; i++) {
         rc = yaksi_ipack_backend(sbuf, dbuf, type->u.hvector.blocklength, type->u.hvector.child,
                                  info, request);
@@ -161,7 +162,8 @@ static int pack_sub_blkhindx(const void *inbuf, yaksi_type_s * type, uintptr_t i
 
 
     /* step 3: perform a full pack of the next few blocks */
-    uintptr_t numblocks = rem_pack_bytes / bytes_in_block;
+    uintptr_t numblocks;
+    numblocks = rem_pack_bytes / bytes_in_block;
     for (int i = 0; i < numblocks; i++) {
         sbuf = (const char *) inbuf + type->u.blkhindx.array_of_displs[blockid++];
         rc = yaksi_ipack_backend(sbuf, dbuf, type->u.blkhindx.blocklength, type->u.blkhindx.child,

@@ -46,8 +46,10 @@ int yaksi_type_create_hindexed_block(int count, int blocklength, const intptr_t 
     outtype->size = intype->size * blocklength * count;
     outtype->alignment = intype->alignment;
 
-    intptr_t min_disp = array_of_displs[0];
-    intptr_t max_disp = array_of_displs[0];
+    intptr_t min_disp;
+    min_disp = array_of_displs[0];
+    intptr_t max_disp;
+    max_disp = array_of_displs[0];
     for (int i = 1; i < count; i++) {
         if (array_of_displs[i] < min_disp)
             min_disp = array_of_displs[i];

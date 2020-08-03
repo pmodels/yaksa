@@ -429,9 +429,12 @@ int yaksuri_progress_poke(void)
     rc = yaksi_type_get(YAKSA_TYPE__BYTE, &byte_type);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    progress_elem_s *elem = progress_head;
-    yaksuri_request_s *request_backend = (yaksuri_request_s *) elem->request->backend.priv;
-    yaksuri_gpudriver_id_e id = request_backend->gpudriver_id;
+    progress_elem_s *elem;
+    elem = progress_head;
+    yaksuri_request_s *request_backend;
+    request_backend = (yaksuri_request_s *) elem->request->backend.priv;
+    yaksuri_gpudriver_id_e id;
+    id = request_backend->gpudriver_id;
 
     /****************************************************************************/
     /* Step 1: Check for completion and free up any held up resources */
