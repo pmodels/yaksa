@@ -20,8 +20,9 @@ int yaksi_type_create_resized(yaksi_type_s * intype, intptr_t lb, uintptr_t exte
     }
 
     yaksi_type_s *outtype;
-    rc = yaksi_type_alloc(&outtype);
-    YAKSU_ERR_CHECK(rc, fn_fail);
+    outtype = (yaksi_type_s *) malloc(sizeof(yaksi_type_s));
+    YAKSU_ERR_CHKANDJUMP(!outtype, rc, YAKSA_ERR__OUT_OF_MEM, fn_fail);
+    yaksu_atomic_store(&outtype->refcount, 1);
 
     yaksu_atomic_incr(&intype->refcount);
 
@@ -71,7 +72,11 @@ int yaksa_type_create_resized(yaksa_type_t oldtype, intptr_t lb, uintptr_t exten
     rc = yaksi_type_create_resized(intype, lb, extent, &outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    *newtype = outtype->id;
+    uint32_t id;
+    rc = yaksi_type_handle_alloc(outtype, &id);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    *newtype = (yaksa_type_t) id;
 
   fn_exit:
     return rc;

@@ -20,8 +20,9 @@ int yaksi_type_create_contig(int count, yaksi_type_s * intype, yaksi_type_s ** n
     }
 
     yaksi_type_s *outtype;
-    rc = yaksi_type_alloc(&outtype);
-    YAKSU_ERR_CHECK(rc, fn_fail);
+    outtype = (yaksi_type_s *) malloc(sizeof(yaksi_type_s));
+    YAKSU_ERR_CHKANDJUMP(!outtype, rc, YAKSA_ERR__OUT_OF_MEM, fn_fail);
+    yaksu_atomic_store(&outtype->refcount, 1);
 
     yaksu_atomic_incr(&intype->refcount);
 
@@ -76,7 +77,11 @@ int yaksa_type_create_contig(int count, yaksa_type_t oldtype, yaksa_type_t * new
     rc = yaksi_type_create_contig(count, intype, &outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    *newtype = outtype->id;
+    uint32_t id;
+    rc = yaksi_type_handle_alloc(outtype, &id);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    *newtype = (yaksa_type_t) id;
 
   fn_exit:
     return rc;

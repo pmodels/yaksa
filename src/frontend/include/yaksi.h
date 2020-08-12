@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <sys/uio.h>
+#include <yuthash.h>
 #include "yaksa_config.h"
 #include "yaksa.h"
 #include "yaksu.h"
@@ -37,19 +38,18 @@ typedef enum {
 } yaksi_type_kind_e;
 
 struct yaksi_type_s;
+struct yaksi_type_user_handle_s;
 struct yaksi_request_s;
 
 /* global variables */
 typedef struct {
-    yaksu_pool_s type_pool;
-    yaksu_pool_s request_pool;
+    yaksu_handle_pool_s type_handle_pool;
+    yaksu_handle_pool_s request_handle_pool;
     int is_initialized;
 } yaksi_global_s;
 extern yaksi_global_s yaksi_global;
 
 typedef struct yaksi_type_s {
-    /* yaksa type associated with this structure */
-    yaksa_type_t id;
     yaksu_atomic_int refcount;
 
     yaksi_type_kind_e kind;
@@ -107,19 +107,29 @@ typedef struct yaksi_type_s {
         struct {
             struct yaksi_type_s *child;
         } dup;
+        struct {
+            yaksa_type_t handle;
+        } builtin;
     } u;
 
     /* give some private space for the backend to store content */
     yaksur_type_s backend;
 } yaksi_type_s;
 
+typedef struct yaksi_type_user_handle_s {
+    uint32_t id;
+    yaksi_type_s *type;
+    UT_hash_handle hh;
+} yaksi_type_user_handle_s;
+
 typedef struct yaksi_request_s {
-    /* yaksa request associated with this structure */
-    yaksa_request_t id;
+    uint32_t id;
     yaksu_atomic_int cc;        /* completion counter */
 
     /* give some private space for the backend to store content */
     yaksur_request_s backend;
+
+    UT_hash_handle hh;
 } yaksi_request_s;
 
 typedef struct yaksi_info_s {
@@ -224,8 +234,8 @@ int yaksi_iov(const char *buf, uintptr_t count, yaksi_type_s * type, uintptr_t i
 int yaksi_flatten_size(yaksi_type_s * type, uintptr_t * flattened_type_size);
 
 /* type pool */
-int yaksi_type_alloc(yaksi_type_s ** type);
-int yaksi_type_dealloc(yaksi_type_s * type);
+int yaksi_type_handle_alloc(yaksi_type_s * type, uint32_t * handle);
+int yaksi_type_handle_dealloc(uint32_t handle, yaksi_type_s ** type);
 int yaksi_type_get(yaksa_type_t type, yaksi_type_s ** yaksi_type);
 
 /* request pool */

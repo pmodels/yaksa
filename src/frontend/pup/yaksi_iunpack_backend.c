@@ -43,7 +43,7 @@ static inline int unpack_backend(const void *inbuf, void *outbuf, uintptr_t coun
 
     switch (type->kind) {
         case YAKSI_TYPE_KIND__BUILTIN:
-            switch (type->id) {
+            switch (type->u.builtin.handle) {
                 case YAKSA_TYPE__FLOAT_INT:
                     BUILTIN_PAIRTYPE_UNPACK(yaksi_float_int_s, FLOAT, INT, inbuf, outbuf, count,
                                             info, request);

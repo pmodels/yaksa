@@ -17,7 +17,7 @@ int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
     /* shortcut for hindexed types */
     bool is_hindexed = true;
     for (int i = 1; i < count; i++) {
-        if (array_of_intypes[i]->id != array_of_intypes[i - 1]->id)
+        if (array_of_intypes[i] != array_of_intypes[i - 1])
             is_hindexed = false;
     }
     if (is_hindexed) {
@@ -29,8 +29,9 @@ int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
 
     /* regular struct type */
     yaksi_type_s *outtype;
-    rc = yaksi_type_alloc(&outtype);
-    YAKSU_ERR_CHECK(rc, fn_fail);
+    outtype = (yaksi_type_s *) malloc(sizeof(yaksi_type_s));
+    YAKSU_ERR_CHKANDJUMP(!outtype, rc, YAKSA_ERR__OUT_OF_MEM, fn_fail);
+    yaksu_atomic_store(&outtype->refcount, 1);
 
     outtype->kind = YAKSI_TYPE_KIND__STRUCT;
 
@@ -168,7 +169,11 @@ int yaksa_type_create_struct(int count, const int *array_of_blocklengths,
                                   &outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    *newtype = outtype->id;
+    uint32_t id;
+    rc = yaksi_type_handle_alloc(outtype, &id);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    *newtype = (yaksa_type_t) id;
     free(array_of_intypes);
 
   fn_exit:

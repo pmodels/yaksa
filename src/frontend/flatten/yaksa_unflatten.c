@@ -16,7 +16,7 @@ static inline int unflatten(yaksi_type_s ** type, const void *flattened_type)
     const char *flatbuf = (const char *) flattened_type;
 
     if (((yaksi_type_s *) flattened_type)->kind == YAKSI_TYPE_KIND__BUILTIN) {
-        yaksa_type_t id = ((yaksi_type_s *) flattened_type)->id;
+        yaksa_type_t id = ((yaksi_type_s *) flattened_type)->u.builtin.handle;
         yaksi_type_s *tmp;
         rc = yaksi_type_get(id, &tmp);
         YAKSU_ERR_CHECK(rc, fn_fail);
@@ -24,17 +24,12 @@ static inline int unflatten(yaksi_type_s ** type, const void *flattened_type)
         newtype = tmp;
         goto fn_exit;
     } else {
-        rc = yaksi_type_alloc(&newtype);
-        YAKSU_ERR_CHECK(rc, fn_fail);
+        newtype = (yaksi_type_s *) malloc(sizeof(yaksi_type_s));
+        YAKSU_ERR_CHKANDJUMP(!newtype, rc, YAKSA_ERR__OUT_OF_MEM, fn_fail);
+        yaksu_atomic_store(&newtype->refcount, 1);
 
-        /* don't overwrite the local ID with the unflattened type ID,
-         * which potentially belongs to a different process or a
-         * different type. */
-        yaksa_type_t local_id;
-        local_id = newtype->id;
         memcpy(newtype, flatbuf, sizeof(yaksi_type_s));
         flatbuf += sizeof(yaksi_type_s);
-        newtype->id = local_id;
         yaksu_atomic_store(&newtype->refcount, 1);
     }
 
@@ -143,7 +138,12 @@ int yaksa_unflatten(yaksa_type_t * type, const void *flattened_type)
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     assert(yaksi_type);
-    *type = yaksi_type->id;
+
+    uint32_t id;
+    rc = yaksi_type_handle_alloc(yaksi_type, &id);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    *type = (yaksa_type_t) id;
 
   fn_exit:
     return rc;

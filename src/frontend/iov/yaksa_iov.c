@@ -78,7 +78,7 @@ int yaksi_iov(const char *buf, uintptr_t count, yaksi_type_s * type, uintptr_t i
     switch (type->kind) {
         case YAKSI_TYPE_KIND__BUILTIN:
             {
-                switch (type->id) {
+                switch (type->u.builtin.handle) {
                     case YAKSA_TYPE__FLOAT_INT:
                         BUILTIN_PAIRTYPE_IOV(buf, count, iov_offset, max_iov_len, iov,
                                              yaksi_float_int_s, float, int, *actual_iov_len);

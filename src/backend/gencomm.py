@@ -59,7 +59,7 @@ def switcher_builtin_element(backend, OUTFILE, blklens, typelist, pupstr, key, v
     yutils.display(OUTFILE, "break;\n")
 
 def switcher_builtin(backend, OUTFILE, blklens, builtin_types, builtin_maps, typelist, pupstr):
-    yutils.display(OUTFILE, "switch (%s->id) {\n" % child_type_str(typelist))
+    yutils.display(OUTFILE, "switch (%s->u.builtin.handle) {\n" % child_type_str(typelist))
 
     for b in builtin_types:
         switcher_builtin_element(backend, OUTFILE, blklens, typelist, pupstr, "YAKSA_TYPE__%s" % b.replace(" ", "_"), b.replace(" ", "_"))
