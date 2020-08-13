@@ -89,7 +89,7 @@ int main()
 {
     pthread_t thread[MAX_THREADS];
 
-    yaksa_init(YAKSA_INIT_ATTR__DEFAULT);
+    yaksa_init(NULL);
 
     inbuf_ = (int **) malloc(MAX_THREADS * sizeof(int *));
     outbuf_ = (int **) malloc(MAX_THREADS * sizeof(int *));

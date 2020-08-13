@@ -131,22 +131,6 @@ typedef enum {
 /*! @} */
 
 
-/*! \addtogroup yaksa-init-attr Yaksa initialization attributes
- * @{
- */
-
-/**
- * \brief yaksa initialization attributes
- */
-/* currently there are no init attributes */
-typedef struct {
-    int __reserved_for_future_use;
-} yaksa_init_attr_t;
-extern yaksa_init_attr_t YAKSA_INIT_ATTR__DEFAULT;
-
-/*! @} */
-
-
 /*! \addtogroup yaksa-info Yaksa info object
  * @{
  */
@@ -171,7 +155,7 @@ typedef void *yaksa_info_t;
 /*!
  * \brief initializes the yaksa library
  */
-int yaksa_init(yaksa_init_attr_t attr);
+int yaksa_init(yaksa_info_t info);
 
 /*!
  * \brief finalizes the yaksa library
