@@ -14,7 +14,7 @@ int yaksa_info_create(yaksa_info_t * info)
     int rc = YAKSA_SUCCESS;
     yaksi_info_s *yaksi_info;
 
-    assert(yaksi_global.is_initialized);
+    assert(yaksu_atomic_load(&yaksi_is_initialized));
 
     yaksi_info = (yaksi_info_s *) malloc(sizeof(yaksi_info_s));
 
@@ -32,7 +32,7 @@ int yaksa_info_free(yaksa_info_t info)
     int rc = YAKSA_SUCCESS;
     yaksi_info_s *yaksi_info = (yaksi_info_s *) info;
 
-    assert(yaksi_global.is_initialized);
+    assert(yaksu_atomic_load(&yaksi_is_initialized));
 
     rc = yaksur_info_free_hook(yaksi_info);
     YAKSU_ERR_CHECK(rc, fn_fail);
@@ -51,7 +51,7 @@ int yaksa_info_keyval_append(yaksa_info_t info, const char *key, const void *val
     int rc = YAKSA_SUCCESS;
     yaksi_info_s *yaksi_info = (yaksi_info_s *) info;
 
-    assert(yaksi_global.is_initialized);
+    assert(yaksu_atomic_load(&yaksi_is_initialized));
 
     rc = yaksur_info_keyval_append(yaksi_info, key, val, vallen);
     YAKSU_ERR_CHECK(rc, fn_fail);

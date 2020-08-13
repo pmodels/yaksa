@@ -11,7 +11,7 @@ int yaksa_request_test(yaksa_request_t request, int *completed)
 {
     int rc = YAKSA_SUCCESS;
 
-    assert(yaksi_global.is_initialized);
+    assert(yaksu_atomic_load(&yaksi_is_initialized));
 
     if (request == YAKSA_REQUEST__NULL) {
         *completed = 1;
@@ -44,7 +44,7 @@ int yaksa_request_wait(yaksa_request_t request)
 {
     int rc = YAKSA_SUCCESS;
 
-    assert(yaksi_global.is_initialized);
+    assert(yaksu_atomic_load(&yaksi_is_initialized));
 
     if (request == YAKSA_REQUEST__NULL) {
         goto fn_exit;

@@ -372,7 +372,7 @@ int yaksa_iov(const char *buf, uintptr_t count, yaksa_type_t type, uintptr_t iov
     yaksi_type_s *yaksi_type;
     int rc = YAKSA_SUCCESS;
 
-    assert(yaksi_global.is_initialized);
+    assert(yaksu_atomic_load(&yaksi_is_initialized));
 
     rc = yaksi_type_get(type, &yaksi_type);
     YAKSU_ERR_CHECK(rc, fn_fail);

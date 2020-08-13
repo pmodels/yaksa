@@ -96,7 +96,7 @@ int yaksa_flatten_size(yaksa_type_t type, uintptr_t * flattened_type_size)
     int rc = YAKSA_SUCCESS;
     yaksi_type_s *yaksi_type;
 
-    assert(yaksi_global.is_initialized);
+    assert(yaksu_atomic_load(&yaksi_is_initialized));
 
     rc = yaksi_type_get(type, &yaksi_type);
     YAKSU_ERR_CHECK(rc, fn_fail);

@@ -22,7 +22,7 @@ int yaksa_type_create_dup(yaksa_type_t oldtype, yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 
-    assert(yaksi_global.is_initialized);
+    assert(yaksu_atomic_load(&yaksi_is_initialized));
 
     yaksi_type_s *intype;
     rc = yaksi_type_get(oldtype, &intype);

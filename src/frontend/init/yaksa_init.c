@@ -111,13 +111,21 @@
     } while (0)
 
 yaksi_global_s yaksi_global = { 0 };
-yaksa_init_attr_t YAKSA_INIT_ATTR__DEFAULT = { 0 };
+
+yaksu_atomic_int yaksi_is_initialized = 0;
+static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define CHUNK_SIZE (1024)
 
-int yaksa_init(yaksa_init_attr_t attr)
+int yaksa_init(yaksa_info_t info)
 {
     int rc = YAKSA_SUCCESS;
+
+    pthread_mutex_lock(&init_mutex);
+
+    if (yaksu_atomic_incr(&yaksi_is_initialized)) {
+        goto fn_exit;
+    }
 
     /*************************************************************/
     /* initialize the backend */
@@ -205,13 +213,8 @@ int yaksa_init(yaksa_init_attr_t attr)
 
     assert(request->id == YAKSA_REQUEST__NULL);
 
-
-    /*************************************************************/
-    /* final processing */
-    /*************************************************************/
-    yaksi_global.is_initialized = 1;
-
   fn_exit:
+    pthread_mutex_unlock(&init_mutex);
     return rc;
   fn_fail:
     goto fn_exit;
@@ -220,6 +223,12 @@ int yaksa_init(yaksa_init_attr_t attr)
 int yaksa_finalize(void)
 {
     int rc = YAKSA_SUCCESS;
+
+    pthread_mutex_lock(&init_mutex);
+
+    if (yaksu_atomic_decr(&yaksi_is_initialized) > 1) {
+        goto fn_exit;
+    }
 
     /* finalize the backend */
     rc = yaksur_finalize_hook();
@@ -286,6 +295,7 @@ int yaksa_finalize(void)
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
+    pthread_mutex_unlock(&init_mutex);
     return rc;
   fn_fail:
     goto fn_exit;

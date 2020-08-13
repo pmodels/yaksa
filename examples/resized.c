@@ -17,7 +17,7 @@ int main()
     yaksa_type_t vector_resized;
     yaksa_type_t transpose;
 
-    yaksa_init(YAKSA_INIT_ATTR__DEFAULT);
+    yaksa_init(NULL);
 
     init_matrix(input_matrix, ROWS, COLS);
     set_matrix(pack_buf, ROWS, COLS, 0);

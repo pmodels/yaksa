@@ -169,7 +169,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    yaksa_init(YAKSA_INIT_ATTR__DEFAULT);
+    yaksa_init(NULL);
 
     dtp = (DTP_pool_s *) malloc(num_threads * sizeof(DTP_pool_s));
     for (uintptr_t i = 0; i < num_threads; i++) {

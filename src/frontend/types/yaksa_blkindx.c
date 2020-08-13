@@ -108,7 +108,7 @@ int yaksa_type_create_hindexed_block(int count, int blocklength, const intptr_t 
 {
     int rc = YAKSA_SUCCESS;
 
-    assert(yaksi_global.is_initialized);
+    assert(yaksu_atomic_load(&yaksi_is_initialized));
 
     yaksi_type_s *intype;
     rc = yaksi_type_get(oldtype, &intype);
@@ -141,7 +141,7 @@ int yaksa_type_create_indexed_block(int count, int blocklength, const int *array
     intptr_t *real_array_of_displs = NULL;
     int rc = YAKSA_SUCCESS;
 
-    assert(yaksi_global.is_initialized);
+    assert(yaksu_atomic_load(&yaksi_is_initialized));
 
     yaksi_type_s *intype;
     rc = yaksi_type_get(oldtype, &intype);
