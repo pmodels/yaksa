@@ -153,6 +153,31 @@ typedef void *yaksa_info_t;
 /* YAKSA PUBLIC FUNCTIONS */
 /******************************************************************************/
 /*!
+ * \brief creates an info object
+ *
+ * \param[out] info              Info object being created
+ */
+int yaksa_info_create(yaksa_info_t * info);
+
+/*!
+ * \brief frees the info object
+ *
+ * \param[in]  info              Info object being freed
+ */
+int yaksa_info_free(yaksa_info_t info);
+
+/*!
+ * \brief append a hint to the info object
+ *
+ * \param[in]  info              Info object
+ * \param[in]  key               Hint key
+ * \param[in]  val               Hint value
+ * \param[in]  vallen            Length of the hint value
+ */
+int yaksa_info_keyval_append(yaksa_info_t info, const char *key, const void *val,
+                             unsigned int vallen);
+
+/*!
  * \brief initializes the yaksa library
  */
 int yaksa_init(yaksa_info_t info);
@@ -361,31 +386,6 @@ int yaksa_request_test(yaksa_request_t request, int *completed);
  * \param[in]  request           The request object that needs to be waited up on
  */
 int yaksa_request_wait(yaksa_request_t request);
-
-/*!
- * \brief creates an info object
- *
- * \param[out] info              Info object being created
- */
-int yaksa_info_create(yaksa_info_t * info);
-
-/*!
- * \brief frees the info object
- *
- * \param[in]  info              Info object being freed
- */
-int yaksa_info_free(yaksa_info_t info);
-
-/*!
- * \brief append a hint to the info object
- *
- * \param[in]  info              Info object
- * \param[in]  key               Hint key
- * \param[in]  val               Hint value
- * \param[in]  vallen            Length of the hint value
- */
-int yaksa_info_keyval_append(yaksa_info_t info, const char *key, const void *val,
-                             unsigned int vallen);
 
 /*!
  * \brief packs the data represented by the (incount, type) tuple into a contiguous buffer
