@@ -23,6 +23,8 @@ void *thread_fn(void *arg)
     int *inbuf = inbuf_[tid];
     int *outbuf = outbuf_[tid];
 
+    yaksa_init(NULL);
+
     rc = yaksa_type_create_vector(3, 2, 3, YAKSA_TYPE__INT, &vector);
     assert(rc == YAKSA_SUCCESS);
 
@@ -79,6 +81,8 @@ void *thread_fn(void *arg)
     yaksa_type_free(vector_vector);
     yaksa_type_free(vector);
 
+    yaksa_finalize();
+
     return NULL;
 }
 
@@ -88,8 +92,6 @@ void *thread_fn(void *arg)
 int main()
 {
     pthread_t thread[MAX_THREADS];
-
-    yaksa_init(NULL);
 
     inbuf_ = (int **) malloc(MAX_THREADS * sizeof(int *));
     outbuf_ = (int **) malloc(MAX_THREADS * sizeof(int *));
@@ -112,8 +114,6 @@ int main()
     }
     free(inbuf_);
     free(outbuf_);
-
-    yaksa_finalize();
 
     return 0;
 }
