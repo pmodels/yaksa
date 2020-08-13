@@ -82,7 +82,7 @@ int yaksa_type_create_hvector(int count, int blocklength, intptr_t stride, yaksa
 {
     int rc = YAKSA_SUCCESS;
 
-    assert(yaksi_global.is_initialized);
+    assert(yaksu_atomic_load(&yaksi_is_initialized));
 
     yaksi_type_s *intype;
     rc = yaksi_type_get(oldtype, &intype);
@@ -114,7 +114,7 @@ int yaksa_type_create_vector(int count, int blocklength, int stride, yaksa_type_
 {
     int rc = YAKSA_SUCCESS;
 
-    assert(yaksi_global.is_initialized);
+    assert(yaksu_atomic_load(&yaksi_is_initialized));
 
     yaksi_type_s *intype;
     rc = yaksi_type_get(oldtype, &intype);

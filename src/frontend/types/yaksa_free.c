@@ -90,7 +90,7 @@ int yaksa_type_free(yaksa_type_t type)
     yaksi_type_s *yaksi_type;
     int rc = YAKSA_SUCCESS;
 
-    assert(yaksi_global.is_initialized);
+    assert(yaksu_atomic_load(&yaksi_is_initialized));
 
     if (type == YAKSA_TYPE__NULL)
         goto fn_exit;

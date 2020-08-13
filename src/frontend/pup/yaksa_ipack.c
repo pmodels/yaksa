@@ -13,7 +13,7 @@ int yaksa_ipack(const void *inbuf, uintptr_t incount, yaksa_type_t type, uintptr
 {
     int rc = YAKSA_SUCCESS;
 
-    assert(yaksi_global.is_initialized);
+    assert(yaksu_atomic_load(&yaksi_is_initialized));
 
     if (incount == 0) {
         *actual_pack_bytes = 0;

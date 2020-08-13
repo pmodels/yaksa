@@ -15,7 +15,7 @@ int yaksa_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t o
 {
     int rc = YAKSA_SUCCESS;
 
-    assert(yaksi_global.is_initialized);
+    assert(yaksu_atomic_load(&yaksi_is_initialized));
 
     if (outcount == 0) {
         *actual_unpack_bytes = 0;

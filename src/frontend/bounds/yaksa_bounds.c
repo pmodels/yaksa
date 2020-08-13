@@ -13,7 +13,7 @@ int yaksa_type_get_size(yaksa_type_t type, uintptr_t * size)
     yaksi_type_s *yaksi_type;
     int rc = YAKSA_SUCCESS;
 
-    assert(yaksi_global.is_initialized);
+    assert(yaksu_atomic_load(&yaksi_is_initialized));
 
     rc = yaksi_type_get(type, &yaksi_type);
     YAKSU_ERR_CHECK(rc, fn_fail);
@@ -31,7 +31,7 @@ int yaksa_type_get_extent(yaksa_type_t type, intptr_t * lb, uintptr_t * extent)
     yaksi_type_s *yaksi_type;
     int rc = YAKSA_SUCCESS;
 
-    assert(yaksi_global.is_initialized);
+    assert(yaksu_atomic_load(&yaksi_is_initialized));
 
     rc = yaksi_type_get(type, &yaksi_type);
     YAKSU_ERR_CHECK(rc, fn_fail);
@@ -50,7 +50,7 @@ int yaksa_type_get_true_extent(yaksa_type_t type, intptr_t * lb, uintptr_t * ext
     yaksi_type_s *yaksi_type;
     int rc = YAKSA_SUCCESS;
 
-    assert(yaksi_global.is_initialized);
+    assert(yaksu_atomic_load(&yaksi_is_initialized));
 
     rc = yaksi_type_get(type, &yaksi_type);
     YAKSU_ERR_CHECK(rc, fn_fail);

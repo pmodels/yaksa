@@ -25,6 +25,8 @@
 
 #define YAKSI_ENV_DEFAULT_NESTING_LEVEL  (3)
 
+extern yaksu_atomic_int yaksi_is_initialized;
+
 typedef enum {
     YAKSI_TYPE_KIND__BUILTIN,
     YAKSI_TYPE_KIND__CONTIG,
@@ -45,7 +47,6 @@ struct yaksi_request_s;
 typedef struct {
     yaksu_handle_pool_s type_handle_pool;
     yaksu_handle_pool_s request_handle_pool;
-    int is_initialized;
 } yaksi_global_s;
 extern yaksi_global_s yaksi_global;
 

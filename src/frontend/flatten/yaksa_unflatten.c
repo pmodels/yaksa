@@ -132,7 +132,7 @@ int yaksa_unflatten(yaksa_type_t * type, const void *flattened_type)
     int rc = YAKSA_SUCCESS;
     yaksi_type_s *yaksi_type;
 
-    assert(yaksi_global.is_initialized);
+    assert(yaksu_atomic_load(&yaksi_is_initialized));
 
     rc = unflatten(&yaksi_type, flattened_type);
     YAKSU_ERR_CHECK(rc, fn_fail);

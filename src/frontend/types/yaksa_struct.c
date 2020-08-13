@@ -139,7 +139,7 @@ int yaksa_type_create_struct(int count, const int *array_of_blocklengths,
 {
     int rc = YAKSA_SUCCESS;
 
-    assert(yaksi_global.is_initialized);
+    assert(yaksu_atomic_load(&yaksi_is_initialized));
 
     uintptr_t total_size;
     total_size = 0;
