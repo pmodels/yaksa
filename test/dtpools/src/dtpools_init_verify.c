@@ -5,6 +5,7 @@
 
 #include "dtpools_internal.h"
 #include <stdint.h>
+#include <stddef.h>
 
 #define MAX_ERRCOUNT 10
 
@@ -55,8 +56,16 @@ static int init_verify_basic_datatype(yaksa_type_t type_, char *buf, int val, in
     int rc = DTP_SUCCESS;
 
     switch (type) {
+        case YAKSA_TYPE___BOOL:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, _Bool);
+            val += val_stride;
+            break;
         case YAKSA_TYPE__CHAR:
             INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, char);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__SIGNED_CHAR:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, signed char);
             val += val_stride;
             break;
         case YAKSA_TYPE__UNSIGNED_CHAR:
@@ -128,6 +137,82 @@ static int init_verify_basic_datatype(yaksa_type_t type_, char *buf, int val, in
             INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, uint64_t);
             val += val_stride;
             break;
+        case YAKSA_TYPE__INT_FAST8_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, int_fast8_t);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__INT_FAST16_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, int_fast16_t);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__INT_FAST32_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, int_fast32_t);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__INT_FAST64_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, int_fast64_t);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__UINT_FAST8_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, uint_fast8_t);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__UINT_FAST16_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, uint_fast16_t);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__UINT_FAST32_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, uint_fast32_t);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__UINT_FAST64_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, uint_fast64_t);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__INT_LEAST8_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, int_least8_t);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__INT_LEAST16_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, int_least16_t);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__INT_LEAST32_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, int_least32_t);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__INT_LEAST64_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, int_least64_t);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__UINT_LEAST8_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, uint_least8_t);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__UINT_LEAST16_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, uint_least16_t);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__UINT_LEAST32_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, uint_least32_t);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__UINT_LEAST64_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, uint_least64_t);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__INTMAX_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, intmax_t);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__UINTMAX_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, uintmax_t);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__SIZE_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, size_t);
+            val += val_stride;
+            break;
         case YAKSA_TYPE__FLOAT:
             INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, float);
             val += val_stride;
@@ -138,6 +223,18 @@ static int init_verify_basic_datatype(yaksa_type_t type_, char *buf, int val, in
             break;
         case YAKSA_TYPE__LONG_DOUBLE:
             INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, long double);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__INTPTR_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, intptr_t);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__UINTPTR_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, uintptr_t);
+            val += val_stride;
+            break;
+        case YAKSA_TYPE__PTRDIFF_T:
+            INIT_VERIFY_SINGLE_VAL(rc, buf, val, verify, ptrdiff_t);
             val += val_stride;
             break;
         case YAKSA_TYPE__C_COMPLEX:

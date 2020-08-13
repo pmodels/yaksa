@@ -36,46 +36,77 @@ typedef uint64_t yaksa_type_t;
  */
 /* generic */
 #define YAKSA_TYPE__NULL                              ((yaksa_type_t) 0)
-#define YAKSA_TYPE__BYTE                              ((yaksa_type_t) 1)
+#define YAKSA_TYPE___BOOL                             ((yaksa_type_t) 1)
 
 /* char types */
 #define YAKSA_TYPE__CHAR                              ((yaksa_type_t) 2)
-#define YAKSA_TYPE__UNSIGNED_CHAR                     ((yaksa_type_t) 3)
-#define YAKSA_TYPE__WCHAR_T                           ((yaksa_type_t) 4)
+#define YAKSA_TYPE__SIGNED_CHAR                       ((yaksa_type_t) 3)
+#define YAKSA_TYPE__UNSIGNED_CHAR                     ((yaksa_type_t) 4)
+#define YAKSA_TYPE__WCHAR_T                           ((yaksa_type_t) 5)
 
 /* int types */
-#define YAKSA_TYPE__INT                               ((yaksa_type_t) 5)
-#define YAKSA_TYPE__UNSIGNED                          ((yaksa_type_t) 6)
-#define YAKSA_TYPE__SHORT                             ((yaksa_type_t) 7)
-#define YAKSA_TYPE__UNSIGNED_SHORT                    ((yaksa_type_t) 8)
-#define YAKSA_TYPE__LONG                              ((yaksa_type_t) 9)
-#define YAKSA_TYPE__UNSIGNED_LONG                     ((yaksa_type_t) 10)
-#define YAKSA_TYPE__LONG_LONG                         ((yaksa_type_t) 11)
-#define YAKSA_TYPE__UNSIGNED_LONG_LONG                ((yaksa_type_t) 12)
-#define YAKSA_TYPE__INT8_T                            ((yaksa_type_t) 13)
-#define YAKSA_TYPE__INT16_T                           ((yaksa_type_t) 14)
-#define YAKSA_TYPE__INT32_T                           ((yaksa_type_t) 15)
-#define YAKSA_TYPE__INT64_T                           ((yaksa_type_t) 16)
-#define YAKSA_TYPE__UINT8_T                           ((yaksa_type_t) 17)
-#define YAKSA_TYPE__UINT16_T                          ((yaksa_type_t) 18)
-#define YAKSA_TYPE__UINT32_T                          ((yaksa_type_t) 19)
-#define YAKSA_TYPE__UINT64_T                          ((yaksa_type_t) 20)
+#define YAKSA_TYPE__INT8_T                            ((yaksa_type_t) 6)
+#define YAKSA_TYPE__INT16_T                           ((yaksa_type_t) 7)
+#define YAKSA_TYPE__INT32_T                           ((yaksa_type_t) 8)
+#define YAKSA_TYPE__INT64_T                           ((yaksa_type_t) 9)
+#define YAKSA_TYPE__UINT8_T                           ((yaksa_type_t) 10)
+#define YAKSA_TYPE__UINT16_T                          ((yaksa_type_t) 11)
+#define YAKSA_TYPE__UINT32_T                          ((yaksa_type_t) 12)
+#define YAKSA_TYPE__UINT64_T                          ((yaksa_type_t) 13)
+
+#define YAKSA_TYPE__INT                               ((yaksa_type_t) 14)
+#define YAKSA_TYPE__UNSIGNED                          ((yaksa_type_t) 15)
+#define YAKSA_TYPE__SHORT                             ((yaksa_type_t) 16)
+#define YAKSA_TYPE__UNSIGNED_SHORT                    ((yaksa_type_t) 17)
+#define YAKSA_TYPE__LONG                              ((yaksa_type_t) 18)
+#define YAKSA_TYPE__UNSIGNED_LONG                     ((yaksa_type_t) 19)
+#define YAKSA_TYPE__LONG_LONG                         ((yaksa_type_t) 20)
+#define YAKSA_TYPE__UNSIGNED_LONG_LONG                ((yaksa_type_t) 21)
+
+#define YAKSA_TYPE__INT_FAST8_T                       ((yaksa_type_t) 22)
+#define YAKSA_TYPE__INT_FAST16_T                      ((yaksa_type_t) 23)
+#define YAKSA_TYPE__INT_FAST32_T                      ((yaksa_type_t) 24)
+#define YAKSA_TYPE__INT_FAST64_T                      ((yaksa_type_t) 25)
+#define YAKSA_TYPE__UINT_FAST8_T                      ((yaksa_type_t) 26)
+#define YAKSA_TYPE__UINT_FAST16_T                     ((yaksa_type_t) 27)
+#define YAKSA_TYPE__UINT_FAST32_T                     ((yaksa_type_t) 28)
+#define YAKSA_TYPE__UINT_FAST64_T                     ((yaksa_type_t) 29)
+
+#define YAKSA_TYPE__INT_LEAST8_T                      ((yaksa_type_t) 30)
+#define YAKSA_TYPE__INT_LEAST16_T                     ((yaksa_type_t) 31)
+#define YAKSA_TYPE__INT_LEAST32_T                     ((yaksa_type_t) 32)
+#define YAKSA_TYPE__INT_LEAST64_T                     ((yaksa_type_t) 33)
+#define YAKSA_TYPE__UINT_LEAST8_T                     ((yaksa_type_t) 34)
+#define YAKSA_TYPE__UINT_LEAST16_T                    ((yaksa_type_t) 35)
+#define YAKSA_TYPE__UINT_LEAST32_T                    ((yaksa_type_t) 36)
+#define YAKSA_TYPE__UINT_LEAST64_T                    ((yaksa_type_t) 37)
+
+#define YAKSA_TYPE__BYTE                              ((yaksa_type_t) 38)
+#define YAKSA_TYPE__INTMAX_T                          ((yaksa_type_t) 39)
+#define YAKSA_TYPE__UINTMAX_T                         ((yaksa_type_t) 40)
+
+#define YAKSA_TYPE__SIZE_T                            ((yaksa_type_t) 41)
+
+/* pointer type */
+#define YAKSA_TYPE__INTPTR_T                          ((yaksa_type_t) 42)
+#define YAKSA_TYPE__UINTPTR_T                         ((yaksa_type_t) 43)
+#define YAKSA_TYPE__PTRDIFF_T                         ((yaksa_type_t) 44)
 
 /* float types */
-#define YAKSA_TYPE__FLOAT                             ((yaksa_type_t) 21)
-#define YAKSA_TYPE__DOUBLE                            ((yaksa_type_t) 22)
-#define YAKSA_TYPE__LONG_DOUBLE                       ((yaksa_type_t) 23)
+#define YAKSA_TYPE__FLOAT                             ((yaksa_type_t) 45)
+#define YAKSA_TYPE__DOUBLE                            ((yaksa_type_t) 46)
+#define YAKSA_TYPE__LONG_DOUBLE                       ((yaksa_type_t) 47)
 
 /* pair types */
-#define YAKSA_TYPE__C_COMPLEX                         ((yaksa_type_t) 24)
-#define YAKSA_TYPE__C_DOUBLE_COMPLEX                  ((yaksa_type_t) 25)
-#define YAKSA_TYPE__C_LONG_DOUBLE_COMPLEX             ((yaksa_type_t) 26)
-#define YAKSA_TYPE__FLOAT_INT                         ((yaksa_type_t) 27)
-#define YAKSA_TYPE__DOUBLE_INT                        ((yaksa_type_t) 28)
-#define YAKSA_TYPE__LONG_INT                          ((yaksa_type_t) 29)
-#define YAKSA_TYPE__2INT                              ((yaksa_type_t) 30)
-#define YAKSA_TYPE__SHORT_INT                         ((yaksa_type_t) 31)
-#define YAKSA_TYPE__LONG_DOUBLE_INT                   ((yaksa_type_t) 32)
+#define YAKSA_TYPE__C_COMPLEX                         ((yaksa_type_t) 48)
+#define YAKSA_TYPE__C_DOUBLE_COMPLEX                  ((yaksa_type_t) 49)
+#define YAKSA_TYPE__C_LONG_DOUBLE_COMPLEX             ((yaksa_type_t) 50)
+#define YAKSA_TYPE__FLOAT_INT                         ((yaksa_type_t) 51)
+#define YAKSA_TYPE__DOUBLE_INT                        ((yaksa_type_t) 52)
+#define YAKSA_TYPE__LONG_INT                          ((yaksa_type_t) 53)
+#define YAKSA_TYPE__2INT                              ((yaksa_type_t) 54)
+#define YAKSA_TYPE__SHORT_INT                         ((yaksa_type_t) 55)
+#define YAKSA_TYPE__LONG_DOUBLE_INT                   ((yaksa_type_t) 56)
 
 /*! @} */
 
