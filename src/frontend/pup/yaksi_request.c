@@ -50,7 +50,7 @@ int yaksi_request_free(yaksi_request_s * request)
 int yaksi_request_get(yaksa_request_t request, struct yaksi_request_s **yaksi_request)
 {
     int rc = YAKSA_SUCCESS;
-    uint32_t id = (uint32_t) ((request << 32) >> 32);
+    uint32_t id = (uint32_t) request;
 
     rc = yaksu_handle_pool_elem_get(yaksi_global.request_handle_pool, id,
                                     (const void **) yaksi_request);
