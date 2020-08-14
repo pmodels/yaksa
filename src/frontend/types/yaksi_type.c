@@ -39,7 +39,7 @@ int yaksi_type_handle_dealloc(uint32_t handle, yaksi_type_s ** type)
 int yaksi_type_get(yaksa_type_t type, struct yaksi_type_s **yaksi_type)
 {
     int rc = YAKSA_SUCCESS;
-    uint32_t id = (uint32_t) ((type << 32) >> 32);
+    uint32_t id = (uint32_t) type;
 
     rc = yaksu_handle_pool_elem_get(yaksi_global.type_handle_pool, id, (const void **) yaksi_type);
     YAKSU_ERR_CHECK(rc, fn_fail);

@@ -29,6 +29,12 @@
  * @{
  */
 
+/* The most significant 32 bits of the yaksa type are unused at this
+ * point.  They are kept for future potential use, for example to set
+ * a predefined bit or to store the size or alignment for predefined
+ * types inside the handle itself.  For now, only the least
+ * significant 32 bits are used to store the handle to the internal
+ * type object. */
 typedef uint64_t yaksa_type_t;
 
 /**
