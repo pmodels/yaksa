@@ -19,21 +19,10 @@ import gencomm
 ########################################################################################
 
 num_paren_open = 0
-builtin_types = [ "char", "wchar_t", "int", "short", "long", "long long", "int8_t", "int16_t", \
+builtin_types = [ "_Bool", "char", "wchar_t", "int8_t", "int16_t", \
                   "int32_t", "int64_t", "float", "double", "long double" ]
 blklens = [ "1", "2", "3", "4", "5", "6", "7", "8", "generic" ]
-builtin_maps = {
-    "YAKSA_TYPE__UNSIGNED_CHAR": "char",
-    "YAKSA_TYPE__UNSIGNED": "int",
-    "YAKSA_TYPE__UNSIGNED_SHORT": "short",
-    "YAKSA_TYPE__UNSIGNED_LONG": "long",
-    "YAKSA_TYPE__UNSIGNED_LONG_LONG": "long_long",
-    "YAKSA_TYPE__UINT8_T": "int8_t",
-    "YAKSA_TYPE__UINT16_T": "int16_t",
-    "YAKSA_TYPE__UINT32_T": "int32_t",
-    "YAKSA_TYPE__UINT64_T": "int64_t",
-    "YAKSA_TYPE__BYTE": "int8_t"
-}
+builtin_maps = { }
 
 
 ########################################################################################

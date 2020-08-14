@@ -15,8 +15,12 @@ int DTPI_func_nesting = -1;
 
 static yaksa_type_t name_to_type(const char *name)
 {
-    if (!strcmp(name, "char"))
+    if (!strcmp(name, "_Bool") || !strcmp(name, "bool"))
+        return YAKSA_TYPE___BOOL;
+    else if (!strcmp(name, "char"))
         return YAKSA_TYPE__CHAR;
+    else if (!strcmp(name, "signed_char"))
+        return YAKSA_TYPE__SIGNED_CHAR;
     else if (!strcmp(name, "unsigned_char"))
         return YAKSA_TYPE__UNSIGNED_CHAR;
     else if (!strcmp(name, "wchar"))
@@ -53,12 +57,56 @@ static yaksa_type_t name_to_type(const char *name)
         return YAKSA_TYPE__UINT32_T;
     else if (!strcmp(name, "uint64_t"))
         return YAKSA_TYPE__UINT64_T;
+    else if (!strcmp(name, "int_fast8_t"))
+        return YAKSA_TYPE__INT_FAST8_T;
+    else if (!strcmp(name, "int_fast16_t"))
+        return YAKSA_TYPE__INT_FAST16_T;
+    else if (!strcmp(name, "int_fast32_t"))
+        return YAKSA_TYPE__INT_FAST32_T;
+    else if (!strcmp(name, "int_fast64_t"))
+        return YAKSA_TYPE__INT_FAST64_T;
+    else if (!strcmp(name, "uint_fast8_t"))
+        return YAKSA_TYPE__UINT_FAST8_T;
+    else if (!strcmp(name, "uint_fast16_t"))
+        return YAKSA_TYPE__UINT_FAST16_T;
+    else if (!strcmp(name, "uint_fast32_t"))
+        return YAKSA_TYPE__UINT_FAST32_T;
+    else if (!strcmp(name, "uint_fast64_t"))
+        return YAKSA_TYPE__UINT_FAST64_T;
+    else if (!strcmp(name, "int_least8_t"))
+        return YAKSA_TYPE__INT_LEAST8_T;
+    else if (!strcmp(name, "int_least16_t"))
+        return YAKSA_TYPE__INT_LEAST16_T;
+    else if (!strcmp(name, "int_least32_t"))
+        return YAKSA_TYPE__INT_LEAST32_T;
+    else if (!strcmp(name, "int_least64_t"))
+        return YAKSA_TYPE__INT_LEAST64_T;
+    else if (!strcmp(name, "uint_least8_t"))
+        return YAKSA_TYPE__UINT_LEAST8_T;
+    else if (!strcmp(name, "uint_least16_t"))
+        return YAKSA_TYPE__UINT_LEAST16_T;
+    else if (!strcmp(name, "uint_least32_t"))
+        return YAKSA_TYPE__UINT_LEAST32_T;
+    else if (!strcmp(name, "uint_least64_t"))
+        return YAKSA_TYPE__UINT_LEAST64_T;
+    else if (!strcmp(name, "intmax_t"))
+        return YAKSA_TYPE__INTMAX_T;
+    else if (!strcmp(name, "uintmax_t"))
+        return YAKSA_TYPE__UINTMAX_T;
+    else if (!strcmp(name, "size_t"))
+        return YAKSA_TYPE__SIZE_T;
     else if (!strcmp(name, "float"))
         return YAKSA_TYPE__FLOAT;
     else if (!strcmp(name, "double"))
         return YAKSA_TYPE__DOUBLE;
     else if (!strcmp(name, "long_double"))
         return YAKSA_TYPE__LONG_DOUBLE;
+    else if (!strcmp(name, "intptr_t"))
+        return YAKSA_TYPE__INTPTR_T;
+    else if (!strcmp(name, "uintptr_t"))
+        return YAKSA_TYPE__UINTPTR_T;
+    else if (!strcmp(name, "ptrdiff_t"))
+        return YAKSA_TYPE__PTRDIFF_T;
     else if (!strcmp(name, "c_complex"))
         return YAKSA_TYPE__C_COMPLEX;
     else if (!strcmp(name, "c_double_complex"))
