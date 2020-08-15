@@ -135,7 +135,7 @@ int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
 
 int yaksa_type_create_struct(int count, const int *array_of_blocklengths,
                              const intptr_t * array_of_displs, const yaksa_type_t * array_of_types,
-                             yaksa_type_t * newtype)
+                             yaksa_info_t info, yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 

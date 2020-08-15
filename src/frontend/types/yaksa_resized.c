@@ -58,7 +58,7 @@ int yaksi_type_create_resized(yaksi_type_s * intype, intptr_t lb, uintptr_t exte
 }
 
 int yaksa_type_create_resized(yaksa_type_t oldtype, intptr_t lb, uintptr_t extent,
-                              yaksa_type_t * newtype)
+                              yaksa_info_t info, yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 

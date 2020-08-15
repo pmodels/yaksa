@@ -138,7 +138,7 @@ int yaksi_type_create_subarray(int ndims, const int *array_of_sizes, const int *
 
 int yaksa_type_create_subarray(int ndims, const int *array_of_sizes, const int *array_of_subsizes,
                                const int *array_of_starts, yaksa_subarray_order_e order,
-                               yaksa_type_t oldtype, yaksa_type_t * newtype)
+                               yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 

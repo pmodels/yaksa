@@ -22,7 +22,7 @@ int main()
     set_matrix(pack_buf, ROWS, COLS, 0);
     set_matrix(unpack_buf, ROWS, COLS, 0);
 
-    rc = yaksa_type_create_hvector(ROWS, 1, COLS * sizeof(int), YAKSA_TYPE__INT, &hvector);
+    rc = yaksa_type_create_hvector(ROWS, 1, COLS * sizeof(int), YAKSA_TYPE__INT, NULL, &hvector);
     assert(rc == YAKSA_SUCCESS);
 
     yaksa_request_t request;
@@ -65,10 +65,10 @@ int main()
     /* matrix transposition using hvector */
     yaksa_type_t vector;
 
-    rc = yaksa_type_create_vector(ROWS, 1, COLS, YAKSA_TYPE__INT, &vector);
+    rc = yaksa_type_create_vector(ROWS, 1, COLS, YAKSA_TYPE__INT, NULL, &vector);
     assert(rc == YAKSA_SUCCESS);
 
-    rc = yaksa_type_create_hvector(COLS, 1, sizeof(int), vector, &hvector);
+    rc = yaksa_type_create_hvector(COLS, 1, sizeof(int), vector, NULL, &hvector);
     assert(rc == YAKSA_SUCCESS);
 
     set_matrix(pack_buf, ROWS, COLS, 0);
