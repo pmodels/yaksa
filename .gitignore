@@ -16,6 +16,7 @@ libtool
 *.la
 *.lo
 *.o
+__pycache__
 
 # m4 temporary files
 ar-lib
