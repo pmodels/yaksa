@@ -23,11 +23,11 @@ int main()
     set_matrix(pack_buf, ROWS, COLS, 0);
     set_matrix(unpack_buf, ROWS, COLS, 0);
 
-    rc = yaksa_type_create_vector(ROWS, 1, COLS, YAKSA_TYPE__INT, &vector);
+    rc = yaksa_type_create_vector(ROWS, 1, COLS, YAKSA_TYPE__INT, NULL, &vector);
     assert(rc == YAKSA_SUCCESS);
-    rc = yaksa_type_create_resized(vector, 0, sizeof(int), &vector_resized);
+    rc = yaksa_type_create_resized(vector, 0, sizeof(int), NULL, &vector_resized);
     assert(rc == YAKSA_SUCCESS);
-    rc = yaksa_type_create_contig(COLS, vector_resized, &transpose);
+    rc = yaksa_type_create_contig(COLS, vector_resized, NULL, &transpose);
     assert(rc == YAKSA_SUCCESS);
 
     yaksa_request_t request;

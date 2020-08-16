@@ -29,7 +29,7 @@ int main()
     set_matrix(unpack_buf, ROWS, COLS, 0);
 
     rc = yaksa_type_create_subarray(ndims, array_of_sizes, array_of_subsizes,
-                                    array_of_starts, order, YAKSA_TYPE__INT, &subarray);
+                                    array_of_starts, order, YAKSA_TYPE__INT, NULL, &subarray);
     assert(rc == YAKSA_SUCCESS);
 
     yaksa_request_t request;

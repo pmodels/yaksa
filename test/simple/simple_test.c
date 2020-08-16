@@ -19,10 +19,10 @@ int main()
 
     yaksa_init(NULL);
 
-    rc = yaksa_type_create_vector(3, 2, 3, YAKSA_TYPE__INT, &vector);
+    rc = yaksa_type_create_vector(3, 2, 3, YAKSA_TYPE__INT, NULL, &vector);
     assert(rc == YAKSA_SUCCESS);
 
-    rc = yaksa_type_create_vector(5, 1, 10, vector, &vector_vector);
+    rc = yaksa_type_create_vector(5, 1, 10, vector, NULL, &vector_vector);
     assert(rc == YAKSA_SUCCESS);
 
     for (int i = 0; i < DIMSIZE * DIMSIZE; i++) {

@@ -217,7 +217,7 @@ int DTPI_parse_base_type_str(DTP_pool_s * dtp, const char *str)
     }
 
     rc = yaksa_type_create_struct(num_types, array_of_blklens, array_of_displs, array_of_types,
-                                  &dtp->DTP_base_type);
+                                  NULL, &dtp->DTP_base_type);
     DTPI_ERR_CHK_RC(rc);
 
     dtpi->base_type_is_struct = 1;

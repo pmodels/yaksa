@@ -22,7 +22,7 @@ int main()
     set_matrix(pack_buf, ROWS, COLS, 0);
     set_matrix(unpack_buf, ROWS, COLS, 0);
 
-    rc = yaksa_type_create_contig(SIZE, YAKSA_TYPE__INT, &contig);
+    rc = yaksa_type_create_contig(SIZE, YAKSA_TYPE__INT, NULL, &contig);
     assert(rc == YAKSA_SUCCESS);
 
     /* pack */

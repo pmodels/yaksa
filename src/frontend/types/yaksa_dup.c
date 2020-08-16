@@ -18,7 +18,7 @@ int yaksi_type_create_dup(yaksi_type_s * intype, yaksi_type_s ** newtype)
     return rc;
 }
 
-int yaksa_type_create_dup(yaksa_type_t oldtype, yaksa_type_t * newtype)
+int yaksa_type_create_dup(yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 

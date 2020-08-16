@@ -30,7 +30,7 @@ int main()
     set_matrix(unpack_buf, ROWS, COLS, 0);
 
     rc = yaksa_type_create_indexed_block(ROWS, BLKLEN, array_of_displacements, YAKSA_TYPE__INT,
-                                         &indexed_block);
+                                         NULL, &indexed_block);
     assert(rc == YAKSA_SUCCESS);
 
     /* create an iov of the datatype */

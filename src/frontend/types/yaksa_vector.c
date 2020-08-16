@@ -78,7 +78,7 @@ int yaksi_type_create_hvector(int count, int blocklength, intptr_t stride, yaksi
 }
 
 int yaksa_type_create_hvector(int count, int blocklength, intptr_t stride, yaksa_type_t oldtype,
-                              yaksa_type_t * newtype)
+                              yaksa_info_t info, yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -110,7 +110,7 @@ int yaksa_type_create_hvector(int count, int blocklength, intptr_t stride, yaksa
 }
 
 int yaksa_type_create_vector(int count, int blocklength, int stride, yaksa_type_t oldtype,
-                             yaksa_type_t * newtype)
+                             yaksa_info_t info, yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 

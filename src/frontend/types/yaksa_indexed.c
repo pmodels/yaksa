@@ -122,7 +122,7 @@ int yaksi_type_create_hindexed(int count, const int *array_of_blocklengths,
 
 int yaksa_type_create_hindexed(int count, const int *array_of_blocklengths,
                                const intptr_t * array_of_displs, yaksa_type_t oldtype,
-                               yaksa_type_t * newtype)
+                               yaksa_info_t info, yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -161,7 +161,7 @@ int yaksa_type_create_hindexed(int count, const int *array_of_blocklengths,
 
 int yaksa_type_create_indexed(int count, const int *array_of_blocklengths,
                               const int *array_of_displs, yaksa_type_t oldtype,
-                              yaksa_type_t * newtype)
+                              yaksa_info_t info, yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
     intptr_t *real_array_of_displs = (intptr_t *) malloc(count * sizeof(intptr_t));

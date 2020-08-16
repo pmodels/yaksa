@@ -35,7 +35,7 @@ int main()
     set_matrix(unpack_buf, ROWS, COLS, 0);
 
     rc = yaksa_type_create_hindexed_block(ROWS, BLKLEN, array_of_displacements, YAKSA_TYPE__INT,
-                                          &hindexed_block);
+                                          NULL, &hindexed_block);
     assert(rc == YAKSA_SUCCESS);
 
     yaksa_request_t request;
