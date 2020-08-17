@@ -30,7 +30,7 @@ static int construct_contig(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
     uintptr_t count = 0;
     DTPI_pool_s *dtpi = dtp.priv;
     int rc = DTP_SUCCESS;
-    uintptr_t extent;
+    uint64_t extent;
 
     /* setup the child type first */
     rc = DTPI_construct_datatype(dtp, attr_tree_depth - 1, &attr->child, &type, &count);
@@ -113,7 +113,8 @@ static int construct_resized(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
                              yaksa_type_t * newtype, uintptr_t * new_count)
 {
     intptr_t true_lb, lb;
-    uintptr_t true_extent, extent;
+    uintptr_t true_extent;
+    uint64_t extent;
     yaksa_type_t type;
     uintptr_t count = 0;
     DTPI_pool_s *dtpi = dtp.priv;
@@ -194,7 +195,7 @@ static int construct_vector(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
     uintptr_t count = 0;
     DTPI_pool_s *dtpi = dtp.priv;
     int rc = DTP_SUCCESS;
-    uintptr_t extent;
+    uint64_t extent;
 
     /* setup the child type first */
     rc = DTPI_construct_datatype(dtp, attr_tree_depth - 1, &attr->child, &type, &count);
@@ -303,7 +304,7 @@ static int construct_hvector(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
     uintptr_t count = 0;
     DTPI_pool_s *dtpi = dtp.priv;
     int rc = DTP_SUCCESS;
-    uintptr_t extent;
+    uint64_t extent;
 
     /* setup the child type first */
     rc = DTPI_construct_datatype(dtp, attr_tree_depth - 1, &attr->child, &type, &count);
@@ -416,7 +417,7 @@ static int construct_blkindx(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
     uintptr_t count = 0;
     DTPI_pool_s *dtpi = dtp.priv;
     int rc = DTP_SUCCESS;
-    uintptr_t extent;
+    uint64_t extent;
 
     /* setup the child type first */
     rc = DTPI_construct_datatype(dtp, attr_tree_depth - 1, &attr->child, &type, &count);
@@ -553,7 +554,7 @@ static int construct_blkhindx(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
     uintptr_t count = 0;
     DTPI_pool_s *dtpi = dtp.priv;
     int rc = DTP_SUCCESS;
-    uintptr_t extent;
+    uint64_t extent;
 
     /* setup the child type first */
     rc = DTPI_construct_datatype(dtp, attr_tree_depth - 1, &attr->child, &type, &count);
@@ -693,7 +694,7 @@ static int construct_indexed(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
     uintptr_t count = 0;
     DTPI_pool_s *dtpi = dtp.priv;
     int rc = DTP_SUCCESS;
-    uintptr_t extent;
+    uint64_t extent;
 
     /* setup the child type first */
     rc = DTPI_construct_datatype(dtp, attr_tree_depth - 1, &attr->child, &type, &count);
@@ -864,7 +865,7 @@ static int construct_hindexed(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
     uintptr_t count = 0;
     DTPI_pool_s *dtpi = dtp.priv;
     int rc = DTP_SUCCESS;
-    uintptr_t extent;
+    uint64_t extent;
 
     /* setup the child type first */
     rc = DTPI_construct_datatype(dtp, attr_tree_depth - 1, &attr->child, &type, &count);
@@ -1039,7 +1040,7 @@ static int construct_subarray(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
     uintptr_t count;
     DTPI_pool_s *dtpi = dtp.priv;
     int rc = DTP_SUCCESS;
-    uintptr_t extent;
+    uint64_t extent;
 
     /* setup the child type first */
     rc = DTPI_construct_datatype(dtp, attr_tree_depth - 1, &attr->child, &type, &count);
@@ -1156,7 +1157,7 @@ static int construct_struct(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
     uintptr_t count = 0;
     DTPI_pool_s *dtpi = dtp.priv;
     int rc = DTP_SUCCESS;
-    uintptr_t extent;
+    uint64_t extent;
 
     /* setup the child type first */
     rc = DTPI_construct_datatype(dtp, attr_tree_depth - 1, &attr->child, &type, &count);
