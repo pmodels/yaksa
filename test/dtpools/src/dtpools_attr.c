@@ -17,7 +17,7 @@
         intptr_t lb_;                                                   \
         yaksa_type_get_extent(type, &lb_, &type_extent);                     \
         if (type_extent != extent) {                                    \
-            fprintf(stderr, "expected extent of %" PRIxPTR ", but got %" PRIxPTR "\n", extent, type_extent); \
+            fprintf(stderr, "expected extent of %" PRIuPTR ", but got %" PRIuPTR "\n", extent, type_extent); \
             fflush(stderr);                                             \
             assert(0);                                                  \
         }                                                               \
