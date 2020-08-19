@@ -16,14 +16,11 @@
         YAKSU_ERR_CHKANDJUMP(!tmp_type_, rc, YAKSA_ERR__OUT_OF_MEM, fn_fail); \
         yaksu_atomic_store(&tmp_type_->refcount, 1);                    \
                                                                         \
-        yaksi_type_user_handle_s *user_handle;                          \
-        user_handle = (yaksi_type_user_handle_s *) malloc(sizeof(yaksi_type_user_handle_s)); \
-        YAKSU_ERR_CHKANDJUMP(!user_handle, rc, YAKSA_ERR__OUT_OF_MEM, fn_fail); \
-                                                                        \
-        rc = yaksi_type_handle_alloc(tmp_type_, &user_handle->id);      \
+        uint32_t id;                                                    \
+        rc = yaksi_type_handle_alloc(tmp_type_, &id);                   \
         YAKSU_ERR_CHECK(rc, fn_fail);                                   \
                                                                         \
-        assert(user_handle->id == YAKSA_TYPE__##TYPE);                  \
+        assert(id == (uint32_t) YAKSA_TYPE__##TYPE);                    \
     } while (0)
 
 #define ASSIGN_TYPE_HANDLE(OLDTYPE, NEWTYPE, rc, fn_fail)               \
@@ -34,14 +31,11 @@
         YAKSU_ERR_CHECK(rc, fn_fail);                                   \
         yaksu_atomic_incr(&tmp_type_->refcount);                        \
                                                                         \
-        yaksi_type_user_handle_s *user_handle;                          \
-        user_handle = (yaksi_type_user_handle_s *) malloc(sizeof(yaksi_type_user_handle_s)); \
-        YAKSU_ERR_CHKANDJUMP(!user_handle, rc, YAKSA_ERR__OUT_OF_MEM, fn_fail); \
-                                                                        \
-        rc = yaksi_type_handle_alloc(tmp_type_, &user_handle->id);      \
+        uint32_t id;                                                    \
+        rc = yaksi_type_handle_alloc(tmp_type_, &id);                   \
         YAKSU_ERR_CHECK(rc, fn_fail);                                   \
                                                                         \
-        assert(user_handle->id == YAKSA_TYPE__##NEWTYPE);               \
+        assert(id == (uint32_t) YAKSA_TYPE__##NEWTYPE);                 \
     } while (0)
 
 #define INT_MATCH_HANDLE(ctype, TYPE, rc, fn_fail)              \

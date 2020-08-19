@@ -40,7 +40,6 @@ typedef enum {
 } yaksi_type_kind_e;
 
 struct yaksi_type_s;
-struct yaksi_type_user_handle_s;
 struct yaksi_request_s;
 
 /* global variables */
@@ -116,12 +115,6 @@ typedef struct yaksi_type_s {
     /* give some private space for the backend to store content */
     yaksur_type_s backend;
 } yaksi_type_s;
-
-typedef struct yaksi_type_user_handle_s {
-    uint32_t id;
-    yaksi_type_s *type;
-    UT_hash_handle hh;
-} yaksi_type_user_handle_s;
 
 typedef struct yaksi_request_s {
     uint32_t id;

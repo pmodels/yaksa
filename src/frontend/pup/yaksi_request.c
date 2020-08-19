@@ -41,6 +41,8 @@ int yaksi_request_free(yaksi_request_s * request)
     rc = yaksu_handle_pool_elem_free(yaksi_global.request_handle_pool, request->id);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
+    free(request);
+
   fn_exit:
     return rc;
   fn_fail:
