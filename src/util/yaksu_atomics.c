@@ -4,5 +4,6 @@
  */
 
 #include <pthread.h>
+#include "yaksu_atomics.h"
 
-pthread_mutex_t yaksui_atomic_mutex = PTHREAD_MUTEX_INITIALIZER;
+yaksu_rwlock_t yaksui_atomic_lock = YAKSU_RWLOCK_INITIALIZER;

@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <limits.h>
+#include <pthread.h>
 
 #define ALLOC_TYPE_HANDLE(tmp_type_, TYPE, rc, fn_fail)                 \
     do {                                                                \

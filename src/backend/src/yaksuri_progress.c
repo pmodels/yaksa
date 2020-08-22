@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <pthread.h>
 #include "yaksa.h"
 #include "yaksi.h"
 #include "yaksu.h"

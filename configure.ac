@@ -93,6 +93,10 @@ PAC_PUSH_FLAG([CFLAGS])
 AC_PROG_CC
 AC_PROG_CC_C99
 PAC_POP_FLAG([CFLAGS])
+
+# assume POSIX-2001
+PAC_APPEND_FLAG([-D_POSIX_C_SOURCE=200112L],[CPPFLAGS])
+
 AC_HEADER_STDC
 
 # required pre-Automake-1.14
@@ -136,6 +140,17 @@ if test "$have_pthreads" = "yes" ; then
     PAC_PREPEND_FLAG([-lpthread],[LIBS])
 else
     AC_ERROR([pthreads not found on the system])
+fi
+
+# look for pthreads read-write locks
+AC_TRY_COMPILE([
+               #include <pthread.h>
+	       ],
+               [pthread_rwlock_t lock;],
+               [have_pthread_rwlocks=yes],
+               [have_pthread_rwlocks=no])
+if test "$have_pthread_rwlocks" = "yes" ; then
+    AC_DEFINE([HAVE_PTHREAD_RWLOCKS],[1],[Define if pthread read-write locks exist])
 fi
 
 # backend devices
