@@ -11,6 +11,7 @@
 #include <string.h>
 #include <yutlist.h>
 #include <yuthash.h>
+#include <pthread.h>
 
 /*
  * The pool contains three lists/hashmaps:

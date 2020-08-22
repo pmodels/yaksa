@@ -6,7 +6,9 @@
 #ifndef YAKSU_ATOMICS_H_INCLUDED
 #define YAKSU_ATOMICS_H_INCLUDED
 
-#ifdef HAVE_STDATOMICS_H
+#include <yaksa_config.h>
+
+#ifdef HAVE_C11_ATOMICS
 
 #include <stdatomic.h>
 

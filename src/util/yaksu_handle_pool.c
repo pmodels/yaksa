@@ -11,6 +11,7 @@
 #include <string.h>
 #include <yutlist.h>
 #include <yuthash.h>
+#include <pthread.h>
 
 /*
  * If there are any free handles that were previously allocated and
