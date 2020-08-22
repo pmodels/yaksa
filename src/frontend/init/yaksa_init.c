@@ -140,7 +140,7 @@
 
 yaksi_global_s yaksi_global = { 0 };
 
-yaksu_atomic_int yaksi_is_initialized = 0;
+yaksu_atomic_int yaksi_is_initialized = YAKSU_ATOMIC_VAR_INIT(0);
 static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define CHUNK_SIZE (1024)
