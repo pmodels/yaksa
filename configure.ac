@@ -94,6 +94,15 @@ AC_PROG_CC
 AC_PROG_CC_C99
 PAC_POP_FLAG([CFLAGS])
 
+# see if C11 is available (for atomics)
+PAC_PUSH_FLAG([CFLAGS])
+PAC_APPEND_FLAG([-std=c11],[CFLAGS])
+PAC_C_CHECK_COMPILER_OPTION([-std=c11],[c11_available=yes],[c11_available=no])
+PAC_POP_FLAG([CFLAGS])
+if test "${c11_available}" = "yes" ; then
+    PAC_APPEND_FLAG([-std=c11],[CFLAGS])
+fi
+
 # assume POSIX-2001
 PAC_APPEND_FLAG([-D_POSIX_C_SOURCE=200112L],[CPPFLAGS])
 
@@ -132,6 +141,13 @@ dnl ----------------------------------------------------------------------------
 dnl check the environment and the availability of functions
 dnl ----------------------------------------------------------------------------
 PAC_C_GNU_ATTRIBUTE
+
+# look for stdatomic
+AC_CHECK_HEADERS([stdatomic.h],[have_c11_atomics=yes],[have_c11_atomics=no])
+if test "${have_c11_atomics}" = "yes"; then
+    AC_DEFINE([HAVE_C11_ATOMICS],[1],[Define if C11 atomics are available])
+fi
+AM_CONDITIONAL([HAVE_C11_ATOMICS], [test x${have_c11_atomics} = xyes])
 
 # look for pthreads
 AC_CHECK_HEADERS(pthread.h)
