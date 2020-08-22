@@ -21,6 +21,7 @@
         rc = yaksi_type_handle_alloc(tmp_type_, &id);                   \
         YAKSU_ERR_CHECK(rc, fn_fail);                                   \
                                                                         \
+        yaksi_global.yaksi_builtin_types[YAKSA_TYPE__##TYPE] = tmp_type_; \
         assert(id == (uint32_t) YAKSA_TYPE__##TYPE);                    \
     } while (0)
 
@@ -36,6 +37,7 @@
         rc = yaksi_type_handle_alloc(tmp_type_, &id);                   \
         YAKSU_ERR_CHECK(rc, fn_fail);                                   \
                                                                         \
+        yaksi_global.yaksi_builtin_types[YAKSA_TYPE__##NEWTYPE] = tmp_type_; \
         assert(id == (uint32_t) YAKSA_TYPE__##NEWTYPE);                 \
     } while (0)
 
@@ -186,6 +188,7 @@ int yaksa_init(yaksa_info_t info)
     null_type->is_contig = true;
     null_type->num_contig = 0;
     yaksur_type_create_hook(null_type);
+    yaksi_global.yaksi_builtin_types[YAKSA_TYPE__NULL] = null_type;
 
     INIT_BUILTIN_TYPE(_Bool, _BOOL, rc, fn_fail);
 
