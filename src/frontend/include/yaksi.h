@@ -42,6 +42,30 @@ typedef enum {
 struct yaksi_type_s;
 struct yaksi_request_s;
 
+/*
+ * The type handle is divided into the following parts:
+ *
+ *    32 bits -- unused
+ *    32 bits -- type object id
+ */
+#define YAKSI_TYPE_UNUSED_BITS                  (32)
+#define YAKSI_TYPE_OBJECT_ID_BITS               (32)
+
+#define YAKSI_TYPE_GET_OBJECT_ID(handle) \
+    ((handle) << (64 - YAKSI_TYPE_OBJECT_ID_BITS) >> (64 - YAKSI_TYPE_OBJECT_ID_BITS))
+
+/*
+ * The request handle is divided into the following parts:
+ *
+ *    32 bits -- unused
+ *    32 bits -- request object id
+ */
+#define YAKSI_REQUEST_UNUSED_BITS                  (32)
+#define YAKSI_REQUEST_OBJECT_ID_BITS               (32)
+
+#define YAKSI_REQUEST_GET_OBJECT_ID(handle) \
+    ((handle) << (64 - YAKSI_REQUEST_OBJECT_ID_BITS) >> (64 - YAKSI_REQUEST_OBJECT_ID_BITS))
+
 /* global variables */
 typedef struct {
     yaksu_handle_pool_s type_handle_pool;
@@ -121,7 +145,7 @@ typedef struct yaksi_type_s {
 } yaksi_type_s;
 
 typedef struct yaksi_request_s {
-    uint32_t id;
+    yaksu_handle_t id;
     yaksu_atomic_int cc;        /* completion counter */
 
     /* give some private space for the backend to store content */
@@ -232,8 +256,8 @@ int yaksi_iov(const char *buf, uintptr_t count, yaksi_type_s * type, uintptr_t i
 int yaksi_flatten_size(yaksi_type_s * type, uintptr_t * flattened_type_size);
 
 /* type pool */
-int yaksi_type_handle_alloc(yaksi_type_s * type, uint32_t * handle);
-int yaksi_type_handle_dealloc(uint32_t handle, yaksi_type_s ** type);
+int yaksi_type_handle_alloc(yaksi_type_s * type, yaksu_handle_t * handle);
+int yaksi_type_handle_dealloc(yaksu_handle_t handle, yaksi_type_s ** type);
 int yaksi_type_get(yaksa_type_t type, yaksi_type_s ** yaksi_type);
 
 /* request pool */

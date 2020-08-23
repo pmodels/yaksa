@@ -17,12 +17,12 @@
         YAKSU_ERR_CHKANDJUMP(!tmp_type_, rc, YAKSA_ERR__OUT_OF_MEM, fn_fail); \
         yaksu_atomic_store(&tmp_type_->refcount, 1);                    \
                                                                         \
-        uint32_t id;                                                    \
+        yaksu_handle_t id;                                              \
         rc = yaksi_type_handle_alloc(tmp_type_, &id);                   \
         YAKSU_ERR_CHECK(rc, fn_fail);                                   \
                                                                         \
         yaksi_global.yaksi_builtin_types[YAKSA_TYPE__##TYPE] = tmp_type_; \
-        assert(id == (uint32_t) YAKSA_TYPE__##TYPE);                    \
+        assert(id == (yaksu_handle_t) YAKSA_TYPE__##TYPE);              \
     } while (0)
 
 #define ASSIGN_TYPE_HANDLE(OLDTYPE, NEWTYPE, rc, fn_fail)               \
@@ -33,12 +33,12 @@
         YAKSU_ERR_CHECK(rc, fn_fail);                                   \
         yaksu_atomic_incr(&tmp_type_->refcount);                        \
                                                                         \
-        uint32_t id;                                                    \
+        yaksu_handle_t id;                                              \
         rc = yaksi_type_handle_alloc(tmp_type_, &id);                   \
         YAKSU_ERR_CHECK(rc, fn_fail);                                   \
                                                                         \
         yaksi_global.yaksi_builtin_types[YAKSA_TYPE__##NEWTYPE] = tmp_type_; \
-        assert(id == (uint32_t) YAKSA_TYPE__##NEWTYPE);                 \
+        assert(id == (yaksu_handle_t) YAKSA_TYPE__##NEWTYPE);           \
     } while (0)
 
 #define INT_MATCH_HANDLE(ctype, TYPE, rc, fn_fail)              \
@@ -130,7 +130,7 @@
 
 #define FINALIZE_BUILTIN_TYPE(TYPE, rc, fn_fail)                        \
     do {                                                                \
-        uint32_t id = (uint32_t) YAKSA_TYPE__##TYPE;                    \
+        yaksu_handle_t id = (yaksu_handle_t) YAKSA_TYPE__##TYPE;        \
         yaksi_type_s *tmp_type_;                                        \
                                                                         \
         rc = yaksi_type_handle_dealloc(id, &tmp_type_);                 \
@@ -371,8 +371,8 @@ int yaksa_finalize(void)
 
 
     /* free the NULL request */
-    uint32_t id;
-    id = (uint32_t) YAKSA_REQUEST__NULL;
+    yaksu_handle_t id;
+    id = (yaksu_handle_t) YAKSA_REQUEST__NULL;
     yaksi_request_s *request;
 
     rc = yaksi_request_get(id, &request);

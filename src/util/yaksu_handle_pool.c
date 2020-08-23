@@ -27,7 +27,7 @@
  */
 
 typedef struct handle {
-    uint32_t id;
+    yaksu_handle_t id;
     const void *data;
 
     /* free handles are maintained as a linked list */
@@ -41,7 +41,7 @@ typedef struct handle {
 typedef struct handle_pool {
     pthread_mutex_t mutex;
 
-    uint32_t next_handle;       /* next brand-new handle (never allocated) */
+    yaksu_handle_t next_handle; /* next brand-new handle (never allocated) */
     handle_s *free_handles;     /* list of handles that were allocated, but later freed */
     handle_s *used_handles;     /* hashmap of handles in use */
 } handle_pool_s;
@@ -102,7 +102,8 @@ int yaksu_handle_pool_free(yaksu_handle_pool_s pool)
     return rc;
 }
 
-int yaksu_handle_pool_elem_alloc(yaksu_handle_pool_s pool, uint32_t * handle, const void *data)
+int yaksu_handle_pool_elem_alloc(yaksu_handle_pool_s pool, yaksu_handle_t * handle,
+                                 const void *data)
 {
     int rc = YAKSA_SUCCESS;
     handle_pool_s *handle_pool = (handle_pool_s *) pool;
@@ -122,7 +123,7 @@ int yaksu_handle_pool_elem_alloc(yaksu_handle_pool_s pool, uint32_t * handle, co
     }
 
     el->data = data;
-    HASH_ADD(hh, handle_pool->used_handles, id, sizeof(uint32_t), el);
+    HASH_ADD(hh, handle_pool->used_handles, id, sizeof(yaksu_handle_t), el);
 
     *handle = el->id;
 
@@ -133,7 +134,7 @@ int yaksu_handle_pool_elem_alloc(yaksu_handle_pool_s pool, uint32_t * handle, co
     goto fn_exit;
 }
 
-int yaksu_handle_pool_elem_free(yaksu_handle_pool_s pool, uint32_t handle)
+int yaksu_handle_pool_elem_free(yaksu_handle_pool_s pool, yaksu_handle_t handle)
 {
     int rc = YAKSA_SUCCESS;
     handle_pool_s *handle_pool = (handle_pool_s *) pool;
@@ -141,7 +142,7 @@ int yaksu_handle_pool_elem_free(yaksu_handle_pool_s pool, uint32_t handle)
     pthread_mutex_lock(&handle_pool->mutex);
 
     handle_s *el = NULL;
-    HASH_FIND(hh, handle_pool->used_handles, &handle, sizeof(uint32_t), el);
+    HASH_FIND(hh, handle_pool->used_handles, &handle, sizeof(yaksu_handle_t), el);
     assert(el);
 
     DL_PREPEND(handle_pool->free_handles, el);
@@ -151,7 +152,7 @@ int yaksu_handle_pool_elem_free(yaksu_handle_pool_s pool, uint32_t handle)
     return rc;
 }
 
-int yaksu_handle_pool_elem_get(yaksu_handle_pool_s pool, uint32_t handle, const void **data)
+int yaksu_handle_pool_elem_get(yaksu_handle_pool_s pool, yaksu_handle_t handle, const void **data)
 {
     int rc = YAKSA_SUCCESS;
     handle_pool_s *handle_pool = (handle_pool_s *) pool;
@@ -159,7 +160,7 @@ int yaksu_handle_pool_elem_get(yaksu_handle_pool_s pool, uint32_t handle, const 
     pthread_mutex_lock(&handle_pool->mutex);
 
     handle_s *el = NULL;
-    HASH_FIND(hh, handle_pool->used_handles, &handle, sizeof(uint32_t), el);
+    HASH_FIND(hh, handle_pool->used_handles, &handle, sizeof(yaksu_handle_t), el);
     assert(el);
 
     *data = el->data;

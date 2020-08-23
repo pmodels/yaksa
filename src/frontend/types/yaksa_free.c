@@ -95,8 +95,8 @@ int yaksa_type_free(yaksa_type_t type)
     if (type == YAKSA_TYPE__NULL)
         goto fn_exit;
 
-    uint32_t id;
-    id = (uint32_t) type;
+    yaksu_handle_t id;
+    id = (yaksu_handle_t) type;
     rc = yaksi_type_handle_dealloc(id, &yaksi_type);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
