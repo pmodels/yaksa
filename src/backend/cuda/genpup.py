@@ -230,7 +230,7 @@ if __name__ == '__main__':
             yutils.display(OUTFILE, "#include <assert.h>\n")
             yutils.display(OUTFILE, "#include <cuda.h>\n")
             yutils.display(OUTFILE, "#include <cuda_runtime.h>\n")
-            yutils.display(OUTFILE, "#include \"yaksuri_cudai.h\"\n")
+            yutils.display(OUTFILE, "#include \"yaksuri_cudai_base.h\"\n")
             yutils.display(OUTFILE, "#include \"yaksuri_cudai_pup.h\"\n")
             yutils.display(OUTFILE, "\n")
 
@@ -256,7 +256,7 @@ if __name__ == '__main__':
                 yutils.display(OUTFILE, "#include <assert.h>\n")
                 yutils.display(OUTFILE, "#include <cuda.h>\n")
                 yutils.display(OUTFILE, "#include <cuda_runtime.h>\n")
-                yutils.display(OUTFILE, "#include \"yaksuri_cudai.h\"\n")
+                yutils.display(OUTFILE, "#include \"yaksuri_cudai_base.h\"\n")
                 yutils.display(OUTFILE, "#include \"yaksuri_cudai_pup.h\"\n")
                 yutils.display(OUTFILE, "\n")
 
@@ -278,7 +278,6 @@ if __name__ == '__main__':
     yutils.display(OUTFILE, "\n")
     yutils.display(OUTFILE, "#include <string.h>\n")
     yutils.display(OUTFILE, "#include <stdint.h>\n")
-    yutils.display(OUTFILE, "#include \"yaksi.h\"\n")
     yutils.display(OUTFILE, "\n")
     yutils.display(OUTFILE, "#ifdef __cplusplus\n")
     yutils.display(OUTFILE, "extern \"C\"\n")

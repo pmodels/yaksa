@@ -41,8 +41,14 @@ int yaksi_type_get(yaksa_type_t type, struct yaksi_type_s **yaksi_type)
     int rc = YAKSA_SUCCESS;
     uint32_t id = (uint32_t) type;
 
-    rc = yaksu_handle_pool_elem_get(yaksi_global.type_handle_pool, id, (const void **) yaksi_type);
-    YAKSU_ERR_CHECK(rc, fn_fail);
+    if (id < YAKSI_TYPE__LAST) {
+        assert(yaksi_global.yaksi_builtin_types[id]);
+        *yaksi_type = yaksi_global.yaksi_builtin_types[id];
+    } else {
+        rc = yaksu_handle_pool_elem_get(yaksi_global.type_handle_pool, id,
+                                        (const void **) yaksi_type);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+    }
 
   fn_exit:
     return rc;

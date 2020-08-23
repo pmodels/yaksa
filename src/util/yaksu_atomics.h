@@ -6,10 +6,13 @@
 #ifndef YAKSU_ATOMICS_H_INCLUDED
 #define YAKSU_ATOMICS_H_INCLUDED
 
-#ifdef HAVE_STDATOMICS_H
+#include <yaksa_config.h>
+
+#ifdef HAVE_C11_ATOMICS
 
 #include <stdatomic.h>
 
+#define YAKSU_ATOMIC_VAR_INIT ATOMIC_VAR_INIT
 typedef atomic_int yaksu_atomic_int;
 
 static inline int yaksu_atomic_incr(yaksu_atomic_int * val)
@@ -36,6 +39,7 @@ static inline void yaksu_atomic_store(yaksu_atomic_int * val, int x)
 
 #include <pthread.h>
 
+#define YAKSU_ATOMIC_VAR_INIT(x) x
 extern pthread_mutex_t yaksui_atomic_mutex;
 typedef int yaksu_atomic_int;
 
