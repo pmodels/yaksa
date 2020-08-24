@@ -17,7 +17,7 @@
         intptr_t lb_;                                                   \
         yaksa_type_get_extent(type, &lb_, &type_extent);                     \
         if (type_extent != extent) {                                    \
-            fprintf(stderr, "expected extent of %" PRIuPTR ", but got %" PRIuPTR "\n", extent, type_extent); \
+            fprintf(stderr, "expected extent of %" PRIu64 ", but got %" PRIuPTR "\n", extent, type_extent); \
             fflush(stderr);                                             \
             assert(0);                                                  \
         }                                                               \
@@ -174,7 +174,7 @@ static int construct_resized(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
     rc = yaksa_type_create_resized(type, attr->u.resized.lb, attr->u.resized.extent, NULL, newtype);
     DTPI_ERR_CHK_RC(rc);
 
-    confirm_extent(*newtype, attr->u.resized.extent);
+    confirm_extent(*newtype, (uint64_t) attr->u.resized.extent);
 
   fn_exit:
     *new_count = count;
