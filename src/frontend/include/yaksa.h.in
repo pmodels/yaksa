@@ -114,9 +114,6 @@ typedef uint64_t yaksa_type_t;
 #define YAKSA_TYPE__SHORT_INT                         ((yaksa_type_t) 55)
 #define YAKSA_TYPE__LONG_DOUBLE_INT                   ((yaksa_type_t) 56)
 
-/* internal: should not be used in applications */
-#define YAKSI_TYPE__LAST                              ((yaksa_type_t) 57)
-
 /*! @} */
 
 

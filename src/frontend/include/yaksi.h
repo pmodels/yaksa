@@ -70,10 +70,6 @@ struct yaksi_request_s;
 typedef struct {
     yaksu_handle_pool_s type_handle_pool;
     yaksu_handle_pool_s request_handle_pool;
-
-    /* keep a cache of the builtin types, so we do not have to get a
-     * lock to query for them each time */
-    struct yaksi_type_s *yaksi_builtin_types[YAKSI_TYPE__LAST];
 } yaksi_global_s;
 extern yaksi_global_s yaksi_global;
 
