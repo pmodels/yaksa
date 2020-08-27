@@ -391,7 +391,7 @@ int yaksa_type_get_size(yaksa_type_t type, uintptr_t * size);
  * \brief gets the true extent (true span) of the datatype
  *
  * \param[in]  type         The datatype whose extent is being requested
- * \param[in]  lb           The lowerbound of the datatype
+ * \param[out] lb           The lowerbound of the datatype
  *                          (only used to calculate the extent; does
  *                          not change where the buffer points to)
  * \param[out] extent       The extent of the datatype
@@ -406,7 +406,7 @@ int yaksa_type_get_true_extent(yaksa_type_t type, intptr_t * lb, uintptr_t * ext
  * \brief gets the extent (span) of the datatype
  *
  * \param[in]  type         The datatype whose extent is being requested
- * \param[in]  lb           The lowerbound of the datatype
+ * \param[out] lb           The lowerbound of the datatype
  *                          (only used to calculate the extent; does
  *                          not change where the buffer points to)
  * \param[out] extent       The extent of the datatype
