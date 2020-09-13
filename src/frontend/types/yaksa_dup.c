@@ -32,7 +32,7 @@ int yaksa_type_create_dup(yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t 
     rc = yaksi_type_create_dup(intype, &outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    uint32_t id;
+    yaksu_handle_t id;
     rc = yaksi_type_handle_alloc(outtype, &id);
     YAKSU_ERR_CHECK(rc, fn_fail);
 

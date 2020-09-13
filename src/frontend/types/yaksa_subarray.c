@@ -158,7 +158,7 @@ int yaksa_type_create_subarray(int ndims, const int *array_of_sizes, const int *
                                     order, intype, &outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    uint32_t id;
+    yaksu_handle_t id;
     rc = yaksi_type_handle_alloc(outtype, &id);
     YAKSU_ERR_CHECK(rc, fn_fail);
 

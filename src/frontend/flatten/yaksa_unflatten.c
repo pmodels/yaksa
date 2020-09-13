@@ -139,7 +139,7 @@ int yaksa_unflatten(yaksa_type_t * type, const void *flattened_type)
 
     assert(yaksi_type);
 
-    uint32_t id;
+    yaksu_handle_t id;
     rc = yaksi_type_handle_alloc(yaksi_type, &id);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
