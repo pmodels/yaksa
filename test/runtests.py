@@ -129,9 +129,12 @@ def create_summary(summary_file):
 
     for x in range(len(testnames)):
         fh.write("    <testcase name=\"%s\" time=\"%f\">\n" % (testnames[x].strip(), testtimes[x]))
-        if (testretvals[x] != 0 and testoutputs[x]):
+        if (testretvals[x] != 0):
             fh.write("      <failure><![CDATA[\n")
-            fh.write(testoutputs[x] + "\n")
+            if (testoutputs[x]):
+                fh.write(testoutputs[x] + "\n")
+            else:
+                fh.write("test failed\n")
             fh.write("      ]]></failure>\n")
         fh.write("    </testcase>\n")
 
