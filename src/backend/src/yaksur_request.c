@@ -23,6 +23,11 @@ int yaksur_request_test(yaksi_request_s * request)
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (completed) {
+            /* Destroy complete event, in case request is still pending,
+             * and would check this event again in future. */
+            rc = yaksuri_global.gpudriver[id].info->event_destroy(backend->event);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+            backend->event = NULL;
             yaksu_atomic_decr(&request->cc);
         }
     }
