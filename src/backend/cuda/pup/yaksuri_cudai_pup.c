@@ -85,8 +85,10 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
     cerr = cudaGetDevice(&cur_device);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-    cerr = cudaSetDevice(target);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    if (target != cur_device) {
+        cerr = cudaSetDevice(target);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    }
 
     if (*event == NULL) {
         cerr = cudaEventCreate((cudaEvent_t *) event);
@@ -178,8 +180,10 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
     cerr = cudaEventRecord((cudaEvent_t) * event, yaksuri_cudai_global.stream[target]);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-    cerr = cudaSetDevice(cur_device);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    if (target != cur_device) {
+        cerr = cudaSetDevice(cur_device);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    }
 
   fn_exit:
     return rc;
@@ -212,8 +216,10 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
     cerr = cudaGetDevice(&cur_device);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-    cerr = cudaSetDevice(target);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    if (target != cur_device) {
+        cerr = cudaSetDevice(target);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    }
 
     if (*event == NULL) {
         cerr = cudaEventCreate((cudaEvent_t *) event);
@@ -307,8 +313,10 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
     cerr = cudaEventRecord((cudaEvent_t) * event, yaksuri_cudai_global.stream[target]);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-    cerr = cudaSetDevice(cur_device);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    if (target != cur_device) {
+        cerr = cudaSetDevice(cur_device);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    }
 
   fn_exit:
     return rc;

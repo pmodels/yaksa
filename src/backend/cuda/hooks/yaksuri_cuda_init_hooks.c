@@ -7,6 +7,7 @@
 #include "yaksuri_cudai.h"
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 
@@ -29,14 +30,18 @@ static void *cuda_gpu_malloc(uintptr_t size, int device)
     cerr = cudaGetDevice(&cur_device);
     YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
 
-    cerr = cudaSetDevice(device);
-    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
+    if (device != cur_device) {
+        cerr = cudaSetDevice(device);
+        YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
+    }
 
     cerr = cudaMalloc(&ptr, size);
     YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
 
-    cerr = cudaSetDevice(cur_device);
-    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
+    if (device != cur_device) {
+        cerr = cudaSetDevice(cur_device);
+        YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
+    }
 
     return ptr;
 }
@@ -54,6 +59,7 @@ static void cuda_gpu_free(void *ptr)
 }
 
 yaksuri_cudai_global_s yaksuri_cudai_global;
+static int lazy_init_device = 0;
 
 static int finalize_hook(void)
 {
@@ -64,7 +70,15 @@ static int finalize_hook(void)
     cerr = cudaGetDevice(&cur_device);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
+    if (lazy_init_device > 0) {
+        cerr = cudaStreamDestroy(yaksuri_cudai_global.stream[cur_device]);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    }
+
     for (int i = 0; i < yaksuri_cudai_global.ndevices; i++) {
+        if (lazy_init_device > 0)
+            continue;
+
         cerr = cudaSetDevice(i);
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
@@ -76,8 +90,10 @@ static int finalize_hook(void)
     free(yaksuri_cudai_global.stream);
     free(yaksuri_cudai_global.p2p);
 
-    cerr = cudaSetDevice(cur_device);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    if (lazy_init_device == 0) {
+        cerr = cudaSetDevice(cur_device);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    }
 
   fn_exit:
     return rc;
@@ -128,7 +144,32 @@ int yaksuri_cuda_init_hook(yaksur_gpudriver_info_s ** info)
     cerr = cudaGetDevice(&cur_device);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
+    lazy_init_device = 0;
+    char *lazy_init_device_env_p;
+    lazy_init_device_env_p = getenv("YAKSA_LAZY_INIT_DEVICE");
+    if (lazy_init_device_env_p != NULL) {
+        lazy_init_device = atoi(lazy_init_device_env_p);
+        if (lazy_init_device < 0) {
+            lazy_init_device = 0;
+        }
+    }
+
+    if (lazy_init_device > 0) {
+        for (int j = 0; j < yaksuri_cudai_global.ndevices; j++) {
+            memset(yaksuri_cudai_global.p2p[j], 0, yaksuri_cudai_global.ndevices * sizeof(bool));
+            yaksuri_cudai_global.stream[j] = NULL;
+        }
+        yaksuri_cudai_global.p2p[cur_device][cur_device] = 1;
+        cerr =
+            cudaStreamCreateWithFlags(&yaksuri_cudai_global.stream[cur_device],
+                                      cudaStreamNonBlocking);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    }
+
     for (int i = 0; i < yaksuri_cudai_global.ndevices; i++) {
+        if (lazy_init_device > 0)
+            continue;
+
         cerr = cudaSetDevice(i);
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
@@ -156,8 +197,10 @@ int yaksuri_cuda_init_hook(yaksur_gpudriver_info_s ** info)
         }
     }
 
-    cerr = cudaSetDevice(cur_device);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    if (lazy_init_device == 0) {
+        cerr = cudaSetDevice(cur_device);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    }
 
     *info = (yaksur_gpudriver_info_s *) malloc(sizeof(yaksur_gpudriver_info_s));
     (*info)->get_num_devices = get_num_devices;

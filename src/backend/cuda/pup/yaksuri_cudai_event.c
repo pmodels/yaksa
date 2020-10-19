@@ -72,14 +72,18 @@ int yaksuri_cudai_event_add_dependency(void *event, int device)
     cerr = cudaGetDevice(&cur_device);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-    cerr = cudaSetDevice(device);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    if (device != cur_device) {
+        cerr = cudaSetDevice(device);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    }
 
     cerr = cudaStreamWaitEvent(yaksuri_cudai_global.stream[device], (cudaEvent_t) event, 0);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-    cerr = cudaSetDevice(cur_device);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    if (device != cur_device) {
+        cerr = cudaSetDevice(cur_device);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    }
 
   fn_exit:
     return rc;
