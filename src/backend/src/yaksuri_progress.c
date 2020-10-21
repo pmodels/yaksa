@@ -923,6 +923,13 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
         pupfn = iunpack;
     }
 
+    uintptr_t threshold;
+    if (backend->optype == YAKSURI_OPTYPE__PACK) {
+        threshold = yaksuri_global.gpudriver[id].info->get_iov_pack_threshold(info);
+    } else {
+        threshold = yaksuri_global.gpudriver[id].info->get_iov_unpack_threshold(info);
+    }
+
     if (backend->inattr.type == YAKSUR_PTR_TYPE__GPU &&
         backend->outattr.type == YAKSUR_PTR_TYPE__GPU &&
         backend->inattr.device == backend->outattr.device) {
@@ -933,8 +940,12 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
         event_create(id, backend->inattr.device, &subreq->u.single.event);
         event_record(id, subreq->u.single.event);
 
-    } else if (type->is_contig && backend->inattr.type == YAKSUR_PTR_TYPE__GPU &&
-               backend->outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
+        goto enqueue_subreq;
+    }
+
+    if (backend->inattr.type == YAKSUR_PTR_TYPE__GPU &&
+        backend->outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
+        (type->is_contig || type->size / type->num_contig >= threshold)) {
 
         subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
         rc = pupfn(id, inbuf, outbuf, count, type, info, backend->inattr.device);
@@ -942,8 +953,12 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
         event_create(id, backend->inattr.device, &subreq->u.single.event);
         event_record(id, subreq->u.single.event);
 
-    } else if (type->is_contig && backend->inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
-               backend->outattr.type == YAKSUR_PTR_TYPE__GPU) {
+        goto enqueue_subreq;
+    }
+
+    if (backend->inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
+        backend->outattr.type == YAKSUR_PTR_TYPE__GPU &&
+        (type->is_contig || type->size / type->num_contig >= threshold)) {
 
         subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
         rc = pupfn(id, inbuf, outbuf, count, type, info, backend->outattr.device);
@@ -951,61 +966,63 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
         event_create(id, backend->outattr.device, &subreq->u.single.event);
         event_record(id, subreq->u.single.event);
 
-    } else {
-        /* we can only take on types where at least one count of the
-         * type fits into our temporary buffers. */
-        if (type->size > YAKSURI_TMPBUF_EL_SIZE) {
-            rc = YAKSA_ERR__NOT_SUPPORTED;
-            free(subreq);
-            goto fn_exit;
-        }
+        goto enqueue_subreq;
+    }
 
-        subreq->kind = YAKSURI_SUBREQ_KIND__MULTI_CHUNK;
+    /* we can only take on types where at least one count of the type
+     * fits into our temporary buffers. */
+    if (type->size > YAKSURI_TMPBUF_EL_SIZE) {
+        rc = YAKSA_ERR__NOT_SUPPORTED;
+        free(subreq);
+        goto fn_exit;
+    }
 
-        subreq->u.multiple.inbuf = inbuf;
-        subreq->u.multiple.outbuf = outbuf;
-        subreq->u.multiple.count = count;
-        subreq->u.multiple.type = type;
-        subreq->u.multiple.issued_count = 0;
-        subreq->u.multiple.chunks = NULL;
+    subreq->kind = YAKSURI_SUBREQ_KIND__MULTI_CHUNK;
 
-        if (backend->optype == YAKSURI_OPTYPE__PACK) {
-            if (backend->inattr.type == YAKSUR_PTR_TYPE__GPU &&
-                backend->outattr.type == YAKSUR_PTR_TYPE__GPU) {
-                subreq->u.multiple.acquire = pack_d2d_acquire;
+    subreq->u.multiple.inbuf = inbuf;
+    subreq->u.multiple.outbuf = outbuf;
+    subreq->u.multiple.count = count;
+    subreq->u.multiple.type = type;
+    subreq->u.multiple.issued_count = 0;
+    subreq->u.multiple.chunks = NULL;
+
+    if (backend->optype == YAKSURI_OPTYPE__PACK) {
+        if (backend->inattr.type == YAKSUR_PTR_TYPE__GPU &&
+            backend->outattr.type == YAKSUR_PTR_TYPE__GPU) {
+            subreq->u.multiple.acquire = pack_d2d_acquire;
+            subreq->u.multiple.release = simple_release;
+        } else if (backend->inattr.type == YAKSUR_PTR_TYPE__GPU) {
+            if (backend->outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
+                subreq->u.multiple.acquire = pack_d2rh_acquire;
                 subreq->u.multiple.release = simple_release;
-            } else if (backend->inattr.type == YAKSUR_PTR_TYPE__GPU) {
-                if (backend->outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
-                    subreq->u.multiple.acquire = pack_d2rh_acquire;
-                    subreq->u.multiple.release = simple_release;
-                } else {
-                    subreq->u.multiple.acquire = pack_d2urh_acquire;
-                    subreq->u.multiple.release = pack_d2urh_release;
-                }
-            } else if (backend->outattr.type == YAKSUR_PTR_TYPE__GPU) {
-                subreq->u.multiple.acquire = pack_h2d_acquire;
-                subreq->u.multiple.release = simple_release;
+            } else {
+                subreq->u.multiple.acquire = pack_d2urh_acquire;
+                subreq->u.multiple.release = pack_d2urh_release;
             }
-        } else {
-            if (backend->inattr.type == YAKSUR_PTR_TYPE__GPU &&
-                backend->outattr.type == YAKSUR_PTR_TYPE__GPU) {
-                subreq->u.multiple.acquire = unpack_d2d_acquire;
+        } else if (backend->outattr.type == YAKSUR_PTR_TYPE__GPU) {
+            subreq->u.multiple.acquire = pack_h2d_acquire;
+            subreq->u.multiple.release = simple_release;
+        }
+    } else {
+        if (backend->inattr.type == YAKSUR_PTR_TYPE__GPU &&
+            backend->outattr.type == YAKSUR_PTR_TYPE__GPU) {
+            subreq->u.multiple.acquire = unpack_d2d_acquire;
+            subreq->u.multiple.release = simple_release;
+        } else if (backend->inattr.type == YAKSUR_PTR_TYPE__GPU) {
+            subreq->u.multiple.acquire = unpack_d2h_acquire;
+            subreq->u.multiple.release = unpack_d2h_release;
+        } else if (backend->outattr.type == YAKSUR_PTR_TYPE__GPU) {
+            if (backend->inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
+                subreq->u.multiple.acquire = unpack_rh2d_acquire;
                 subreq->u.multiple.release = simple_release;
-            } else if (backend->inattr.type == YAKSUR_PTR_TYPE__GPU) {
-                subreq->u.multiple.acquire = unpack_d2h_acquire;
-                subreq->u.multiple.release = unpack_d2h_release;
-            } else if (backend->outattr.type == YAKSUR_PTR_TYPE__GPU) {
-                if (backend->inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
-                    subreq->u.multiple.acquire = unpack_rh2d_acquire;
-                    subreq->u.multiple.release = simple_release;
-                } else {
-                    subreq->u.multiple.acquire = unpack_urh2d_acquire;
-                    subreq->u.multiple.release = simple_release;
-                }
+            } else {
+                subreq->u.multiple.acquire = unpack_urh2d_acquire;
+                subreq->u.multiple.release = simple_release;
             }
         }
     }
 
+  enqueue_subreq:
     pthread_mutex_lock(&progress_mutex);
     DL_APPEND(backend->subreqs, subreq);
 

@@ -165,6 +165,8 @@ int yaksuri_cuda_init_hook(yaksur_gpudriver_info_s ** info)
     (*info)->ipack = yaksuri_cudai_ipack;
     (*info)->iunpack = yaksuri_cudai_iunpack;
     (*info)->pup_is_supported = yaksuri_cudai_pup_is_supported;
+    (*info)->get_iov_pack_threshold = yaksuri_cudai_get_iov_pack_threshold;
+    (*info)->get_iov_unpack_threshold = yaksuri_cudai_get_iov_unpack_threshold;
     (*info)->host_malloc = cuda_host_malloc;
     (*info)->host_free = cuda_host_free;
     (*info)->gpu_malloc = cuda_gpu_malloc;

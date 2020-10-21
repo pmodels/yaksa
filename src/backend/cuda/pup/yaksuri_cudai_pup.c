@@ -15,7 +15,7 @@
 #define MAX_GRIDSZ_Y       (65535U)
 #define MAX_GRIDSZ_Z       (65535U)
 
-#define MAX_IOV_LENGTH (16384)
+#define MAX_IOV_LENGTH (8192)
 
 static int get_thread_block_dims(uintptr_t count, yaksi_type_s * type, unsigned int *n_threads,
                                  unsigned int *n_blocks_x, unsigned int *n_blocks_y,
@@ -60,6 +60,28 @@ int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, bool * is_supported)
     return rc;
 }
 
+uintptr_t yaksuri_cudai_get_iov_pack_threshold(yaksi_info_s * info)
+{
+    uintptr_t iov_pack_threshold = YAKSURI_CUDAI_INFO__DEFAULT_IOV_PUP_THRESHOLD;
+    if (info) {
+        yaksuri_cudai_info_s *cuda_info = (yaksuri_cudai_info_s *) info->backend.cuda.priv;
+        iov_pack_threshold = cuda_info->iov_pack_threshold;
+    }
+
+    return iov_pack_threshold;
+}
+
+uintptr_t yaksuri_cudai_get_iov_unpack_threshold(yaksi_info_s * info)
+{
+    uintptr_t iov_unpack_threshold = YAKSURI_CUDAI_INFO__DEFAULT_IOV_PUP_THRESHOLD;
+    if (info) {
+        yaksuri_cudai_info_s *cuda_info = (yaksuri_cudai_info_s *) info->backend.cuda.priv;
+        iov_unpack_threshold = cuda_info->iov_unpack_threshold;
+    }
+
+    return iov_unpack_threshold;
+}
+
 int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
                         yaksi_info_s * info, int target)
 {
@@ -67,11 +89,7 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
     cudaError_t cerr;
 
-    uintptr_t iov_pack_threshold = YAKSURI_CUDAI_INFO__DEFAULT_IOV_PUP_THRESHOLD;
-    if (info) {
-        yaksuri_cudai_info_s *cuda_info = (yaksuri_cudai_info_s *) info->backend.cuda.priv;
-        iov_pack_threshold = cuda_info->iov_pack_threshold;
-    }
+    uintptr_t iov_pack_threshold = yaksuri_cudai_get_iov_pack_threshold(info);
 
     struct cudaPointerAttributes outattr, inattr;
 
@@ -96,47 +114,22 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
                                yaksuri_cudai_global.stream[target]);
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
     } else if (type->size / type->num_contig >= iov_pack_threshold) {
-        struct iovec *iov;
-        uintptr_t actual_iov_len;
+        struct iovec iov[MAX_IOV_LENGTH];
+        char *dbuf = (char *) outbuf;
+        uintptr_t offset = 0;
 
-        if (type->num_contig * count <= MAX_IOV_LENGTH) {
-            iov = (struct iovec *) malloc(type->num_contig * count * sizeof(struct iovec));
-
-            rc = yaksi_iov(inbuf, count, type, 0, iov, MAX_IOV_LENGTH, &actual_iov_len);
+        while (offset < type->num_contig * count) {
+            uintptr_t actual_iov_len;
+            rc = yaksi_iov(inbuf, count, type, offset, iov, MAX_IOV_LENGTH, &actual_iov_len);
             YAKSU_ERR_CHECK(rc, fn_fail);
-            assert(actual_iov_len == type->num_contig * count);
 
-            char *dbuf = (char *) outbuf;
             for (uintptr_t i = 0; i < actual_iov_len; i++) {
                 cudaMemcpyAsync(dbuf, iov[i].iov_base, iov[i].iov_len, cudaMemcpyDefault,
                                 yaksuri_cudai_global.stream[target]);
                 dbuf += iov[i].iov_len;
             }
 
-            free(iov);
-        } else if (type->num_contig <= MAX_IOV_LENGTH) {
-            iov = (struct iovec *) malloc(type->num_contig * sizeof(struct iovec));
-
-            uintptr_t iov_offset = 0;
-            char *dbuf = (char *) outbuf;
-            const char *sbuf = (const char *) inbuf;
-            for (uintptr_t i = 0; i < count; i++) {
-                rc = yaksi_iov(sbuf, 1, type, iov_offset, iov, MAX_IOV_LENGTH, &actual_iov_len);
-                YAKSU_ERR_CHECK(rc, fn_fail);
-                assert(actual_iov_len == type->num_contig);
-
-                for (uintptr_t j = 0; j < actual_iov_len; j++) {
-                    cudaMemcpyAsync(dbuf, iov[j].iov_base, iov[j].iov_len, cudaMemcpyDefault,
-                                    yaksuri_cudai_global.stream[target]);
-                    dbuf += iov[j].iov_len;
-                }
-
-                sbuf += type->extent;
-            }
-
-            free(iov);
-        } else {
-            rc = YAKSA_ERR__NOT_SUPPORTED;
+            offset += actual_iov_len;
         }
     } else {
         rc = yaksuri_cudai_md_alloc(type);
@@ -178,11 +171,7 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
     cudaError_t cerr;
 
-    uintptr_t iov_unpack_threshold = YAKSURI_CUDAI_INFO__DEFAULT_IOV_PUP_THRESHOLD;
-    if (info) {
-        yaksuri_cudai_info_s *cuda_info = (yaksuri_cudai_info_s *) info->backend.cuda.priv;
-        iov_unpack_threshold = cuda_info->iov_unpack_threshold;
-    }
+    uintptr_t iov_unpack_threshold = yaksuri_cudai_get_iov_unpack_threshold(info);
 
     struct cudaPointerAttributes outattr, inattr;
 
@@ -207,47 +196,22 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
                                yaksuri_cudai_global.stream[target]);
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
     } else if (type->size / type->num_contig >= iov_unpack_threshold) {
-        struct iovec *iov;
-        uintptr_t actual_iov_len;
+        struct iovec iov[MAX_IOV_LENGTH];
+        const char *sbuf = (const char *) inbuf;
+        uintptr_t offset = 0;
 
-        if (type->num_contig * count <= MAX_IOV_LENGTH) {
-            iov = (struct iovec *) malloc(type->num_contig * count * sizeof(struct iovec));
-
-            rc = yaksi_iov(outbuf, count, type, 0, iov, MAX_IOV_LENGTH, &actual_iov_len);
+        while (offset < type->num_contig * count) {
+            uintptr_t actual_iov_len;
+            rc = yaksi_iov(outbuf, count, type, offset, iov, MAX_IOV_LENGTH, &actual_iov_len);
             YAKSU_ERR_CHECK(rc, fn_fail);
-            assert(actual_iov_len == type->num_contig * count);
 
-            const char *sbuf = (const char *) inbuf;
             for (uintptr_t i = 0; i < actual_iov_len; i++) {
                 cudaMemcpyAsync(iov[i].iov_base, sbuf, iov[i].iov_len, cudaMemcpyDefault,
                                 yaksuri_cudai_global.stream[target]);
                 sbuf += iov[i].iov_len;
             }
 
-            free(iov);
-        } else if (type->num_contig <= MAX_IOV_LENGTH) {
-            iov = (struct iovec *) malloc(type->num_contig * sizeof(struct iovec));
-
-            uintptr_t iov_offset = 0;
-            char *dbuf = (char *) outbuf;
-            const char *sbuf = (const char *) inbuf;
-            for (uintptr_t i = 0; i < count; i++) {
-                rc = yaksi_iov(dbuf, 1, type, iov_offset, iov, MAX_IOV_LENGTH, &actual_iov_len);
-                YAKSU_ERR_CHECK(rc, fn_fail);
-                assert(actual_iov_len == type->num_contig);
-
-                for (uintptr_t j = 0; j < actual_iov_len; j++) {
-                    cudaMemcpyAsync(iov[j].iov_base, sbuf, iov[j].iov_len, cudaMemcpyDefault,
-                                    yaksuri_cudai_global.stream[target]);
-                    sbuf += iov[j].iov_len;
-                }
-
-                dbuf += type->extent;
-            }
-
-            free(iov);
-        } else {
-            rc = YAKSA_ERR__NOT_SUPPORTED;
+            offset += actual_iov_len;
         }
     } else {
         rc = yaksuri_cudai_md_alloc(type);

@@ -47,6 +47,10 @@ typedef struct yaksur_gpudriver_info_s {
     int (*finalize) (void);
 
     /* pup functions */
+    /* *INDENT-OFF* */
+    uintptr_t (*get_iov_pack_threshold) (struct yaksi_info_s * info);
+    uintptr_t (*get_iov_unpack_threshold) (struct yaksi_info_s * info);
+    /* *INDENT-ON* */
     int (*ipack) (const void *inbuf, void *outbuf, uintptr_t count,
                   struct yaksi_type_s * type, struct yaksi_info_s * info, int device);
     int (*iunpack) (const void *inbuf, void *outbuf, uintptr_t count, struct yaksi_type_s * type,
