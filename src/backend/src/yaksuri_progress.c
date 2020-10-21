@@ -26,7 +26,7 @@ typedef struct progress_subop_s {
 
 typedef struct progress_elem_s {
     struct {
-        yaksuri_puptype_e puptype;
+        yaksuri_optype_e optype;
 
         yaksur_ptr_attr_s inattr;
         yaksur_ptr_attr_s outattr;
@@ -85,7 +85,7 @@ static int progress_dequeue(progress_elem_s * elem)
 int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
                              yaksi_info_s * info, yaksi_request_s * request,
                              yaksur_ptr_attr_s inattr, yaksur_ptr_attr_s outattr,
-                             yaksuri_puptype_e puptype)
+                             yaksuri_optype_e optype)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -101,7 +101,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
     progress_elem_s *newelem;
     newelem = (progress_elem_s *) malloc(sizeof(progress_elem_s));
 
-    newelem->pup.puptype = puptype;
+    newelem->pup.optype = optype;
     newelem->pup.inattr = inattr;
     newelem->pup.outattr = outattr;
     newelem->pup.inbuf = inbuf;
@@ -141,22 +141,22 @@ static int alloc_subop(progress_subop_s ** subop)
     bool need_gpu_tmpbuf = false, need_host_tmpbuf = false;
     int devid = INT_MIN;
 
-    if ((elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+    if ((elem->pup.optype == YAKSURI_OPTYPE__PACK &&
          elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
          elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) ||
-        (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+        (elem->pup.optype == YAKSURI_OPTYPE__PACK &&
          elem->pup.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
          elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU) ||
-        (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+        (elem->pup.optype == YAKSURI_OPTYPE__PACK &&
          elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
          elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU) ||
-        (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+        (elem->pup.optype == YAKSURI_OPTYPE__UNPACK &&
          elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
          elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU) ||
-        (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+        (elem->pup.optype == YAKSURI_OPTYPE__UNPACK &&
          elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
          elem->pup.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
-        (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+        (elem->pup.optype == YAKSURI_OPTYPE__UNPACK &&
          elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
          elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST)) {
         need_host_tmpbuf = true;
@@ -175,26 +175,26 @@ static int alloc_subop(progress_subop_s ** subop)
         }
     }
 
-    if ((elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+    if ((elem->pup.optype == YAKSURI_OPTYPE__PACK &&
          elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
          elem->pup.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
-        (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+        (elem->pup.optype == YAKSURI_OPTYPE__PACK &&
          elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
          elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) ||
-        (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+        (elem->pup.optype == YAKSURI_OPTYPE__PACK &&
          elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
          elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU)) {
         need_gpu_tmpbuf = true;
         devid = elem->pup.inattr.device;
     }
 
-    if ((elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+    if ((elem->pup.optype == YAKSURI_OPTYPE__UNPACK &&
          elem->pup.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
          elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU) ||
-        (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+        (elem->pup.optype == YAKSURI_OPTYPE__UNPACK &&
          elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
          elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU) ||
-        (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+        (elem->pup.optype == YAKSURI_OPTYPE__UNPACK &&
          elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
          elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU)) {
         need_gpu_tmpbuf = true;
@@ -351,7 +351,7 @@ static int free_subop(progress_subop_s * subop)
     if (subop->gpu_tmpbuf) {
         int devid;
 
-        if (elem->pup.puptype == YAKSURI_PUPTYPE__PACK)
+        if (elem->pup.optype == YAKSURI_OPTYPE__PACK)
             devid = elem->pup.inattr.device;
         else
             devid = elem->pup.outattr.device;
@@ -446,14 +446,14 @@ int yaksuri_progress_poke(void)
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (completed) {
-            if (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+            if (elem->pup.optype == YAKSURI_OPTYPE__PACK &&
                 elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
                 elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) {
                 char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->size;
                 rc = yaksuri_seq_ipack(subop->host_tmpbuf, dbuf,
                                        subop->count * elem->pup.type->size, byte_type, elem->info);
                 YAKSU_ERR_CHECK(rc, fn_fail);
-            } else if (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+            } else if (elem->pup.optype == YAKSURI_OPTYPE__UNPACK &&
                        elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
                        (elem->pup.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST ||
                         elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST)) {
@@ -500,7 +500,7 @@ int yaksuri_progress_poke(void)
             break;
         }
 
-        if (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+        if (elem->pup.optype == YAKSURI_OPTYPE__PACK &&
             elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
             elem->pup.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
             const char *sbuf = (const char *) elem->pup.inbuf +
@@ -512,7 +512,7 @@ int yaksuri_progress_poke(void)
                                                           subop->gpu_tmpbuf,
                                                           elem->pup.inattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
-        } else if (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+        } else if (elem->pup.optype == YAKSURI_OPTYPE__PACK &&
                    elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
                    elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) {
             const char *sbuf = (const char *) elem->pup.inbuf +
@@ -523,10 +523,10 @@ int yaksuri_progress_poke(void)
                                                           &subop->event, subop->gpu_tmpbuf,
                                                           elem->pup.inattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
-        } else if ((elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+        } else if ((elem->pup.optype == YAKSURI_OPTYPE__PACK &&
                     elem->pup.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
                     elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU) ||
-                   (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+                   (elem->pup.optype == YAKSURI_OPTYPE__PACK &&
                     elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
                     elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU)) {
             const char *sbuf = (const char *) elem->pup.inbuf +
@@ -542,7 +542,7 @@ int yaksuri_progress_poke(void)
                                                           byte_type, elem->info, &subop->event,
                                                           NULL, elem->pup.outattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
-        } else if (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
+        } else if (elem->pup.optype == YAKSURI_OPTYPE__PACK &&
                    elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
                    elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU) {
             assert(elem->pup.inattr.device != elem->pup.outattr.device);
@@ -581,7 +581,7 @@ int yaksuri_progress_poke(void)
                                                               NULL, elem->pup.outattr.device);
                 YAKSU_ERR_CHECK(rc, fn_fail);
             }
-        } else if (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+        } else if (elem->pup.optype == YAKSURI_OPTYPE__UNPACK &&
                    elem->pup.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
                    elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU) {
             const char *sbuf = (const char *) elem->pup.inbuf +
@@ -593,7 +593,7 @@ int yaksuri_progress_poke(void)
                                                             &subop->event, subop->gpu_tmpbuf,
                                                             elem->pup.outattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
-        } else if (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+        } else if (elem->pup.optype == YAKSURI_OPTYPE__UNPACK &&
                    elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
                    elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU) {
             const char *sbuf = (const char *) elem->pup.inbuf +
@@ -609,10 +609,10 @@ int yaksuri_progress_poke(void)
                                                             &subop->event, subop->gpu_tmpbuf,
                                                             elem->pup.outattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
-        } else if ((elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+        } else if ((elem->pup.optype == YAKSURI_OPTYPE__UNPACK &&
                     elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
                     elem->pup.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
-                   (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+                   (elem->pup.optype == YAKSURI_OPTYPE__UNPACK &&
                     elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
                     elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST)) {
             const char *sbuf = (const char *) elem->pup.inbuf +
@@ -624,7 +624,7 @@ int yaksuri_progress_poke(void)
                                                             &subop->event, NULL,
                                                             elem->pup.inattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
-        } else if (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
+        } else if (elem->pup.optype == YAKSURI_OPTYPE__UNPACK &&
                    elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
                    elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU) {
             const char *sbuf = (const char *) elem->pup.inbuf +

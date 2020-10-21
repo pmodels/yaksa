@@ -53,14 +53,14 @@ static int get_ptr_attr(const void *buf, yaksur_ptr_attr_s * ptrattr, yaksuri_gp
  */
 
 static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                yaksi_info_s * info, yaksi_request_s * request, yaksuri_puptype_e puptype)
+                yaksi_info_s * info, yaksi_request_s * request, yaksuri_optype_e optype)
 {
     int rc = YAKSA_SUCCESS;
     yaksur_ptr_attr_s inattr, outattr;
     yaksuri_gpudriver_id_e inbuf_gpudriver, outbuf_gpudriver, id;
     yaksuri_request_s *request_backend = (yaksuri_request_s *) request->backend.priv;
 
-    if (puptype == YAKSURI_PUPTYPE__PACK) {
+    if (optype == YAKSURI_OPTYPE__PACK) {
         rc = get_ptr_attr((const char *) inbuf + type->true_lb, &inattr, &inbuf_gpudriver);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
@@ -97,7 +97,7 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
         if (!is_supported) {
             rc = YAKSA_ERR__NOT_SUPPORTED;
         } else {
-            if (puptype == YAKSURI_PUPTYPE__PACK) {
+            if (optype == YAKSURI_OPTYPE__PACK) {
                 rc = yaksuri_seq_ipack(inbuf, outbuf, count, type, info);
                 YAKSU_ERR_CHECK(rc, fn_fail);
             } else {
@@ -130,7 +130,7 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
     int (*pupfn) (const void *inbuf, void *outbuf, uintptr_t count,
                   struct yaksi_type_s * type, struct yaksi_info_s * info, void **event,
                   void *device_tmpbuf, int device);
-    if (puptype == YAKSURI_PUPTYPE__PACK) {
+    if (optype == YAKSURI_OPTYPE__PACK) {
         pupfn = yaksuri_global.gpudriver[id].info->ipack;
     } else {
         pupfn = yaksuri_global.gpudriver[id].info->iunpack;
@@ -194,7 +194,7 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
         request_backend->kind = YAKSURI_REQUEST_KIND__STAGED;
 
         rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, info, request,
-                                      inattr, outattr, puptype);
+                                      inattr, outattr, optype);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         rc = yaksuri_progress_poke();
@@ -212,7 +212,7 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
 {
     int rc = YAKSA_SUCCESS;
 
-    rc = ipup(inbuf, outbuf, count, type, info, request, YAKSURI_PUPTYPE__PACK);
+    rc = ipup(inbuf, outbuf, count, type, info, request, YAKSURI_OPTYPE__PACK);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
@@ -226,7 +226,7 @@ int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_
 {
     int rc = YAKSA_SUCCESS;
 
-    rc = ipup(inbuf, outbuf, count, type, info, request, YAKSURI_PUPTYPE__UNPACK);
+    rc = ipup(inbuf, outbuf, count, type, info, request, YAKSURI_OPTYPE__UNPACK);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:

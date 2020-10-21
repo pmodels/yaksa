@@ -15,9 +15,9 @@ typedef enum yaksuri_gpudriver_id_e {
 } yaksuri_gpudriver_id_e;
 
 typedef enum yaksuri_pup_e {
-    YAKSURI_PUPTYPE__PACK,
-    YAKSURI_PUPTYPE__UNPACK,
-} yaksuri_puptype_e;
+    YAKSURI_OPTYPE__PACK,
+    YAKSURI_OPTYPE__UNPACK,
+} yaksuri_optype_e;
 
 typedef struct {
     void *slab;
@@ -48,7 +48,7 @@ typedef struct {
 int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
                              yaksi_info_s * info, yaksi_request_s * request,
                              yaksur_ptr_attr_s inattr, yaksur_ptr_attr_s outattr,
-                             yaksuri_puptype_e puptype);
+                             yaksuri_optype_e optype);
 int yaksuri_progress_poke(void);
 
 #endif /* YAKSURI_H_INCLUDED */
