@@ -7,14 +7,16 @@
 #include "yaksu.h"
 #include <assert.h>
 
-int yaksi_type_handle_alloc(yaksi_type_s * type, yaksu_handle_t * handle)
+int yaksi_type_handle_alloc(yaksi_type_s * type, yaksa_type_t * handle)
 {
     int rc = YAKSA_SUCCESS;
+    yaksu_handle_t id;
 
-    rc = yaksu_handle_pool_elem_alloc(yaksi_global.type_handle_pool, handle, type);
+    rc = yaksu_handle_pool_elem_alloc(yaksi_global.type_handle_pool, &id, type);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    assert(*handle < ((yaksa_type_t) 1 << YAKSI_TYPE_OBJECT_ID_BITS));
+    *handle = 0;
+    YAKSI_TYPE_SET_OBJECT_ID(*handle, id);
 
   fn_exit:
     return rc;
@@ -22,14 +24,15 @@ int yaksi_type_handle_alloc(yaksi_type_s * type, yaksu_handle_t * handle)
     goto fn_exit;
 }
 
-int yaksi_type_handle_dealloc(yaksu_handle_t handle, yaksi_type_s ** type)
+int yaksi_type_handle_dealloc(yaksa_type_t handle, yaksi_type_s ** type)
 {
     int rc = YAKSA_SUCCESS;
+    yaksu_handle_t id = YAKSI_TYPE_GET_OBJECT_ID(handle);
 
-    rc = yaksu_handle_pool_elem_get(yaksi_global.type_handle_pool, handle, (const void **) type);
+    rc = yaksu_handle_pool_elem_get(yaksi_global.type_handle_pool, id, (const void **) type);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    rc = yaksu_handle_pool_elem_free(yaksi_global.type_handle_pool, handle);
+    rc = yaksu_handle_pool_elem_free(yaksi_global.type_handle_pool, id);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
@@ -38,12 +41,12 @@ int yaksi_type_handle_dealloc(yaksu_handle_t handle, yaksi_type_s ** type)
     goto fn_exit;
 }
 
-int yaksi_type_get(yaksa_type_t type, struct yaksi_type_s **yaksi_type)
+int yaksi_type_get(yaksa_type_t handle, yaksi_type_s ** type)
 {
     int rc = YAKSA_SUCCESS;
-    yaksu_handle_t id = YAKSI_TYPE_GET_OBJECT_ID(type);
+    yaksu_handle_t id = YAKSI_TYPE_GET_OBJECT_ID(handle);
 
-    rc = yaksu_handle_pool_elem_get(yaksi_global.type_handle_pool, id, (const void **) yaksi_type);
+    rc = yaksu_handle_pool_elem_get(yaksi_global.type_handle_pool, id, (const void **) type);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:

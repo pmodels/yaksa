@@ -97,11 +97,8 @@ int yaksa_type_create_hvector(int count, int blocklength, intptr_t stride, yaksa
     rc = yaksi_type_create_hvector(count, blocklength, stride, intype, &outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    yaksu_handle_t id;
-    rc = yaksi_type_handle_alloc(outtype, &id);
+    rc = yaksi_type_handle_alloc(outtype, newtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
-
-    *newtype = (yaksa_type_t) id;
 
   fn_exit:
     return rc;
@@ -130,11 +127,8 @@ int yaksa_type_create_vector(int count, int blocklength, int stride, yaksa_type_
                                    &outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    yaksu_handle_t id;
-    rc = yaksi_type_handle_alloc(outtype, &id);
+    rc = yaksi_type_handle_alloc(outtype, newtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
-
-    *newtype = (yaksa_type_t) id;
 
   fn_exit:
     return rc;

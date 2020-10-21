@@ -53,6 +53,11 @@ struct yaksi_request_s;
 
 #define YAKSI_TYPE_GET_OBJECT_ID(handle) \
     ((handle) << (64 - YAKSI_TYPE_OBJECT_ID_BITS) >> (64 - YAKSI_TYPE_OBJECT_ID_BITS))
+#define YAKSI_TYPE_SET_OBJECT_ID(handle, obj_id)                        \
+    do {                                                                \
+        assert((obj_id) < ((yaksa_type_t) 1 << YAKSI_TYPE_OBJECT_ID_BITS)); \
+        (handle) = (((handle) & ~((((yaksa_type_t) 1) << YAKSI_TYPE_OBJECT_ID_BITS) - 1)) + (obj_id)); \
+    } while (0)
 
 /*
  * The request handle is divided into the following parts:
@@ -252,8 +257,8 @@ int yaksi_iov(const char *buf, uintptr_t count, yaksi_type_s * type, uintptr_t i
 int yaksi_flatten_size(yaksi_type_s * type, uintptr_t * flattened_type_size);
 
 /* type pool */
-int yaksi_type_handle_alloc(yaksi_type_s * type, yaksu_handle_t * handle);
-int yaksi_type_handle_dealloc(yaksu_handle_t handle, yaksi_type_s ** type);
+int yaksi_type_handle_alloc(yaksi_type_s * type, yaksa_type_t * handle);
+int yaksi_type_handle_dealloc(yaksa_type_t handle, yaksi_type_s ** type);
 int yaksi_type_get(yaksa_type_t type, yaksi_type_s ** yaksi_type);
 
 /* request pool */
