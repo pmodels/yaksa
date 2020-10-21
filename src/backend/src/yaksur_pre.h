@@ -27,7 +27,6 @@ struct yaksi_type_s;
 struct yaksi_info_s;
 
 typedef struct yaksur_type_s {
-    void *priv;
     yaksuri_seq_type_s seq;
     yaksuri_cuda_type_s cuda;
 } yaksur_type_s;
