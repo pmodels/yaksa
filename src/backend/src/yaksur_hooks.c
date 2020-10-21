@@ -154,6 +154,7 @@ int yaksur_request_create_hook(yaksi_request_s * request)
     request->backend.priv = malloc(sizeof(yaksuri_request_s));
     yaksuri_request_s *backend = (yaksuri_request_s *) request->backend.priv;
 
+    backend->optype = YAKSURI_OPTYPE__UNSET;
     backend->event = NULL;
     backend->kind = YAKSURI_REQUEST_KIND__UNSET;
 
