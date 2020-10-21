@@ -56,21 +56,22 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
                 yaksi_info_s * info, yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
-    yaksur_ptr_attr_s inattr, outattr;
     yaksuri_gpudriver_id_e inbuf_gpudriver, outbuf_gpudriver, id;
     yaksuri_request_s *request_backend = (yaksuri_request_s *) request->backend.priv;
 
     if (request_backend->optype == YAKSURI_OPTYPE__PACK) {
-        rc = get_ptr_attr((const char *) inbuf + type->true_lb, &inattr, &inbuf_gpudriver);
+        rc = get_ptr_attr((const char *) inbuf + type->true_lb, &request_backend->inattr,
+                          &inbuf_gpudriver);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
-        rc = get_ptr_attr(outbuf, &outattr, &outbuf_gpudriver);
+        rc = get_ptr_attr(outbuf, &request_backend->outattr, &outbuf_gpudriver);
         YAKSU_ERR_CHECK(rc, fn_fail);
     } else {
-        rc = get_ptr_attr(inbuf, &inattr, &inbuf_gpudriver);
+        rc = get_ptr_attr(inbuf, &request_backend->inattr, &inbuf_gpudriver);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
-        rc = get_ptr_attr((char *) outbuf + type->true_lb, &outattr, &outbuf_gpudriver);
+        rc = get_ptr_attr((char *) outbuf + type->true_lb, &request_backend->outattr,
+                          &outbuf_gpudriver);
         YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
@@ -89,7 +90,8 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
 
 
     /* if this can be handled by the CPU, wrap it up */
-    if (inattr.type != YAKSUR_PTR_TYPE__GPU && outattr.type != YAKSUR_PTR_TYPE__GPU) {
+    if (request_backend->inattr.type != YAKSUR_PTR_TYPE__GPU &&
+        request_backend->outattr.type != YAKSUR_PTR_TYPE__GPU) {
         bool is_supported;
         rc = yaksuri_seq_pup_is_supported(type, &is_supported);
         YAKSU_ERR_CHECK(rc, fn_fail);
@@ -136,11 +138,13 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
         pupfn = yaksuri_global.gpudriver[id].info->iunpack;
     }
 
-    if (inattr.type == YAKSUR_PTR_TYPE__GPU && outattr.type == YAKSUR_PTR_TYPE__GPU &&
-        inattr.device == outattr.device) {
+    if (request_backend->inattr.type == YAKSUR_PTR_TYPE__GPU &&
+        request_backend->outattr.type == YAKSUR_PTR_TYPE__GPU &&
+        request_backend->inattr.device == request_backend->outattr.device) {
         /* gpu-to-gpu copies do not need temporary buffers */
         bool first_event = !request_backend->event;
-        rc = pupfn(inbuf, outbuf, count, type, info, &request_backend->event, NULL, inattr.device);
+        rc = pupfn(inbuf, outbuf, count, type, info, &request_backend->event, NULL,
+                   request_backend->inattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (first_event) {
@@ -152,13 +156,14 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
         if (request_backend->kind == YAKSURI_REQUEST_KIND__UNSET) {
             request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
         }
-    } else if (type->is_contig && inattr.type == YAKSUR_PTR_TYPE__GPU &&
-               outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
+    } else if (type->is_contig && request_backend->inattr.type == YAKSUR_PTR_TYPE__GPU &&
+               request_backend->outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
         /* gpu-to-host or host-to-gpu copies do not need
          * temporary buffers either, if the host buffer is registered
          * and the type is contiguous */
         bool first_event = !request_backend->event;
-        rc = pupfn(inbuf, outbuf, count, type, info, &request_backend->event, NULL, inattr.device);
+        rc = pupfn(inbuf, outbuf, count, type, info, &request_backend->event, NULL,
+                   request_backend->inattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (first_event) {
@@ -170,13 +175,14 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
         if (request_backend->kind == YAKSURI_REQUEST_KIND__UNSET) {
             request_backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
         }
-    } else if (type->is_contig && inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
-               outattr.type == YAKSUR_PTR_TYPE__GPU) {
+    } else if (type->is_contig && request_backend->inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST
+               && request_backend->outattr.type == YAKSUR_PTR_TYPE__GPU) {
         /* gpu-to-host or host-to-gpu copies do not need
          * temporary buffers either, if the host buffer is registered
          * and the type is contiguous */
         bool first_event = !request_backend->event;
-        rc = pupfn(inbuf, outbuf, count, type, info, &request_backend->event, NULL, outattr.device);
+        rc = pupfn(inbuf, outbuf, count, type, info, &request_backend->event, NULL,
+                   request_backend->outattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (first_event) {
@@ -193,7 +199,7 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
          * the progress engine */
         request_backend->kind = YAKSURI_REQUEST_KIND__STAGED;
 
-        rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, info, request, inattr, outattr);
+        rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, info, request);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         rc = yaksuri_progress_poke();

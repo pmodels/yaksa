@@ -37,6 +37,9 @@ extern yaksuri_global_s yaksuri_global;
 
 typedef struct {
     yaksuri_optype_e optype;
+    yaksur_ptr_attr_s inattr;
+    yaksur_ptr_attr_s outattr;
+
     yaksuri_gpudriver_id_e gpudriver_id;
     void *event;
 
@@ -48,8 +51,7 @@ typedef struct {
 } yaksuri_request_s;
 
 int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                             yaksi_info_s * info, yaksi_request_s * request,
-                             yaksur_ptr_attr_s inattr, yaksur_ptr_attr_s outattr);
+                             yaksi_info_s * info, yaksi_request_s * request);
 int yaksuri_progress_poke(void);
 
 #endif /* YAKSURI_H_INCLUDED */
