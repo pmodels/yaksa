@@ -61,7 +61,7 @@ int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, bool * is_supported)
 }
 
 int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                        void *gpu_tmpbuf, int target, yaksi_info_s * info, void **event)
+                        yaksi_info_s * info, void **event, void *gpu_tmpbuf, int target)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
@@ -188,7 +188,7 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
 }
 
 int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                          void *gpu_tmpbuf, int target, yaksi_info_s * info, void **event)
+                          yaksi_info_s * info, void **event, void *gpu_tmpbuf, int target)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;

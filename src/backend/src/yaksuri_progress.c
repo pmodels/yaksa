@@ -83,9 +83,9 @@ static int progress_dequeue(progress_elem_s * elem)
 }
 
 int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                             yaksi_request_s * request, yaksur_ptr_attr_s inattr,
-                             yaksur_ptr_attr_s outattr, yaksuri_puptype_e puptype,
-                             yaksi_info_s * info)
+                             yaksi_info_s * info, yaksi_request_s * request,
+                             yaksur_ptr_attr_s inattr, yaksur_ptr_attr_s outattr,
+                             yaksuri_puptype_e puptype)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -451,7 +451,7 @@ int yaksuri_progress_poke(void)
                 elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) {
                 char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->size;
                 rc = yaksuri_seq_ipack(subop->host_tmpbuf, dbuf,
-                                       subop->count * elem->pup.type->size, elem->info, byte_type);
+                                       subop->count * elem->pup.type->size, byte_type, elem->info);
                 YAKSU_ERR_CHECK(rc, fn_fail);
             } else if (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
                        elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
@@ -459,8 +459,8 @@ int yaksuri_progress_poke(void)
                         elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST)) {
                 char *dbuf =
                     (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->extent;
-                rc = yaksuri_seq_iunpack(subop->host_tmpbuf, dbuf, subop->count, elem->info,
-                                         elem->pup.type);
+                rc = yaksuri_seq_iunpack(subop->host_tmpbuf, dbuf, subop->count, elem->pup.type,
+                                         elem->info);
                 YAKSU_ERR_CHECK(rc, fn_fail);
             }
 
@@ -508,9 +508,9 @@ int yaksuri_progress_poke(void)
             char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->size;
 
             rc = yaksuri_global.gpudriver[id].info->ipack(sbuf, dbuf, subop->count, elem->pup.type,
+                                                          elem->info, &subop->event,
                                                           subop->gpu_tmpbuf,
-                                                          elem->pup.inattr.device, elem->info,
-                                                          &subop->event);
+                                                          elem->pup.inattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else if (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
                    elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
@@ -519,9 +519,9 @@ int yaksuri_progress_poke(void)
                 subop->count_offset * elem->pup.type->extent;
 
             rc = yaksuri_global.gpudriver[id].info->ipack(sbuf, subop->host_tmpbuf, subop->count,
-                                                          elem->pup.type, subop->gpu_tmpbuf,
-                                                          elem->pup.inattr.device, elem->info,
-                                                          &subop->event);
+                                                          elem->pup.type, elem->info,
+                                                          &subop->event, subop->gpu_tmpbuf,
+                                                          elem->pup.inattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else if ((elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
                     elem->pup.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
@@ -533,14 +533,14 @@ int yaksuri_progress_poke(void)
                 subop->count_offset * elem->pup.type->extent;
             char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->size;
 
-            rc = yaksuri_seq_ipack(sbuf, subop->host_tmpbuf, subop->count, elem->info,
-                                   elem->pup.type);
+            rc = yaksuri_seq_ipack(sbuf, subop->host_tmpbuf, subop->count, elem->pup.type,
+                                   elem->info);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             rc = yaksuri_global.gpudriver[id].info->ipack(subop->host_tmpbuf, dbuf,
                                                           subop->count * elem->pup.type->size,
-                                                          byte_type, NULL, elem->pup.outattr.device,
-                                                          elem->info, &subop->event);
+                                                          byte_type, elem->info, &subop->event,
+                                                          NULL, elem->pup.outattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else if (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
                    elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
@@ -558,16 +558,16 @@ int yaksuri_progress_poke(void)
 
             if (is_enabled) {
                 rc = yaksuri_global.gpudriver[id].info->ipack(sbuf, dbuf, subop->count,
-                                                              elem->pup.type, subop->gpu_tmpbuf,
-                                                              elem->pup.inattr.device,
-                                                              elem->info, &subop->event);
+                                                              elem->pup.type, elem->info,
+                                                              &subop->event, subop->gpu_tmpbuf,
+                                                              elem->pup.inattr.device);
                 YAKSU_ERR_CHECK(rc, fn_fail);
             } else {
                 rc = yaksuri_global.gpudriver[id].info->ipack(sbuf, subop->host_tmpbuf,
                                                               subop->count, elem->pup.type,
+                                                              elem->info, &subop->interm_event,
                                                               subop->gpu_tmpbuf,
-                                                              elem->pup.inattr.device,
-                                                              elem->info, &subop->interm_event);
+                                                              elem->pup.inattr.device);
                 YAKSU_ERR_CHECK(rc, fn_fail);
 
                 rc = yaksuri_global.gpudriver[id].info->event_add_dependency(subop->interm_event,
@@ -577,9 +577,8 @@ int yaksuri_progress_poke(void)
 
                 rc = yaksuri_global.gpudriver[id].info->ipack(subop->host_tmpbuf, dbuf,
                                                               subop->count * elem->pup.type->size,
-                                                              byte_type, NULL,
-                                                              elem->pup.outattr.device,
-                                                              elem->info, &subop->event);
+                                                              byte_type, elem->info, &subop->event,
+                                                              NULL, elem->pup.outattr.device);
                 YAKSU_ERR_CHECK(rc, fn_fail);
             }
         } else if (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
@@ -590,9 +589,9 @@ int yaksuri_progress_poke(void)
             char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->extent;
 
             rc = yaksuri_global.gpudriver[id].info->iunpack(sbuf, dbuf, subop->count,
-                                                            elem->pup.type, subop->gpu_tmpbuf,
-                                                            elem->pup.outattr.device,
-                                                            elem->info, &subop->event);
+                                                            elem->pup.type, elem->info,
+                                                            &subop->event, subop->gpu_tmpbuf,
+                                                            elem->pup.outattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else if (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
                    elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
@@ -602,13 +601,13 @@ int yaksuri_progress_poke(void)
             char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->extent;
 
             rc = yaksuri_seq_iunpack(sbuf, subop->host_tmpbuf,
-                                     subop->count * elem->pup.type->size, elem->info, byte_type);
+                                     subop->count * elem->pup.type->size, byte_type, elem->info);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             rc = yaksuri_global.gpudriver[id].info->iunpack(subop->host_tmpbuf, dbuf, subop->count,
-                                                            elem->pup.type, subop->gpu_tmpbuf,
-                                                            elem->pup.outattr.device,
-                                                            elem->info, &subop->event);
+                                                            elem->pup.type, elem->info,
+                                                            &subop->event, subop->gpu_tmpbuf,
+                                                            elem->pup.outattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else if ((elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
                     elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
@@ -621,9 +620,9 @@ int yaksuri_progress_poke(void)
 
             rc = yaksuri_global.gpudriver[id].info->iunpack(sbuf, subop->host_tmpbuf,
                                                             subop->count * elem->pup.type->size,
-                                                            byte_type, NULL,
-                                                            elem->pup.inattr.device, elem->info,
-                                                            &subop->event);
+                                                            byte_type, elem->info,
+                                                            &subop->event, NULL,
+                                                            elem->pup.inattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else if (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
                    elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
@@ -640,16 +639,16 @@ int yaksuri_progress_poke(void)
 
             if (is_enabled) {
                 rc = yaksuri_global.gpudriver[id].info->iunpack(sbuf, dbuf, subop->count,
-                                                                elem->pup.type, subop->gpu_tmpbuf,
-                                                                elem->pup.inattr.device,
-                                                                elem->info, &subop->event);
+                                                                elem->pup.type, elem->info,
+                                                                &subop->event, subop->gpu_tmpbuf,
+                                                                elem->pup.inattr.device);
                 YAKSU_ERR_CHECK(rc, fn_fail);
             } else {
                 rc = yaksuri_global.gpudriver[id].info->iunpack(sbuf, subop->host_tmpbuf,
                                                                 subop->count * elem->pup.type->size,
-                                                                byte_type, NULL,
-                                                                elem->pup.inattr.device,
-                                                                elem->info, &subop->interm_event);
+                                                                byte_type, elem->info,
+                                                                &subop->interm_event, NULL,
+                                                                elem->pup.inattr.device);
                 YAKSU_ERR_CHECK(rc, fn_fail);
 
                 rc = yaksuri_global.gpudriver[id].info->event_add_dependency(subop->interm_event,
@@ -659,9 +658,9 @@ int yaksuri_progress_poke(void)
 
                 rc = yaksuri_global.gpudriver[id].info->iunpack(subop->host_tmpbuf, dbuf,
                                                                 subop->count, elem->pup.type,
+                                                                elem->info, &subop->event,
                                                                 subop->gpu_tmpbuf,
-                                                                elem->pup.outattr.device,
-                                                                elem->info, &subop->event);
+                                                                elem->pup.outattr.device);
                 YAKSU_ERR_CHECK(rc, fn_fail);
             }
         } else {

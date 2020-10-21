@@ -98,10 +98,10 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
             rc = YAKSA_ERR__NOT_SUPPORTED;
         } else {
             if (puptype == YAKSURI_PUPTYPE__PACK) {
-                rc = yaksuri_seq_ipack(inbuf, outbuf, count, info, type);
+                rc = yaksuri_seq_ipack(inbuf, outbuf, count, type, info);
                 YAKSU_ERR_CHECK(rc, fn_fail);
             } else {
-                rc = yaksuri_seq_iunpack(inbuf, outbuf, count, info, type);
+                rc = yaksuri_seq_iunpack(inbuf, outbuf, count, type, info);
                 YAKSU_ERR_CHECK(rc, fn_fail);
             }
         }
@@ -128,8 +128,8 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
     assert(yaksuri_global.gpudriver[id].info);
 
     int (*pupfn) (const void *inbuf, void *outbuf, uintptr_t count,
-                  struct yaksi_type_s * type, void *device_tmpbuf, int device,
-                  struct yaksi_info_s * info, void **event);
+                  struct yaksi_type_s * type, struct yaksi_info_s * info, void **event,
+                  void *device_tmpbuf, int device);
     if (puptype == YAKSURI_PUPTYPE__PACK) {
         pupfn = yaksuri_global.gpudriver[id].info->ipack;
     } else {
@@ -140,7 +140,7 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
         inattr.device == outattr.device) {
         /* gpu-to-gpu copies do not need temporary buffers */
         bool first_event = !request_backend->event;
-        rc = pupfn(inbuf, outbuf, count, type, NULL, inattr.device, info, &request_backend->event);
+        rc = pupfn(inbuf, outbuf, count, type, info, &request_backend->event, NULL, inattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (first_event) {
@@ -158,7 +158,7 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
          * temporary buffers either, if the host buffer is registered
          * and the type is contiguous */
         bool first_event = !request_backend->event;
-        rc = pupfn(inbuf, outbuf, count, type, NULL, inattr.device, info, &request_backend->event);
+        rc = pupfn(inbuf, outbuf, count, type, info, &request_backend->event, NULL, inattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (first_event) {
@@ -176,7 +176,7 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
          * temporary buffers either, if the host buffer is registered
          * and the type is contiguous */
         bool first_event = !request_backend->event;
-        rc = pupfn(inbuf, outbuf, count, type, NULL, outattr.device, info, &request_backend->event);
+        rc = pupfn(inbuf, outbuf, count, type, info, &request_backend->event, NULL, outattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (first_event) {
@@ -193,8 +193,8 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
          * the progress engine */
         request_backend->kind = YAKSURI_REQUEST_KIND__STAGED;
 
-        rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, request,
-                                      inattr, outattr, puptype, info);
+        rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, info, request,
+                                      inattr, outattr, puptype);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         rc = yaksuri_progress_poke();

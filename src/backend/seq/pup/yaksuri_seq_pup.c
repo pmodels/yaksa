@@ -24,8 +24,8 @@ int yaksuri_seq_pup_is_supported(yaksi_type_s * type, bool * is_supported)
     return rc;
 }
 
-int yaksuri_seq_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_info_s * info,
-                      yaksi_type_s * type)
+int yaksuri_seq_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
+                      yaksi_info_s * info)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_seqi_type_s *seq_type = (yaksuri_seqi_type_s *) type->backend.seq.priv;
@@ -92,8 +92,8 @@ int yaksuri_seq_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_in
     goto fn_exit;
 }
 
-int yaksuri_seq_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_info_s * info,
-                        yaksi_type_s * type)
+int yaksuri_seq_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
+                        yaksi_info_s * info)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_seqi_type_s *seq_type = (yaksuri_seqi_type_s *) type->backend.seq.priv;
