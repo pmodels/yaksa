@@ -12,6 +12,58 @@
 
 yaksuri_global_s yaksuri_global;
 
+static void *malloc_fn(uintptr_t size, void *state)
+{
+    yaksuri_gpudriver_id_e id;
+
+    for (id = YAKSURI_GPUDRIVER_ID__UNSET; id < YAKSURI_GPUDRIVER_ID__LAST; id++) {
+        if (id == YAKSURI_GPUDRIVER_ID__UNSET)
+            continue;
+
+        if (state == &yaksuri_global.gpudriver[id].host) {
+            return yaksuri_global.gpudriver[id].info->host_malloc(size);
+        } else {
+            uintptr_t start = (uintptr_t) yaksuri_global.gpudriver[id].device;
+            uintptr_t end =
+                (uintptr_t) & yaksuri_global.gpudriver[id].device[yaksuri_global.
+                                                                  gpudriver[id].ndevices - 1];
+
+            if ((uintptr_t) state >= start && (uintptr_t) state <= end) {
+                int dev = (int) ((uintptr_t) state - start) / sizeof(yaksu_buffer_pool_s);
+                return yaksuri_global.gpudriver[id].info->gpu_malloc(size, dev);
+            }
+        }
+    }
+
+    return NULL;
+}
+
+static void free_fn(void *buf, void *state)
+{
+    yaksuri_gpudriver_id_e id;
+
+    for (id = YAKSURI_GPUDRIVER_ID__UNSET; id < YAKSURI_GPUDRIVER_ID__LAST; id++) {
+        if (id == YAKSURI_GPUDRIVER_ID__UNSET)
+            continue;
+
+        if (state == &yaksuri_global.gpudriver[id].host) {
+            return yaksuri_global.gpudriver[id].info->host_free(buf);
+        } else {
+            uintptr_t start = (uintptr_t) yaksuri_global.gpudriver[id].device;
+            uintptr_t end =
+                (uintptr_t) & yaksuri_global.gpudriver[id].device[yaksuri_global.
+                                                                  gpudriver[id].ndevices - 1];
+
+            if ((uintptr_t) state >= start && (uintptr_t) state <= end) {
+                int dev = ((uintptr_t) state - start) / sizeof(yaksu_buffer_pool_s);
+                return yaksuri_global.gpudriver[id].info->gpu_free(buf);
+            }
+        }
+    }
+
+    assert(0);
+}
+
 int yaksur_init_hook(void)
 {
     int rc = YAKSA_SUCCESS;
@@ -33,21 +85,26 @@ int yaksur_init_hook(void)
             continue;
 
         if (yaksuri_global.gpudriver[id].info) {
-            yaksuri_global.gpudriver[id].host.slab = NULL;
-            yaksuri_global.gpudriver[id].host.slab_head_offset = 0;
-            yaksuri_global.gpudriver[id].host.slab_tail_offset = 0;
+            rc = yaksu_buffer_pool_alloc(YAKSURI_TMPBUF_EL_SIZE, 1, YAKSURI_TMPBUF_NUM_EL,
+                                         malloc_fn, free_fn, &yaksuri_global.gpudriver[id].host,
+                                         &yaksuri_global.gpudriver[id].host);
+            YAKSU_ERR_CHECK(rc, fn_fail);
 
             int ndevices;
             rc = yaksuri_global.gpudriver[id].info->get_num_devices(&ndevices);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
-            yaksuri_global.gpudriver[id].device = (yaksuri_slab_s *)
-                malloc(ndevices * sizeof(yaksuri_slab_s));
+            yaksuri_global.gpudriver[id].device = (yaksu_buffer_pool_s *)
+                malloc(ndevices * sizeof(yaksu_buffer_pool_s));
             for (int i = 0; i < ndevices; i++) {
-                yaksuri_global.gpudriver[id].device[i].slab = NULL;
-                yaksuri_global.gpudriver[id].device[i].slab_head_offset = 0;
-                yaksuri_global.gpudriver[id].device[i].slab_tail_offset = 0;
+                rc = yaksu_buffer_pool_alloc(YAKSURI_TMPBUF_EL_SIZE, 1, YAKSURI_TMPBUF_NUM_EL,
+                                             malloc_fn, free_fn,
+                                             &yaksuri_global.gpudriver[id].device[i],
+                                             &yaksuri_global.gpudriver[id].device[i]);
+                YAKSU_ERR_CHECK(rc, fn_fail);
             }
+
+            yaksuri_global.gpudriver[id].ndevices = ndevices;
         }
     }
 
@@ -70,20 +127,13 @@ int yaksur_finalize_hook(void)
             continue;
 
         if (yaksuri_global.gpudriver[id].info) {
-            if (yaksuri_global.gpudriver[id].host.slab) {
-                yaksuri_global.gpudriver[id].info->host_free(yaksuri_global.gpudriver[id].
-                                                             host.slab);
-            }
-
-            int ndevices;
-            rc = yaksuri_global.gpudriver[id].info->get_num_devices(&ndevices);
+            rc = yaksu_buffer_pool_free(yaksuri_global.gpudriver[id].host);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
+            int ndevices = yaksuri_global.gpudriver[id].ndevices;
             for (int i = 0; i < ndevices; i++) {
-                if (yaksuri_global.gpudriver[id].device[i].slab) {
-                    yaksuri_global.gpudriver[id].info->gpu_free(yaksuri_global.gpudriver[id].
-                                                                device[i].slab);
-                }
+                rc = yaksu_buffer_pool_free(yaksuri_global.gpudriver[id].device[i]);
+                YAKSU_ERR_CHECK(rc, fn_fail);
             }
             free(yaksuri_global.gpudriver[id].device);
 

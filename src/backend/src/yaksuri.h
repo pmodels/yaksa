@@ -20,17 +20,15 @@ typedef enum yaksuri_pup_e {
     YAKSURI_OPTYPE__UNPACK,
 } yaksuri_optype_e;
 
-typedef struct {
-    void *slab;
-    uintptr_t slab_head_offset;
-    uintptr_t slab_tail_offset;
-} yaksuri_slab_s;
+#define YAKSURI_TMPBUF_EL_SIZE  (1024 * 1024)
+#define YAKSURI_TMPBUF_NUM_EL   (16)
 
 typedef struct {
     struct {
-        yaksuri_slab_s host;
-        yaksuri_slab_s *device;
+        yaksu_buffer_pool_s host;
+        yaksu_buffer_pool_s *device;
         yaksur_gpudriver_info_s *info;
+        int ndevices;
     } gpudriver[YAKSURI_GPUDRIVER_ID__LAST];
 } yaksuri_global_s;
 extern yaksuri_global_s yaksuri_global;
