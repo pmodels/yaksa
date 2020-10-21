@@ -12,6 +12,7 @@
 #include "yaksi.h"
 #include "yaksu.h"
 #include "yaksuri.h"
+#include "yutlist.h"
 
 typedef struct progress_subop_s {
     uintptr_t count_offset;
@@ -22,6 +23,7 @@ typedef struct progress_subop_s {
     void *event;
 
     struct progress_subop_s *next;
+    struct progress_subop_s *prev;
 } progress_subop_s;
 
 typedef struct progress_elem_s {
@@ -33,17 +35,17 @@ typedef struct progress_elem_s {
 
         uintptr_t completed_count;
         uintptr_t issued_count;
-        progress_subop_s *subop_head;
-        progress_subop_s *subop_tail;
+        progress_subop_s *subops;
     } pup;
 
     yaksi_request_s *request;
     yaksi_info_s *info;
+
     struct progress_elem_s *next;
+    struct progress_elem_s *prev;
 } progress_elem_s;
 
-static progress_elem_s *progress_head = NULL;
-static progress_elem_s *progress_tail = NULL;
+static progress_elem_s *progress_elems = NULL;
 static pthread_mutex_t progress_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define ELEM_TO_OPTYPE(elem) \
@@ -56,35 +58,6 @@ static pthread_mutex_t progress_mutex = PTHREAD_MUTEX_INITIALIZER;
     (((yaksuri_request_s *) elem->request->backend.priv)->inattr.device)
 #define ELEM_TO_OUTATTR_DEVICE(elem) \
     (((yaksuri_request_s *) elem->request->backend.priv)->outattr.device)
-
-/* the dequeue function is not thread safe, as it is always called
- * from within the progress engine */
-static int progress_dequeue(progress_elem_s * elem)
-{
-    int rc = YAKSA_SUCCESS;
-
-    assert(progress_head);
-
-    if (progress_head == elem && progress_tail == elem) {
-        progress_head = progress_tail = NULL;
-    } else if (progress_head == elem) {
-        progress_head = progress_head->next;
-    } else {
-        progress_elem_s *tmp;
-        for (tmp = progress_head; tmp->next; tmp = tmp->next)
-            if (tmp->next == elem)
-                break;
-        assert(tmp->next);
-        tmp->next = tmp->next->next;
-        if (tmp->next == NULL)
-            progress_tail = tmp;
-    }
-
-    yaksu_atomic_decr(&elem->request->cc);
-    free(elem);
-
-    return rc;
-}
 
 int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
                              yaksi_info_s * info, yaksi_request_s * request)
@@ -110,20 +83,16 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
     newelem->pup.type = type;
     newelem->pup.completed_count = 0;
     newelem->pup.issued_count = 0;
-    newelem->pup.subop_head = newelem->pup.subop_tail = NULL;
+    newelem->pup.subops = NULL;
     newelem->request = request;
     newelem->info = info;
     newelem->next = NULL;
 
     /* enqueue the new element */
     yaksu_atomic_incr(&request->cc);
+
     pthread_mutex_lock(&progress_mutex);
-    if (progress_tail == NULL) {
-        progress_head = progress_tail = newelem;
-    } else {
-        progress_tail->next = newelem;
-        progress_tail = newelem;
-    }
+    DL_APPEND(progress_elems, newelem);
     pthread_mutex_unlock(&progress_mutex);
 
   fn_exit:
@@ -133,7 +102,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
 static int alloc_subop(progress_subop_s ** subop)
 {
     int rc = YAKSA_SUCCESS;
-    progress_elem_s *elem = progress_head;
+    progress_elem_s *elem = progress_elems;
     yaksuri_request_s *request_backend = (yaksuri_request_s *) elem->request->backend.priv;
     yaksuri_gpudriver_id_e id = request_backend->gpudriver_id;
     bool need_gpu_tmpbuf = false, need_host_tmpbuf = false;
@@ -249,14 +218,8 @@ static int alloc_subop(progress_subop_s ** subop)
 
     (*subop)->interm_event = NULL;
     (*subop)->event = NULL;
-    (*subop)->next = NULL;
 
-    if (elem->pup.subop_tail == NULL) {
-        assert(elem->pup.subop_head == NULL);
-        elem->pup.subop_head = elem->pup.subop_tail = *subop;
-    } else {
-        elem->pup.subop_tail->next = *subop;
-    }
+    DL_APPEND(elem->pup.subops, *subop);
 
   fn_exit:
     return rc;
@@ -267,7 +230,7 @@ static int alloc_subop(progress_subop_s ** subop)
 static int free_subop(progress_subop_s * subop)
 {
     int rc = YAKSA_SUCCESS;
-    progress_elem_s *elem = progress_head;
+    progress_elem_s *elem = progress_elems;
     yaksuri_request_s *request_backend = (yaksuri_request_s *) elem->request->backend.priv;
     yaksuri_gpudriver_id_e id = request_backend->gpudriver_id;
 
@@ -299,21 +262,7 @@ static int free_subop(progress_subop_s * subop)
         YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
-    if (elem->pup.subop_head == subop && elem->pup.subop_tail == subop) {
-        elem->pup.subop_head = elem->pup.subop_tail = NULL;
-    } else if (elem->pup.subop_head == subop) {
-        elem->pup.subop_head = subop->next;
-    } else {
-        for (progress_subop_s * tmp = elem->pup.subop_head; tmp->next; tmp = tmp->next) {
-            if (tmp->next == subop) {
-                tmp->next = subop->next;
-                if (elem->pup.subop_tail == subop)
-                    elem->pup.subop_tail = tmp;
-                break;
-            }
-        }
-    }
-
+    DL_DELETE(elem->pup.subops, subop);
     free(subop);
 
   fn_exit:
@@ -334,7 +283,7 @@ int yaksuri_progress_poke(void)
     pthread_mutex_lock(&progress_mutex);
 
     /* if there's nothing to do, return */
-    if (progress_head == NULL)
+    if (progress_elems == NULL)
         goto fn_exit;
 
     /* the progress engine has three steps: (1) check for completions
@@ -346,7 +295,7 @@ int yaksuri_progress_poke(void)
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     progress_elem_s *elem;
-    elem = progress_head;
+    elem = progress_elems;
     yaksuri_request_s *request_backend;
     request_backend = (yaksuri_request_s *) elem->request->backend.priv;
     yaksuri_gpudriver_id_e id;
@@ -355,7 +304,8 @@ int yaksuri_progress_poke(void)
     /****************************************************************************/
     /* Step 1: Check for completion and free up any held up resources */
     /****************************************************************************/
-    for (progress_subop_s * subop = elem->pup.subop_head; subop;) {
+    progress_subop_s *subop, *tmp;
+    DL_FOREACH_SAFE(elem->pup.subops, subop, tmp) {
         int completed;
         rc = yaksuri_global.gpudriver[id].info->event_query(subop->event, &completed);
         YAKSU_ERR_CHECK(rc, fn_fail);
@@ -396,8 +346,9 @@ int yaksuri_progress_poke(void)
     /* Step 2: If we don't have any more work to do, return */
     /****************************************************************************/
     if (elem->pup.completed_count == elem->pup.count) {
-        rc = progress_dequeue(elem);
-        YAKSU_ERR_CHECK(rc, fn_fail);
+        DL_DELETE(progress_elems, elem);
+        yaksu_atomic_decr(&elem->request->cc);
+        free(elem);
         goto fn_exit;
     }
 
