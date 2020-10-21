@@ -33,19 +33,67 @@ typedef struct {
 } yaksuri_global_s;
 extern yaksuri_global_s yaksuri_global;
 
-typedef struct {
+#define YAKSURI_SUBREQ_CHUNK_MAX_TMPBUFS (2)
+
+typedef struct yaksuri_subreq_chunk {
+    uintptr_t count_offset;
+    uintptr_t count;
+
+    int num_tmpbufs;
+    struct {
+        void *buf;
+        yaksu_buffer_pool_s pool;
+    } tmpbufs[YAKSURI_SUBREQ_CHUNK_MAX_TMPBUFS];
+    void *event;
+
+    struct yaksuri_subreq_chunk *next;
+    struct yaksuri_subreq_chunk *prev;
+} yaksuri_subreq_chunk_s;
+
+struct yaksuri_request;
+typedef struct yaksuri_subreq {
+    enum {
+        YAKSURI_SUBREQ_KIND__SINGLE_CHUNK,
+        YAKSURI_SUBREQ_KIND__MULTI_CHUNK,
+    } kind;
+
+    union {
+        struct {
+            void *event;
+        } single;
+        struct {
+            const void *inbuf;
+            void *outbuf;
+            uintptr_t count;
+            yaksi_type_s *type;
+
+            uintptr_t issued_count;
+            yaksuri_subreq_chunk_s *chunks;
+
+            int (*acquire) (struct yaksuri_request * backend, struct yaksuri_subreq * subreq,
+                            struct yaksuri_subreq_chunk ** chunk);
+            int (*release) (struct yaksuri_request * backend, struct yaksuri_subreq * subreq,
+                            struct yaksuri_subreq_chunk * chunk);
+        } multiple;
+    } u;
+
+    struct yaksuri_subreq *next;
+    struct yaksuri_subreq *prev;
+} yaksuri_subreq_s;
+
+typedef struct yaksuri_request {
+    yaksi_request_s *request;
+
+    yaksi_info_s *info;
     yaksuri_optype_e optype;
     yaksur_ptr_attr_s inattr;
     yaksur_ptr_attr_s outattr;
 
     yaksuri_gpudriver_id_e gpudriver_id;
-    void *event;
 
-    enum {
-        YAKSURI_REQUEST_KIND__UNSET,
-        YAKSURI_REQUEST_KIND__DIRECT,
-        YAKSURI_REQUEST_KIND__STAGED,
-    } kind;
+    yaksuri_subreq_s *subreqs;
+
+    UT_hash_handle hh;
 } yaksuri_request_s;
 
 int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,

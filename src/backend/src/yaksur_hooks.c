@@ -55,7 +55,6 @@ static void free_fn(void *buf, void *state)
                                                                   gpudriver[id].ndevices - 1];
 
             if ((uintptr_t) state >= start && (uintptr_t) state <= end) {
-                int dev = ((uintptr_t) state - start) / sizeof(yaksu_buffer_pool_s);
                 return yaksuri_global.gpudriver[id].info->gpu_free(buf);
             }
         }
@@ -204,9 +203,11 @@ int yaksur_request_create_hook(yaksi_request_s * request)
     request->backend.priv = malloc(sizeof(yaksuri_request_s));
     yaksuri_request_s *backend = (yaksuri_request_s *) request->backend.priv;
 
+    backend->request = request;
+    backend->info = NULL;
     backend->optype = YAKSURI_OPTYPE__UNSET;
-    backend->event = NULL;
-    backend->kind = YAKSURI_REQUEST_KIND__UNSET;
+    backend->gpudriver_id = YAKSURI_GPUDRIVER_ID__UNSET;
+    backend->subreqs = NULL;
 
     return rc;
 }
@@ -215,20 +216,11 @@ int yaksur_request_free_hook(yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_request_s *backend = (yaksuri_request_s *) request->backend.priv;
-    yaksuri_gpudriver_id_e id = backend->gpudriver_id;
 
-    if (backend->event) {
-        assert(yaksuri_global.gpudriver[id].info);
-        rc = yaksuri_global.gpudriver[id].info->event_destroy(backend->event);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-    }
-
+    assert(backend->subreqs == NULL);
     free(backend);
 
-  fn_exit:
     return rc;
-  fn_fail:
-    goto fn_exit;
 }
 
 int yaksur_info_create_hook(yaksi_info_s * info)

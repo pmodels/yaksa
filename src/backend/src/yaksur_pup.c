@@ -39,19 +39,6 @@ static int get_ptr_attr(const void *buf, yaksur_ptr_attr_s * ptrattr, yaksuri_gp
     goto fn_exit;
 }
 
-/*
- * In all of the "DIRECT" cases below, there are a few important
- * things to note:
- *
- *  1. We increment the completion counter only for the first
- *     incomplete request.  Future incomplete requests simply
- *     overwrite the event.
- *
- *  2. We use an increment instead of an atomic store, because some
- *     operations in this request might go through the progress engine
- *     (STAGED).
- */
-
 static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
                 yaksi_info_s * info, yaksi_request_s * request)
 {
