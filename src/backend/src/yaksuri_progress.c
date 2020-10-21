@@ -64,39 +64,124 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_request_s *backend = (yaksuri_request_s *) request->backend.priv;
+    yaksuri_gpudriver_id_e id = backend->gpudriver_id;
 
-    /* if we need to go through the progress engine, make sure we only
-     * take on types, where at least one count of the type fits into
-     * our temporary buffers. */
-    if (type->size > YAKSURI_TMPBUF_EL_SIZE) {
+    assert(yaksuri_global.gpudriver[id].info);
+
+    /* if the GPU backend cannot support this type, return */
+    bool is_supported;
+    rc = yaksuri_global.gpudriver[id].info->pup_is_supported(type, &is_supported);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (!is_supported) {
         rc = YAKSA_ERR__NOT_SUPPORTED;
         goto fn_exit;
     }
 
-    /* enqueue to the progress engine */
-    progress_elem_s *newelem;
-    newelem = (progress_elem_s *) malloc(sizeof(progress_elem_s));
+    int (*pupfn) (const void *inbuf, void *outbuf, uintptr_t count,
+                  struct yaksi_type_s * type, struct yaksi_info_s * info, void **event,
+                  void *device_tmpbuf, int device);
+    if (backend->optype == YAKSURI_OPTYPE__PACK) {
+        pupfn = yaksuri_global.gpudriver[id].info->ipack;
+    } else {
+        pupfn = yaksuri_global.gpudriver[id].info->iunpack;
+    }
 
-    newelem->pup.inbuf = inbuf;
-    newelem->pup.outbuf = outbuf;
-    newelem->pup.count = count;
-    newelem->pup.type = type;
-    newelem->pup.completed_count = 0;
-    newelem->pup.issued_count = 0;
-    newelem->pup.chunks = NULL;
-    newelem->request = request;
-    newelem->info = info;
-    newelem->next = NULL;
+    if (backend->inattr.type == YAKSUR_PTR_TYPE__GPU &&
+        backend->outattr.type == YAKSUR_PTR_TYPE__GPU &&
+        backend->inattr.device == backend->outattr.device) {
+        /* gpu-to-gpu copies do not need temporary buffers */
+        bool first_event = !backend->event;
+        rc = pupfn(inbuf, outbuf, count, type, info, &backend->event, NULL, backend->inattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
 
-    /* enqueue the new element */
-    yaksu_atomic_incr(&request->cc);
+        if (first_event) {
+            yaksu_atomic_incr(&request->cc);
+        }
 
-    pthread_mutex_lock(&progress_mutex);
-    DL_APPEND(progress_elems, newelem);
-    pthread_mutex_unlock(&progress_mutex);
+        /* if the request kind was already set to STAGED, do not
+         * override it, as a part of the request could be staged */
+        if (backend->kind == YAKSURI_REQUEST_KIND__UNSET) {
+            backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
+        }
+    } else if (type->is_contig && backend->inattr.type == YAKSUR_PTR_TYPE__GPU &&
+               backend->outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
+        /* gpu-to-host or host-to-gpu copies do not need
+         * temporary buffers either, if the host buffer is registered
+         * and the type is contiguous */
+        bool first_event = !backend->event;
+        rc = pupfn(inbuf, outbuf, count, type, info, &backend->event, NULL, backend->inattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        if (first_event) {
+            yaksu_atomic_incr(&request->cc);
+        }
+
+        /* if the request kind was already set to STAGED, do not
+         * override it, as a part of the request could be staged */
+        if (backend->kind == YAKSURI_REQUEST_KIND__UNSET) {
+            backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
+        }
+    } else if (type->is_contig && backend->inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST
+               && backend->outattr.type == YAKSUR_PTR_TYPE__GPU) {
+        /* gpu-to-host or host-to-gpu copies do not need
+         * temporary buffers either, if the host buffer is registered
+         * and the type is contiguous */
+        bool first_event = !backend->event;
+        rc = pupfn(inbuf, outbuf, count, type, info, &backend->event, NULL,
+                   backend->outattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        if (first_event) {
+            yaksu_atomic_incr(&request->cc);
+        }
+
+        /* if the request kind was already set to STAGED, do not
+         * override it, as a part of the request could be staged */
+        if (backend->kind == YAKSURI_REQUEST_KIND__UNSET) {
+            backend->kind = YAKSURI_REQUEST_KIND__DIRECT;
+        }
+    } else {
+        /* if we need to go through the progress engine, make sure we
+         * only take on types, where at least one count of the type
+         * fits into our temporary buffers. */
+        if (type->size > YAKSURI_TMPBUF_EL_SIZE) {
+            rc = YAKSA_ERR__NOT_SUPPORTED;
+            goto fn_exit;
+        }
+
+        backend->kind = YAKSURI_REQUEST_KIND__STAGED;
+
+        /* enqueue to the progress engine */
+        progress_elem_s *newelem;
+        newelem = (progress_elem_s *) malloc(sizeof(progress_elem_s));
+
+        newelem->pup.inbuf = inbuf;
+        newelem->pup.outbuf = outbuf;
+        newelem->pup.count = count;
+        newelem->pup.type = type;
+        newelem->pup.completed_count = 0;
+        newelem->pup.issued_count = 0;
+        newelem->pup.chunks = NULL;
+        newelem->request = request;
+        newelem->info = info;
+        newelem->next = NULL;
+
+        /* enqueue the new element */
+        yaksu_atomic_incr(&request->cc);
+
+        pthread_mutex_lock(&progress_mutex);
+        DL_APPEND(progress_elems, newelem);
+        pthread_mutex_unlock(&progress_mutex);
+
+        rc = yaksuri_progress_poke();
+        YAKSU_ERR_CHECK(rc, fn_fail);
+    }
 
   fn_exit:
     return rc;
+  fn_fail:
+    goto fn_exit;
 }
 
 static int alloc_chunk(subreq_chunk_s ** chunk)
