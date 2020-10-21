@@ -21,7 +21,7 @@ static void *malloc_fn(uintptr_t size, void *state)
             continue;
 
         if (state == &yaksuri_global.gpudriver[id].host) {
-            return yaksuri_global.gpudriver[id].info->host_malloc(size);
+            return yaksuri_global.gpudriver[id].hooks->host_malloc(size);
         } else {
             uintptr_t start = (uintptr_t) yaksuri_global.gpudriver[id].device;
             uintptr_t end =
@@ -30,7 +30,7 @@ static void *malloc_fn(uintptr_t size, void *state)
 
             if ((uintptr_t) state >= start && (uintptr_t) state <= end) {
                 int dev = (int) ((uintptr_t) state - start) / sizeof(yaksu_buffer_pool_s);
-                return yaksuri_global.gpudriver[id].info->gpu_malloc(size, dev);
+                return yaksuri_global.gpudriver[id].hooks->gpu_malloc(size, dev);
             }
         }
     }
@@ -47,7 +47,7 @@ static void free_fn(void *buf, void *state)
             continue;
 
         if (state == &yaksuri_global.gpudriver[id].host) {
-            return yaksuri_global.gpudriver[id].info->host_free(buf);
+            return yaksuri_global.gpudriver[id].hooks->host_free(buf);
         } else {
             uintptr_t start = (uintptr_t) yaksuri_global.gpudriver[id].device;
             uintptr_t end =
@@ -55,7 +55,7 @@ static void free_fn(void *buf, void *state)
                                                                   gpudriver[id].ndevices - 1];
 
             if ((uintptr_t) state >= start && (uintptr_t) state <= end) {
-                return yaksuri_global.gpudriver[id].info->gpu_free(buf);
+                return yaksuri_global.gpudriver[id].hooks->gpu_free(buf);
             }
         }
     }
@@ -73,24 +73,24 @@ int yaksur_init_hook(void)
 
     /* CUDA hooks */
     id = YAKSURI_GPUDRIVER_ID__CUDA;
-    yaksuri_global.gpudriver[id].info = NULL;
-    rc = yaksuri_cuda_init_hook(&yaksuri_global.gpudriver[id].info);
+    yaksuri_global.gpudriver[id].hooks = NULL;
+    rc = yaksuri_cuda_init_hook(&yaksuri_global.gpudriver[id].hooks);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
 
-    /* final setup for all backends */
+    /* final setup for all drivers */
     for (id = YAKSURI_GPUDRIVER_ID__UNSET; id < YAKSURI_GPUDRIVER_ID__LAST; id++) {
         if (id == YAKSURI_GPUDRIVER_ID__UNSET)
             continue;
 
-        if (yaksuri_global.gpudriver[id].info) {
+        if (yaksuri_global.gpudriver[id].hooks) {
             rc = yaksu_buffer_pool_alloc(YAKSURI_TMPBUF_EL_SIZE, 1, YAKSURI_TMPBUF_NUM_EL,
                                          malloc_fn, free_fn, &yaksuri_global.gpudriver[id].host,
                                          &yaksuri_global.gpudriver[id].host);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             int ndevices;
-            rc = yaksuri_global.gpudriver[id].info->get_num_devices(&ndevices);
+            rc = yaksuri_global.gpudriver[id].hooks->get_num_devices(&ndevices);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             yaksuri_global.gpudriver[id].device = (yaksu_buffer_pool_s *)
@@ -125,7 +125,7 @@ int yaksur_finalize_hook(void)
         if (id == YAKSURI_GPUDRIVER_ID__UNSET)
             continue;
 
-        if (yaksuri_global.gpudriver[id].info) {
+        if (yaksuri_global.gpudriver[id].hooks) {
             rc = yaksu_buffer_pool_free(yaksuri_global.gpudriver[id].host);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
@@ -136,9 +136,9 @@ int yaksur_finalize_hook(void)
             }
             free(yaksuri_global.gpudriver[id].device);
 
-            rc = yaksuri_global.gpudriver[id].info->finalize();
+            rc = yaksuri_global.gpudriver[id].hooks->finalize();
             YAKSU_ERR_CHECK(rc, fn_fail);
-            free(yaksuri_global.gpudriver[id].info);
+            free(yaksuri_global.gpudriver[id].hooks);
         }
     }
 
@@ -160,8 +160,8 @@ int yaksur_type_create_hook(yaksi_type_s * type)
         if (id == YAKSURI_GPUDRIVER_ID__UNSET)
             continue;
 
-        if (yaksuri_global.gpudriver[id].info) {
-            rc = yaksuri_global.gpudriver[id].info->type_create(type);
+        if (yaksuri_global.gpudriver[id].hooks) {
+            rc = yaksuri_global.gpudriver[id].hooks->type_create(type);
             YAKSU_ERR_CHECK(rc, fn_fail);
         }
     }
@@ -184,8 +184,8 @@ int yaksur_type_free_hook(yaksi_type_s * type)
         if (id == YAKSURI_GPUDRIVER_ID__UNSET)
             continue;
 
-        if (yaksuri_global.gpudriver[id].info) {
-            rc = yaksuri_global.gpudriver[id].info->type_free(type);
+        if (yaksuri_global.gpudriver[id].hooks) {
+            rc = yaksuri_global.gpudriver[id].hooks->type_free(type);
             YAKSU_ERR_CHECK(rc, fn_fail);
         }
     }
@@ -201,13 +201,13 @@ int yaksur_request_create_hook(yaksi_request_s * request)
     int rc = YAKSA_SUCCESS;
 
     request->backend.priv = malloc(sizeof(yaksuri_request_s));
-    yaksuri_request_s *backend = (yaksuri_request_s *) request->backend.priv;
+    yaksuri_request_s *reqpriv = (yaksuri_request_s *) request->backend.priv;
 
-    backend->request = request;
-    backend->info = NULL;
-    backend->optype = YAKSURI_OPTYPE__UNSET;
-    backend->gpudriver_id = YAKSURI_GPUDRIVER_ID__UNSET;
-    backend->subreqs = NULL;
+    reqpriv->request = request;
+    reqpriv->info = NULL;
+    reqpriv->optype = YAKSURI_OPTYPE__UNSET;
+    reqpriv->gpudriver_id = YAKSURI_GPUDRIVER_ID__UNSET;
+    reqpriv->subreqs = NULL;
 
     return rc;
 }
@@ -215,10 +215,10 @@ int yaksur_request_create_hook(yaksi_request_s * request)
 int yaksur_request_free_hook(yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
-    yaksuri_request_s *backend = (yaksuri_request_s *) request->backend.priv;
+    yaksuri_request_s *reqpriv = (yaksuri_request_s *) request->backend.priv;
 
-    assert(backend->subreqs == NULL);
-    free(backend);
+    assert(reqpriv->subreqs == NULL);
+    free(reqpriv);
 
     return rc;
 }
@@ -235,8 +235,8 @@ int yaksur_info_create_hook(yaksi_info_s * info)
         if (id == YAKSURI_GPUDRIVER_ID__UNSET)
             continue;
 
-        if (yaksuri_global.gpudriver[id].info) {
-            rc = yaksuri_global.gpudriver[id].info->info_create(info);
+        if (yaksuri_global.gpudriver[id].hooks) {
+            rc = yaksuri_global.gpudriver[id].hooks->info_create(info);
             YAKSU_ERR_CHECK(rc, fn_fail);
         }
     }
@@ -259,8 +259,8 @@ int yaksur_info_free_hook(yaksi_info_s * info)
         if (id == YAKSURI_GPUDRIVER_ID__UNSET)
             continue;
 
-        if (yaksuri_global.gpudriver[id].info) {
-            rc = yaksuri_global.gpudriver[id].info->info_free(info);
+        if (yaksuri_global.gpudriver[id].hooks) {
+            rc = yaksuri_global.gpudriver[id].hooks->info_free(info);
             YAKSU_ERR_CHECK(rc, fn_fail);
         }
     }
@@ -284,8 +284,8 @@ int yaksur_info_keyval_append(yaksi_info_s * info, const char *key, const void *
         if (id == YAKSURI_GPUDRIVER_ID__UNSET)
             continue;
 
-        if (yaksuri_global.gpudriver[id].info) {
-            rc = yaksuri_global.gpudriver[id].info->info_keyval_append(info, key, val, vallen);
+        if (yaksuri_global.gpudriver[id].hooks) {
+            rc = yaksuri_global.gpudriver[id].hooks->info_keyval_append(info, key, val, vallen);
             YAKSU_ERR_CHECK(rc, fn_fail);
         }
     }

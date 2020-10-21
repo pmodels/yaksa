@@ -40,7 +40,7 @@ typedef struct {
     yaksuri_cuda_info_s cuda;
 } yaksur_info_s;
 
-typedef struct yaksur_gpudriver_info_s {
+typedef struct yaksur_gpudriver_hooks_s {
     /* miscellaneous */
     int (*get_num_devices) (int *ndevices);
     int (*check_p2p_comm) (int sdev, int ddev, bool * is_enabled);
@@ -81,6 +81,6 @@ typedef struct yaksur_gpudriver_info_s {
     int (*info_free) (struct yaksi_info_s * info);
     int (*info_keyval_append) (struct yaksi_info_s * info, const char *key, const void *val,
                                unsigned int vallen);
-} yaksur_gpudriver_info_s;
+} yaksur_gpudriver_hooks_s;
 
 #endif /* YAKSUR_PRE_H_INCLUDED */

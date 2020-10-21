@@ -27,7 +27,7 @@ typedef struct {
     struct {
         yaksu_buffer_pool_s host;
         yaksu_buffer_pool_s *device;
-        yaksur_gpudriver_info_s *info;
+        yaksur_gpudriver_hooks_s *hooks;
         int ndevices;
     } gpudriver[YAKSURI_GPUDRIVER_ID__LAST];
 } yaksuri_global_s;
@@ -70,9 +70,9 @@ typedef struct yaksuri_subreq {
             uintptr_t issued_count;
             yaksuri_subreq_chunk_s *chunks;
 
-            int (*acquire) (struct yaksuri_request * backend, struct yaksuri_subreq * subreq,
+            int (*acquire) (struct yaksuri_request * reqpriv, struct yaksuri_subreq * subreq,
                             struct yaksuri_subreq_chunk ** chunk);
-            int (*release) (struct yaksuri_request * backend, struct yaksuri_subreq * subreq,
+            int (*release) (struct yaksuri_request * reqpriv, struct yaksuri_subreq * subreq,
                             struct yaksuri_subreq_chunk * chunk);
         } multiple;
     } u;
