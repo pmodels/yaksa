@@ -149,6 +149,7 @@ int yaksu_buffer_pool_elem_alloc(yaksu_buffer_pool_s pool, void **elem)
 
     pthread_mutex_lock(&pool_head->mutex);
 
+    *elem = NULL;
     chunk_s *chunk = NULL;
     if (pool_head->free_elems == NULL) {
         /* no more free elements left; see if we can allocate more
