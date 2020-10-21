@@ -32,6 +32,8 @@ typedef struct yaksur_type_s {
 } yaksur_type_s;
 
 typedef struct {
+    yaksur_ptr_attr_s inattr;
+    yaksur_ptr_attr_s outattr;
     void *priv;
 } yaksur_request_s;
 

@@ -47,22 +47,24 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
     yaksuri_request_s *reqpriv = (yaksuri_request_s *) request->backend.priv;
 
     if (reqpriv->optype == YAKSURI_OPTYPE__PACK) {
-        rc = get_ptr_attr((const char *) inbuf + type->true_lb, &reqpriv->inattr, &inbuf_gpudriver);
+        rc = get_ptr_attr((const char *) inbuf + type->true_lb, &request->backend.inattr,
+                          &inbuf_gpudriver);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
-        rc = get_ptr_attr(outbuf, &reqpriv->outattr, &outbuf_gpudriver);
+        rc = get_ptr_attr(outbuf, &request->backend.outattr, &outbuf_gpudriver);
         YAKSU_ERR_CHECK(rc, fn_fail);
     } else {
-        rc = get_ptr_attr(inbuf, &reqpriv->inattr, &inbuf_gpudriver);
+        rc = get_ptr_attr(inbuf, &request->backend.inattr, &inbuf_gpudriver);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
-        rc = get_ptr_attr((char *) outbuf + type->true_lb, &reqpriv->outattr, &outbuf_gpudriver);
+        rc = get_ptr_attr((char *) outbuf + type->true_lb, &request->backend.outattr,
+                          &outbuf_gpudriver);
         YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
     /* if this can be handled by the CPU, wrap it up */
-    if (reqpriv->inattr.type != YAKSUR_PTR_TYPE__GPU &&
-        reqpriv->outattr.type != YAKSUR_PTR_TYPE__GPU) {
+    if (request->backend.inattr.type != YAKSUR_PTR_TYPE__GPU &&
+        request->backend.outattr.type != YAKSUR_PTR_TYPE__GPU) {
         bool is_supported;
         rc = yaksuri_seq_pup_is_supported(type, &is_supported);
         YAKSU_ERR_CHECK(rc, fn_fail);
