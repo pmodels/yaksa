@@ -51,6 +51,7 @@ missing
 /test/pack/testlist.cuda.d-d-d.gen
 /test/pack/testlist.cuda.d-rh-d.gen
 /test/pack/testlist.cuda.d-urh-d.gen
+/test/pack/testlist.cuda.d-m-d.gen
 /test/pack/testlist.cuda.rh-d-rh.gen
 /test/pack/testlist.cuda.urh-d-urh.gen
 /test/pack/testlist.cuda.md-stride.d-d-d.gen

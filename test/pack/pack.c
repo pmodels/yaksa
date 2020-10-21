@@ -56,6 +56,7 @@ typedef enum {
     MEM_TYPE__UNSET,
     MEM_TYPE__UNREGISTERED_HOST,
     MEM_TYPE__REGISTERED_HOST,
+    MEM_TYPE__MANAGED,
     MEM_TYPE__DEVICE,
 } mem_type_e;
 
@@ -85,6 +86,10 @@ static void alloc_mem(size_t size, mem_type_e type, void **hostbuf, void **devic
         cudaMallocHost(devicebuf, size);
         if (hostbuf)
             *hostbuf = *devicebuf;
+    } else if (type == MEM_TYPE__MANAGED) {
+        cudaMallocManaged(devicebuf, size, cudaMemAttachGlobal);
+        if (hostbuf)
+            *hostbuf = *devicebuf;
     } else if (type == MEM_TYPE__DEVICE) {
         cudaSetDevice(device_id);
         cudaMalloc(devicebuf, size);
@@ -106,6 +111,8 @@ static void free_mem(mem_type_e type, void *hostbuf, void *devicebuf)
 #ifdef HAVE_CUDA
     } else if (type == MEM_TYPE__REGISTERED_HOST) {
         cudaFreeHost(devicebuf);
+    } else if (type == MEM_TYPE__MANAGED) {
+        cudaFree(devicebuf);
     } else if (type == MEM_TYPE__DEVICE) {
         cudaFree(devicebuf);
         if (hostbuf) {
@@ -379,6 +386,8 @@ int main(int argc, char **argv)
                 sbuf_memtype = MEM_TYPE__UNREGISTERED_HOST;
             else if (!strcmp(*argv, "reg-host"))
                 sbuf_memtype = MEM_TYPE__REGISTERED_HOST;
+            else if (!strcmp(*argv, "managed"))
+                sbuf_memtype = MEM_TYPE__MANAGED;
             else if (!strcmp(*argv, "device"))
                 sbuf_memtype = MEM_TYPE__DEVICE;
             else {
@@ -392,6 +401,8 @@ int main(int argc, char **argv)
                 dbuf_memtype = MEM_TYPE__UNREGISTERED_HOST;
             else if (!strcmp(*argv, "reg-host"))
                 dbuf_memtype = MEM_TYPE__REGISTERED_HOST;
+            else if (!strcmp(*argv, "managed"))
+                dbuf_memtype = MEM_TYPE__MANAGED;
             else if (!strcmp(*argv, "device"))
                 dbuf_memtype = MEM_TYPE__DEVICE;
             else {
@@ -405,6 +416,8 @@ int main(int argc, char **argv)
                 tbuf_memtype = MEM_TYPE__UNREGISTERED_HOST;
             else if (!strcmp(*argv, "reg-host"))
                 tbuf_memtype = MEM_TYPE__REGISTERED_HOST;
+            else if (!strcmp(*argv, "managed"))
+                tbuf_memtype = MEM_TYPE__MANAGED;
             else if (!strcmp(*argv, "device"))
                 tbuf_memtype = MEM_TYPE__DEVICE;
             else {

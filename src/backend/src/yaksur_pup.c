@@ -63,8 +63,24 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
     }
 
     /* if this can be handled by the CPU, wrap it up */
-    if (request->backend.inattr.type != YAKSUR_PTR_TYPE__GPU &&
-        request->backend.outattr.type != YAKSUR_PTR_TYPE__GPU) {
+    if ((request->backend.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
+         request->backend.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
+        (request->backend.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
+         request->backend.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) ||
+        (request->backend.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
+         request->backend.outattr.type == YAKSUR_PTR_TYPE__MANAGED) ||
+        (request->backend.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
+         request->backend.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
+        (request->backend.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
+         request->backend.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) ||
+        (request->backend.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
+         request->backend.outattr.type == YAKSUR_PTR_TYPE__MANAGED) ||
+        (request->backend.inattr.type == YAKSUR_PTR_TYPE__MANAGED &&
+         request->backend.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
+        (request->backend.inattr.type == YAKSUR_PTR_TYPE__MANAGED &&
+         request->backend.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) ||
+        (request->backend.inattr.type == YAKSUR_PTR_TYPE__MANAGED &&
+         request->backend.outattr.type == YAKSUR_PTR_TYPE__MANAGED)) {
         bool is_supported;
         rc = yaksuri_seq_pup_is_supported(type, &is_supported);
         YAKSU_ERR_CHECK(rc, fn_fail);

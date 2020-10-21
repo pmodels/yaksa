@@ -950,43 +950,66 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
         threshold = yaksuri_global.gpudriver[id].hooks->get_iov_unpack_threshold(info);
     }
 
-    if (request->backend.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-        request->backend.outattr.type == YAKSUR_PTR_TYPE__GPU &&
-        request->backend.inattr.device == request->backend.outattr.device) {
+    if (request->backend.inattr.type == YAKSUR_PTR_TYPE__GPU) {
+        if (request->backend.outattr.type == YAKSUR_PTR_TYPE__GPU &&
+            request->backend.inattr.device == request->backend.outattr.device) {
 
-        subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
-        rc = pupfn(id, inbuf, outbuf, count, type, info, request->backend.inattr.device);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-        event_create(id, request->backend.inattr.device, &subreq->u.single.event);
-        event_record(id, subreq->u.single.event);
+            subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
+            rc = pupfn(id, inbuf, outbuf, count, type, info, request->backend.inattr.device);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+            event_create(id, request->backend.inattr.device, &subreq->u.single.event);
+            event_record(id, subreq->u.single.event);
 
-        goto enqueue_subreq;
-    }
+            goto enqueue_subreq;
+        }
 
-    if (request->backend.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-        request->backend.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
-        (type->is_contig || type->size / type->num_contig >= threshold)) {
+        if (request->backend.outattr.type == YAKSUR_PTR_TYPE__MANAGED) {
 
-        subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
-        rc = pupfn(id, inbuf, outbuf, count, type, info, request->backend.inattr.device);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-        event_create(id, request->backend.inattr.device, &subreq->u.single.event);
-        event_record(id, subreq->u.single.event);
+            subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
+            rc = pupfn(id, inbuf, outbuf, count, type, info, request->backend.inattr.device);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+            event_create(id, request->backend.inattr.device, &subreq->u.single.event);
+            event_record(id, subreq->u.single.event);
 
-        goto enqueue_subreq;
-    }
+            goto enqueue_subreq;
+        }
 
-    if (request->backend.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
-        request->backend.outattr.type == YAKSUR_PTR_TYPE__GPU &&
-        (type->is_contig || type->size / type->num_contig >= threshold)) {
+        if (request->backend.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
+            (type->is_contig || type->size / type->num_contig >= threshold)) {
 
-        subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
-        rc = pupfn(id, inbuf, outbuf, count, type, info, request->backend.outattr.device);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-        event_create(id, request->backend.outattr.device, &subreq->u.single.event);
-        event_record(id, subreq->u.single.event);
+            subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
+            rc = pupfn(id, inbuf, outbuf, count, type, info, request->backend.inattr.device);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+            event_create(id, request->backend.inattr.device, &subreq->u.single.event);
+            event_record(id, subreq->u.single.event);
 
-        goto enqueue_subreq;
+            goto enqueue_subreq;
+        }
+    } else if (request->backend.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
+
+        if (request->backend.outattr.type == YAKSUR_PTR_TYPE__GPU &&
+            (type->is_contig || type->size / type->num_contig >= threshold)) {
+
+            subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
+            rc = pupfn(id, inbuf, outbuf, count, type, info, request->backend.outattr.device);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+            event_create(id, request->backend.outattr.device, &subreq->u.single.event);
+            event_record(id, subreq->u.single.event);
+
+            goto enqueue_subreq;
+        }
+    } else if (request->backend.inattr.type == YAKSUR_PTR_TYPE__MANAGED) {
+
+        if (request->backend.outattr.type == YAKSUR_PTR_TYPE__GPU) {
+
+            subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
+            rc = pupfn(id, inbuf, outbuf, count, type, info, request->backend.outattr.device);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+            event_create(id, request->backend.outattr.device, &subreq->u.single.event);
+            event_record(id, subreq->u.single.event);
+
+            goto enqueue_subreq;
+        }
     }
 
     /* we can only take on types where at least one count of the type

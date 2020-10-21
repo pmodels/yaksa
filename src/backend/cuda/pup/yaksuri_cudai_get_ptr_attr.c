@@ -22,6 +22,9 @@ int yaksuri_cudai_get_ptr_attr(const void *buf, yaksur_ptr_attr_s * ptrattr)
         } else if (attr.type == cudaMemoryTypeHost) {
             ptrattr->type = YAKSUR_PTR_TYPE__REGISTERED_HOST;
             ptrattr->device = -1;
+        } else if (attr.type == cudaMemoryTypeManaged) {
+            ptrattr->type = YAKSUR_PTR_TYPE__MANAGED;
+            ptrattr->device = -1;
         } else {
             ptrattr->type = YAKSUR_PTR_TYPE__GPU;
             ptrattr->device = attr.device;

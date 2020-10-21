@@ -19,6 +19,7 @@ typedef struct {
         YAKSUR_PTR_TYPE__UNREGISTERED_HOST,
         YAKSUR_PTR_TYPE__REGISTERED_HOST,
         YAKSUR_PTR_TYPE__GPU,
+        YAKSUR_PTR_TYPE__MANAGED,
     } type;
     int device;
 } yaksur_ptr_attr_s;
