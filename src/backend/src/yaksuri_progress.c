@@ -18,7 +18,7 @@ static yaksuri_request_s *pending_reqs = NULL;
 static pthread_mutex_t progress_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int icopy(yaksuri_gpudriver_id_e id, const void *inbuf, void *outbuf, uintptr_t bytes,
-                 struct yaksi_info_s *info, int device)
+                 yaksi_info_s * info, int device)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -36,7 +36,7 @@ static int icopy(yaksuri_gpudriver_id_e id, const void *inbuf, void *outbuf, uin
 }
 
 static int ipack(yaksuri_gpudriver_id_e id, const void *inbuf, void *outbuf, uintptr_t count,
-                 struct yaksi_type_s *type, struct yaksi_info_s *info, int device)
+                 yaksi_type_s * type, yaksi_info_s * info, int device)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -50,7 +50,7 @@ static int ipack(yaksuri_gpudriver_id_e id, const void *inbuf, void *outbuf, uin
 }
 
 static int iunpack(yaksuri_gpudriver_id_e id, const void *inbuf, void *outbuf, uintptr_t count,
-                   struct yaksi_type_s *type, struct yaksi_info_s *info, int device)
+                   yaksi_type_s * type, yaksi_info_s * info, int device)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -916,7 +916,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
     subreq = (yaksuri_subreq_s *) malloc(sizeof(yaksuri_subreq_s));
 
     int (*pupfn) (yaksuri_gpudriver_id_e id, const void *inbuf, void *outbuf, uintptr_t count,
-                  struct yaksi_type_s * type, struct yaksi_info_s * info, int device);
+                  yaksi_type_s * type, yaksi_info_s * info, int device);
     if (reqpriv->optype == YAKSURI_OPTYPE__PACK) {
         pupfn = ipack;
     } else {
