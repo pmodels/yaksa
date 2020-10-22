@@ -22,8 +22,7 @@ static int get_ptr_attr(const void *buf, yaksur_ptr_attr_s * ptrattr, yaksuri_gp
             rc = yaksuri_global.gpudriver[*id].hooks->get_ptr_attr(buf, ptrattr);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
-            if (ptrattr->type == YAKSUR_PTR_TYPE__GPU ||
-                ptrattr->type == YAKSUR_PTR_TYPE__REGISTERED_HOST)
+            if (ptrattr->type != YAKSUR_PTR_TYPE__UNREGISTERED_HOST)
                 break;
         }
     }
