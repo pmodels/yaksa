@@ -6,10 +6,10 @@
 #ifndef YAKSURI_CUDA_POST_H_INCLUDED
 #define YAKSURI_CUDA_POST_H_INCLUDED
 
-static int yaksuri_cuda_init_hook(yaksur_gpudriver_info_s ** info) ATTRIBUTE((unused));
-static int yaksuri_cuda_init_hook(yaksur_gpudriver_info_s ** info)
+static int yaksuri_cuda_init_hook(yaksur_gpudriver_hooks_s ** hooks) ATTRIBUTE((unused));
+static int yaksuri_cuda_init_hook(yaksur_gpudriver_hooks_s ** hooks)
 {
-    *info = NULL;
+    *hooks = NULL;
 
     return YAKSA_SUCCESS;
 }

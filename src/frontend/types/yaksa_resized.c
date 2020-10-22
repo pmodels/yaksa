@@ -72,11 +72,8 @@ int yaksa_type_create_resized(yaksa_type_t oldtype, intptr_t lb, uintptr_t exten
     rc = yaksi_type_create_resized(intype, lb, extent, &outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    yaksu_handle_t id;
-    rc = yaksi_type_handle_alloc(outtype, &id);
+    rc = yaksi_type_handle_alloc(outtype, newtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
-
-    *newtype = (yaksa_type_t) id;
 
   fn_exit:
     return rc;

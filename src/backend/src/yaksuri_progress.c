@@ -12,318 +12,188 @@
 #include "yaksi.h"
 #include "yaksu.h"
 #include "yaksuri.h"
+#include "yutlist.h"
 
-typedef struct progress_subop_s {
-    uintptr_t count_offset;
-    uintptr_t count;
-    void *gpu_tmpbuf;
-    void *host_tmpbuf;
-    void *interm_event;
-    void *event;
-
-    struct progress_subop_s *next;
-} progress_subop_s;
-
-typedef struct progress_elem_s {
-    struct {
-        yaksuri_puptype_e puptype;
-
-        yaksur_ptr_attr_s inattr;
-        yaksur_ptr_attr_s outattr;
-
-        const void *inbuf;
-        void *outbuf;
-        uintptr_t count;
-        yaksi_type_s *type;
-
-        uintptr_t completed_count;
-        uintptr_t issued_count;
-        progress_subop_s *subop_head;
-        progress_subop_s *subop_tail;
-    } pup;
-
-    yaksi_request_s *request;
-    yaksi_info_s *info;
-    struct progress_elem_s *next;
-} progress_elem_s;
-
-static progress_elem_s *progress_head = NULL;
-static progress_elem_s *progress_tail = NULL;
+static yaksuri_request_s *pending_reqs = NULL;
 static pthread_mutex_t progress_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-#define TMPBUF_SLAB_SIZE  (16 * 1024 * 1024)
-
-/* the dequeue function is not thread safe, as it is always called
- * from within the progress engine */
-static int progress_dequeue(progress_elem_s * elem)
+static int icopy(yaksuri_gpudriver_id_e id, const void *inbuf, void *outbuf, uintptr_t bytes,
+                 struct yaksi_info_s *info, int device)
 {
     int rc = YAKSA_SUCCESS;
 
-    assert(progress_head);
+    yaksi_type_s *byte_type;
+    rc = yaksi_type_get(YAKSA_TYPE__BYTE, &byte_type);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
-    if (progress_head == elem && progress_tail == elem) {
-        progress_head = progress_tail = NULL;
-    } else if (progress_head == elem) {
-        progress_head = progress_head->next;
-    } else {
-        progress_elem_s *tmp;
-        for (tmp = progress_head; tmp->next; tmp = tmp->next)
-            if (tmp->next == elem)
-                break;
-        assert(tmp->next);
-        tmp->next = tmp->next->next;
-        if (tmp->next == NULL)
-            progress_tail = tmp;
-    }
-
-    yaksu_atomic_decr(&elem->request->cc);
-    free(elem);
-
-    return rc;
-}
-
-int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                             yaksi_request_s * request, yaksur_ptr_attr_s inattr,
-                             yaksur_ptr_attr_s outattr, yaksuri_puptype_e puptype,
-                             yaksi_info_s * info)
-{
-    int rc = YAKSA_SUCCESS;
-
-    /* if we need to go through the progress engine, make sure we only
-     * take on types, where at least one count of the type fits into
-     * our temporary buffers. */
-    if (type->size > TMPBUF_SLAB_SIZE) {
-        rc = YAKSA_ERR__NOT_SUPPORTED;
-        goto fn_exit;
-    }
-
-    /* enqueue to the progress engine */
-    progress_elem_s *newelem;
-    newelem = (progress_elem_s *) malloc(sizeof(progress_elem_s));
-
-    newelem->pup.puptype = puptype;
-    newelem->pup.inattr = inattr;
-    newelem->pup.outattr = outattr;
-    newelem->pup.inbuf = inbuf;
-    newelem->pup.outbuf = outbuf;
-    newelem->pup.count = count;
-    newelem->pup.type = type;
-    newelem->pup.completed_count = 0;
-    newelem->pup.issued_count = 0;
-    newelem->pup.subop_head = newelem->pup.subop_tail = NULL;
-    newelem->request = request;
-    newelem->info = info;
-    newelem->next = NULL;
-
-    /* enqueue the new element */
-    yaksu_atomic_incr(&request->cc);
-    pthread_mutex_lock(&progress_mutex);
-    if (progress_tail == NULL) {
-        progress_head = progress_tail = newelem;
-    } else {
-        progress_tail->next = newelem;
-        progress_tail = newelem;
-    }
-    pthread_mutex_unlock(&progress_mutex);
+    rc = yaksuri_global.gpudriver[id].hooks->ipack(inbuf, outbuf, bytes, byte_type, info, device);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
     return rc;
+  fn_fail:
+    goto fn_exit;
 }
 
-static int alloc_subop(progress_subop_s ** subop)
+static int ipack(yaksuri_gpudriver_id_e id, const void *inbuf, void *outbuf, uintptr_t count,
+                 struct yaksi_type_s *type, struct yaksi_info_s *info, int device)
 {
     int rc = YAKSA_SUCCESS;
-    progress_elem_s *elem = progress_head;
-    uintptr_t gpu_tmpbuf_offset = 0, host_tmpbuf_offset = 0;
-    uintptr_t nelems = UINTPTR_MAX;
-    yaksuri_request_s *request_backend = (yaksuri_request_s *) elem->request->backend.priv;
-    yaksuri_gpudriver_id_e id = request_backend->gpudriver_id;
-    bool need_gpu_tmpbuf = false, need_host_tmpbuf = false;
-    int devid = INT_MIN;
 
-    if ((elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
-         elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-         elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) ||
-        (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
-         elem->pup.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
-         elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU) ||
-        (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
-         elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
-         elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU) ||
-        (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
-         elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
-         elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU) ||
-        (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
-         elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-         elem->pup.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
-        (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
-         elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-         elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST)) {
-        need_host_tmpbuf = true;
-    }
+    rc = yaksuri_global.gpudriver[id].hooks->ipack(inbuf, outbuf, count, type, info, device);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
-    if (elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-        elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU) {
-        bool is_enabled;
-        rc = yaksuri_global.gpudriver[id].info->check_p2p_comm(elem->pup.inattr.device,
-                                                               elem->pup.outattr.device,
-                                                               &is_enabled);
-        YAKSU_ERR_CHECK(rc, fn_fail);
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
 
-        if (!is_enabled) {
-            need_host_tmpbuf = true;
-        }
-    }
+static int iunpack(yaksuri_gpudriver_id_e id, const void *inbuf, void *outbuf, uintptr_t count,
+                   struct yaksi_type_s *type, struct yaksi_info_s *info, int device)
+{
+    int rc = YAKSA_SUCCESS;
 
-    if ((elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
-         elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-         elem->pup.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
-        (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
-         elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-         elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) ||
-        (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
-         elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-         elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU)) {
-        need_gpu_tmpbuf = true;
-        devid = elem->pup.inattr.device;
-    }
+    rc = yaksuri_global.gpudriver[id].hooks->iunpack(inbuf, outbuf, count, type, info, device);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
-    if ((elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
-         elem->pup.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
-         elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU) ||
-        (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
-         elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
-         elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU) ||
-        (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
-         elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-         elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU)) {
-        need_gpu_tmpbuf = true;
-        devid = elem->pup.outattr.device;
-    }
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
 
-    assert(need_host_tmpbuf || need_gpu_tmpbuf);
+static int check_p2p_comm(yaksuri_gpudriver_id_e id, int indev, int outdev, bool * is_enabled)
+{
+    int rc = YAKSA_SUCCESS;
 
-    *subop = NULL;
+    rc = yaksuri_global.gpudriver[id].hooks->check_p2p_comm(indev, outdev, is_enabled);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
-    /* figure out if we actually have enough buffer space */
-    if (need_gpu_tmpbuf) {
-        uintptr_t d_nelems;
-        if (yaksuri_global.gpudriver[id].device[devid].slab_head_offset == 0 &&
-            yaksuri_global.gpudriver[id].device[devid].slab_tail_offset == 0) {
-            d_nelems = TMPBUF_SLAB_SIZE / elem->pup.type->size;
-            gpu_tmpbuf_offset = yaksuri_global.gpudriver[id].device[devid].slab_tail_offset;
-        } else if (yaksuri_global.gpudriver[id].device[devid].slab_tail_offset >
-                   yaksuri_global.gpudriver[id].device[devid].slab_head_offset) {
-            uintptr_t count =
-                (TMPBUF_SLAB_SIZE -
-                 yaksuri_global.gpudriver[id].device[devid].slab_tail_offset) /
-                elem->pup.type->size;
-            if (count) {
-                d_nelems = count;
-                gpu_tmpbuf_offset = yaksuri_global.gpudriver[id].device[devid].slab_tail_offset;
-            } else {
-                d_nelems =
-                    yaksuri_global.gpudriver[id].device[devid].slab_head_offset /
-                    elem->pup.type->size;
-                gpu_tmpbuf_offset = 0;
-            }
-        } else {
-            d_nelems =
-                (yaksuri_global.gpudriver[id].device[devid].slab_head_offset -
-                 yaksuri_global.gpudriver[id].device[devid].slab_tail_offset) /
-                elem->pup.type->size;
-            gpu_tmpbuf_offset = yaksuri_global.gpudriver[id].device[devid].slab_tail_offset;
-        }
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
 
-        if (nelems > d_nelems)
-            nelems = d_nelems;
-    }
+static int event_create(yaksuri_gpudriver_id_e id, int device, void **event)
+{
+    int rc = YAKSA_SUCCESS;
 
-    if (need_host_tmpbuf) {
-        uintptr_t h_nelems;
-        if (yaksuri_global.gpudriver[id].host.slab_head_offset == 0 &&
-            yaksuri_global.gpudriver[id].host.slab_tail_offset == 0) {
-            h_nelems = TMPBUF_SLAB_SIZE / elem->pup.type->size;
-            host_tmpbuf_offset = yaksuri_global.gpudriver[id].host.slab_tail_offset;
-        } else if (yaksuri_global.gpudriver[id].host.slab_tail_offset >
-                   yaksuri_global.gpudriver[id].host.slab_head_offset) {
-            uintptr_t count =
-                (TMPBUF_SLAB_SIZE -
-                 yaksuri_global.gpudriver[id].host.slab_tail_offset) / elem->pup.type->size;
-            if (count) {
-                h_nelems = count;
-                host_tmpbuf_offset = yaksuri_global.gpudriver[id].host.slab_tail_offset;
-            } else {
-                h_nelems =
-                    yaksuri_global.gpudriver[id].host.slab_head_offset / elem->pup.type->size;
-                host_tmpbuf_offset = 0;
-            }
-        } else {
-            h_nelems =
-                (yaksuri_global.gpudriver[id].host.slab_head_offset -
-                 yaksuri_global.gpudriver[id].host.slab_tail_offset) / elem->pup.type->size;
-            host_tmpbuf_offset = yaksuri_global.gpudriver[id].host.slab_tail_offset;
-        }
+    rc = yaksuri_global.gpudriver[id].hooks->event_create(device, event);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
-        if (nelems > h_nelems)
-            nelems = h_nelems;
-    }
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
 
-    if (nelems > elem->pup.count - elem->pup.completed_count - elem->pup.issued_count)
-        nelems = elem->pup.count - elem->pup.completed_count - elem->pup.issued_count;
+static int event_destroy(yaksuri_gpudriver_id_e id, void *event)
+{
+    int rc = YAKSA_SUCCESS;
 
-    /* if we don't have enough space, return */
-    if (nelems == 0) {
-        goto fn_exit;
-    }
+    rc = yaksuri_global.gpudriver[id].hooks->event_destroy(event);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
 
-    /* allocate the actual buffer space */
-    if (need_gpu_tmpbuf) {
-        if (yaksuri_global.gpudriver[id].device[devid].slab == NULL) {
-            yaksuri_global.gpudriver[id].device[devid].slab =
-                yaksuri_global.gpudriver[id].info->gpu_malloc(TMPBUF_SLAB_SIZE, id);
-        }
-        yaksuri_global.gpudriver[id].device[devid].slab_tail_offset =
-            gpu_tmpbuf_offset + nelems * elem->pup.type->size;
-    }
+static int event_record(yaksuri_gpudriver_id_e id, void *event)
+{
+    int rc = YAKSA_SUCCESS;
 
-    if (need_host_tmpbuf) {
-        if (yaksuri_global.gpudriver[id].host.slab == NULL) {
-            yaksuri_global.gpudriver[id].host.slab =
-                yaksuri_global.gpudriver[id].info->host_malloc(TMPBUF_SLAB_SIZE);
-        }
-        yaksuri_global.gpudriver[id].host.slab_tail_offset =
-            host_tmpbuf_offset + nelems * elem->pup.type->size;
-    }
+    rc = yaksuri_global.gpudriver[id].hooks->event_record(event);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
 
-    /* allocate the subop */
-    *subop = (progress_subop_s *) malloc(sizeof(progress_subop_s));
+static int event_query(yaksuri_gpudriver_id_e id, void *event, int *completed)
+{
+    int rc = YAKSA_SUCCESS;
 
-    (*subop)->count_offset = elem->pup.completed_count + elem->pup.issued_count;
-    (*subop)->count = nelems;
-    if (need_gpu_tmpbuf)
-        (*subop)->gpu_tmpbuf =
-            (void *) ((char *) yaksuri_global.gpudriver[id].device[devid].slab + gpu_tmpbuf_offset);
-    else
-        (*subop)->gpu_tmpbuf = NULL;
+    rc = yaksuri_global.gpudriver[id].hooks->event_query(event, completed);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
-    if (need_host_tmpbuf)
-        (*subop)->host_tmpbuf =
-            (void *) ((char *) yaksuri_global.gpudriver[id].host.slab + host_tmpbuf_offset);
-    else
-        (*subop)->host_tmpbuf = NULL;
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
 
-    (*subop)->interm_event = NULL;
-    (*subop)->event = NULL;
-    (*subop)->next = NULL;
+static int event_add_dependency(yaksuri_gpudriver_id_e id, void *event, int device)
+{
+    int rc = YAKSA_SUCCESS;
 
-    if (elem->pup.subop_tail == NULL) {
-        assert(elem->pup.subop_head == NULL);
-        elem->pup.subop_head = elem->pup.subop_tail = *subop;
+    rc = yaksuri_global.gpudriver[id].hooks->event_add_dependency(event, device);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
+static int alloc_chunk(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subreq,
+                       yaksuri_subreq_chunk_s ** chunk)
+{
+    int rc = YAKSA_SUCCESS;
+
+    assert(subreq);
+    assert(subreq->kind == YAKSURI_SUBREQ_KIND__MULTI_CHUNK);
+
+    /* allocate the chunk */
+    *chunk = (yaksuri_subreq_chunk_s *) malloc(sizeof(yaksuri_subreq_chunk_s));
+
+    (*chunk)->count_offset = subreq->u.multiple.issued_count;
+    uintptr_t count_per_chunk = YAKSURI_TMPBUF_EL_SIZE / subreq->u.multiple.type->size;
+    if ((*chunk)->count_offset + count_per_chunk <= subreq->u.multiple.count) {
+        (*chunk)->count = count_per_chunk;
     } else {
-        elem->pup.subop_tail->next = *subop;
+        (*chunk)->count = subreq->u.multiple.count - (*chunk)->count_offset;
+    }
+
+    (*chunk)->event = NULL;
+
+    DL_APPEND(subreq->u.multiple.chunks, (*chunk));
+
+    return rc;
+}
+
+static int simple_release(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subreq,
+                          yaksuri_subreq_chunk_s * chunk)
+{
+    int rc = YAKSA_SUCCESS;
+    yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+
+    /* cleanup */
+    if (chunk->event) {
+        rc = event_destroy(id, chunk->event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+    }
+
+    for (int i = 0; i < chunk->num_tmpbufs; i++) {
+        rc = yaksu_buffer_pool_elem_free(chunk->tmpbufs[i].pool, chunk->tmpbufs[i].buf);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+    }
+
+    DL_DELETE(subreq->u.multiple.chunks, chunk);
+    free(chunk);
+
+    if (subreq->u.multiple.chunks == NULL) {
+        DL_DELETE(reqpriv->subreqs, subreq);
+        free(subreq);
+    }
+    if (reqpriv->subreqs == NULL) {
+        HASH_DEL(pending_reqs, reqpriv);
+        yaksu_atomic_decr(&reqpriv->request->cc);
     }
 
   fn_exit:
@@ -332,74 +202,841 @@ static int alloc_subop(progress_subop_s ** subop)
     goto fn_exit;
 }
 
-static int free_subop(progress_subop_s * subop)
+static int pack_d2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subreq,
+                            yaksuri_subreq_chunk_s ** chunk)
 {
     int rc = YAKSA_SUCCESS;
-    progress_elem_s *elem = progress_head;
-    yaksuri_request_s *request_backend = (yaksuri_request_s *) elem->request->backend.priv;
-    yaksuri_gpudriver_id_e id = request_backend->gpudriver_id;
+    yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    if (subop->interm_event) {
-        rc = yaksuri_global.gpudriver[id].info->event_destroy(subop->interm_event);
+    assert(reqpriv->inattr.device != reqpriv->outattr.device);
+
+    *chunk = NULL;
+
+    bool is_enabled;
+    rc = check_p2p_comm(id, reqpriv->inattr.device, reqpriv->outattr.device, &is_enabled);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+    assert(is_enabled);
+
+    if (is_enabled) {
+        /* p2p is enabled: we need a temporary buffer on the source device */
+        void *d_buf;
+        rc = yaksu_buffer_pool_elem_alloc(yaksuri_global.
+                                          gpudriver[id].device[reqpriv->inattr.device], &d_buf);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        if (d_buf == NULL)
+            goto fn_exit;
+
+        /* we have the temporary buffer, so we can safely issue this
+         * operation */
+        rc = alloc_chunk(reqpriv, subreq, chunk);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        (*chunk)->num_tmpbufs = 1;
+        (*chunk)->tmpbufs[0].buf = d_buf;
+        (*chunk)->tmpbufs[0].pool = yaksuri_global.gpudriver[id].device[reqpriv->inattr.device];
+
+        /* first pack data from the origin buffer into the temporary buffer */
+        const char *sbuf =
+            (const char *) subreq->u.multiple.inbuf +
+            (*chunk)->count_offset * subreq->u.multiple.type->extent;
+
+        rc = ipack(id, sbuf, d_buf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+                   reqpriv->inattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        /* second copy the data into the target device */
+        char *dbuf =
+            (char *) subreq->u.multiple.outbuf +
+            (*chunk)->count_offset * subreq->u.multiple.type->size;
+
+        rc = icopy(id, d_buf, dbuf, (*chunk)->count * subreq->u.multiple.type->size, reqpriv->info,
+                   reqpriv->inattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        event_create(id, reqpriv->inattr.device, &(*chunk)->event);
+        event_record(id, (*chunk)->event);
+    } else {
+        /* p2p is not enabled: we need two temporary buffers, one on
+         * the source device and one on the host */
+        void *d_buf, *rh_buf;
+
+        rc = yaksu_buffer_pool_elem_alloc(yaksuri_global.
+                                          gpudriver[id].device[reqpriv->inattr.device], &d_buf);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        if (d_buf == NULL)
+            goto fn_exit;
+
+        rc = yaksu_buffer_pool_elem_alloc(yaksuri_global.gpudriver[id].host, &rh_buf);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        if (rh_buf == NULL) {
+            if (d_buf) {
+                rc = yaksu_buffer_pool_elem_free(yaksuri_global.
+                                                 gpudriver[id].device[reqpriv->inattr.device],
+                                                 d_buf);
+                YAKSU_ERR_CHECK(rc, fn_fail);
+            }
+            goto fn_exit;
+        }
+
+        /* we have the temporary buffers, so we can safely issue this
+         * operation */
+        rc = alloc_chunk(reqpriv, subreq, chunk);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        (*chunk)->num_tmpbufs = 2;
+        (*chunk)->tmpbufs[0].buf = d_buf;
+        (*chunk)->tmpbufs[0].pool = yaksuri_global.gpudriver[id].device[reqpriv->inattr.device];
+        (*chunk)->tmpbufs[1].buf = rh_buf;
+        (*chunk)->tmpbufs[1].pool = yaksuri_global.gpudriver[id].host;
+
+        /* first pack data from the origin buffer into the temporary buffer */
+        const char *sbuf =
+            (const char *) subreq->u.multiple.inbuf +
+            (*chunk)->count_offset * subreq->u.multiple.type->extent;
+
+        rc = ipack(id, sbuf, d_buf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+                   reqpriv->inattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        /* second copy the data into the temporary host buffer */
+        rc = icopy(id, d_buf, rh_buf, (*chunk)->count * subreq->u.multiple.type->size,
+                   reqpriv->info, reqpriv->inattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        /* third DMA from the host temporary buffer to the target device */
+        void *event;
+        rc = event_create(id, reqpriv->inattr.device, &event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = event_record(id, event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = event_add_dependency(id, event, reqpriv->outattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = event_destroy(id, event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        char *dbuf =
+            (char *) subreq->u.multiple.outbuf +
+            (*chunk)->count_offset * subreq->u.multiple.type->size;
+
+        rc = icopy(id, rh_buf, dbuf, (*chunk)->count * subreq->u.multiple.type->size,
+                   reqpriv->info, reqpriv->outattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = event_create(id, reqpriv->outattr.device, &(*chunk)->event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = event_record(id, (*chunk)->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
-    rc = yaksuri_global.gpudriver[id].info->event_destroy(subop->event);
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
+static int pack_d2rh_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subreq,
+                             yaksuri_subreq_chunk_s ** chunk)
+{
+    int rc = YAKSA_SUCCESS;
+    yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+
+    *chunk = NULL;
+
+    /* we need a temporary buffer on the source device */
+    void *d_buf;
+    rc = yaksu_buffer_pool_elem_alloc(yaksuri_global.gpudriver[id].device[reqpriv->inattr.device],
+                                      &d_buf);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    /* free the device buffer */
-    if (subop->gpu_tmpbuf) {
-        int devid;
+    if (d_buf == NULL)
+        goto fn_exit;
 
-        if (elem->pup.puptype == YAKSURI_PUPTYPE__PACK)
-            devid = elem->pup.inattr.device;
-        else
-            devid = elem->pup.outattr.device;
+    /* we have the temporary buffer, so we can safely issue this
+     * operation */
+    rc = alloc_chunk(reqpriv, subreq, chunk);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
-        assert(subop->gpu_tmpbuf ==
-               (char *) yaksuri_global.gpudriver[id].device[devid].slab +
-               yaksuri_global.gpudriver[id].device[devid].slab_head_offset);
-        if (subop->next) {
-            yaksuri_global.gpudriver[id].device[devid].slab_head_offset =
-                (uintptr_t) ((char *) subop->next->gpu_tmpbuf -
-                             (char *) yaksuri_global.gpudriver[id].device[devid].slab);
-        } else {
-            yaksuri_global.gpudriver[id].device[devid].slab_head_offset =
-                yaksuri_global.gpudriver[id].device[devid].slab_tail_offset = 0;
+    (*chunk)->num_tmpbufs = 1;
+    (*chunk)->tmpbufs[0].buf = d_buf;
+    (*chunk)->tmpbufs[0].pool = yaksuri_global.gpudriver[id].device[reqpriv->inattr.device];
+
+    /* first pack data from the origin buffer into the temporary buffer */
+    const char *sbuf;
+    sbuf = (const char *) subreq->u.multiple.inbuf +
+        (*chunk)->count_offset * subreq->u.multiple.type->extent;
+
+    rc = ipack(id, sbuf, d_buf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+               reqpriv->inattr.device);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    /* second copy the data into the destination buffer */
+    char *dbuf;
+    dbuf =
+        (char *) subreq->u.multiple.outbuf + (*chunk)->count_offset * subreq->u.multiple.type->size;
+
+    rc = icopy(id, d_buf, dbuf, (*chunk)->count * subreq->u.multiple.type->size, reqpriv->info,
+               reqpriv->inattr.device);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    event_create(id, reqpriv->inattr.device, &(*chunk)->event);
+    event_record(id, (*chunk)->event);
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
+static int pack_d2urh_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subreq,
+                              yaksuri_subreq_chunk_s ** chunk)
+{
+    int rc = YAKSA_SUCCESS;
+    yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+
+    *chunk = NULL;
+
+    /* we need two temporary buffers, one on the source device and one
+     * on the host */
+    void *d_buf, *rh_buf;
+
+    rc = yaksu_buffer_pool_elem_alloc(yaksuri_global.gpudriver[id].device[reqpriv->inattr.device],
+                                      &d_buf);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (d_buf == NULL)
+        goto fn_exit;
+
+    rc = yaksu_buffer_pool_elem_alloc(yaksuri_global.gpudriver[id].host, &rh_buf);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (rh_buf == NULL) {
+        if (d_buf) {
+            rc = yaksu_buffer_pool_elem_free(yaksuri_global.
+                                             gpudriver[id].device[reqpriv->inattr.device], d_buf);
+            YAKSU_ERR_CHECK(rc, fn_fail);
         }
+        goto fn_exit;
     }
 
-    /* free the host buffer */
-    if (subop->host_tmpbuf) {
-        assert(subop->host_tmpbuf ==
-               (char *) yaksuri_global.gpudriver[id].host.slab +
-               yaksuri_global.gpudriver[id].host.slab_head_offset);
-        if (subop->next) {
-            yaksuri_global.gpudriver[id].host.slab_head_offset =
-                (uintptr_t) ((char *) subop->next->gpu_tmpbuf -
-                             (char *) yaksuri_global.gpudriver[id].host.slab);
-        } else {
-            yaksuri_global.gpudriver[id].host.slab_head_offset =
-                yaksuri_global.gpudriver[id].host.slab_tail_offset = 0;
-        }
-    }
+    /* we have the temporary buffers, so we can safely issue this
+     * operation */
+    rc = alloc_chunk(reqpriv, subreq, chunk);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
-    if (elem->pup.subop_head == subop && elem->pup.subop_tail == subop) {
-        elem->pup.subop_head = elem->pup.subop_tail = NULL;
-    } else if (elem->pup.subop_head == subop) {
-        elem->pup.subop_head = subop->next;
+    (*chunk)->num_tmpbufs = 2;
+    (*chunk)->tmpbufs[0].buf = d_buf;
+    (*chunk)->tmpbufs[0].pool = yaksuri_global.gpudriver[id].device[reqpriv->inattr.device];
+    (*chunk)->tmpbufs[1].buf = rh_buf;
+    (*chunk)->tmpbufs[1].pool = yaksuri_global.gpudriver[id].host;
+
+    /* first pack data from the origin buffer into the temporary buffer */
+    const char *sbuf;
+    sbuf = (const char *) subreq->u.multiple.inbuf +
+        (*chunk)->count_offset * subreq->u.multiple.type->extent;
+
+    rc = ipack(id, sbuf, d_buf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+               reqpriv->inattr.device);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    /* second copy the data into the temporary host buffer */
+    rc = icopy(id, d_buf, rh_buf, (*chunk)->count * subreq->u.multiple.type->size,
+               reqpriv->info, reqpriv->inattr.device);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    rc = event_create(id, reqpriv->inattr.device, &(*chunk)->event);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    rc = event_record(id, (*chunk)->event);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
+static int pack_d2urh_release(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subreq,
+                              yaksuri_subreq_chunk_s * chunk)
+{
+    int rc = YAKSA_SUCCESS;
+
+    yaksi_type_s *byte_type;
+    rc = yaksi_type_get(YAKSA_TYPE__BYTE, &byte_type);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    char *dbuf;
+    dbuf = (char *) subreq->u.multiple.outbuf + chunk->count_offset * subreq->u.multiple.type->size;
+    rc = yaksuri_seq_ipack(chunk->tmpbufs[1].buf, dbuf,
+                           chunk->count * subreq->u.multiple.type->size, byte_type, reqpriv->info);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    rc = simple_release(reqpriv, subreq, chunk);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
+static int pack_h2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subreq,
+                            yaksuri_subreq_chunk_s ** chunk)
+{
+    int rc = YAKSA_SUCCESS;
+    yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+
+    *chunk = NULL;
+
+    /* we need a host temporary buffer */
+    void *rh_buf;
+
+    rc = yaksu_buffer_pool_elem_alloc(yaksuri_global.gpudriver[id].host, &rh_buf);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (rh_buf == NULL)
+        goto fn_exit;
+
+    /* we have the temporary buffers, so we can safely issue this
+     * operation */
+    rc = alloc_chunk(reqpriv, subreq, chunk);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    (*chunk)->num_tmpbufs = 1;
+    (*chunk)->tmpbufs[0].buf = rh_buf;
+    (*chunk)->tmpbufs[0].pool = yaksuri_global.gpudriver[id].host;
+
+    /* first pack data from the origin buffer into the temporary buffer */
+    const char *sbuf;
+    sbuf = (const char *) subreq->u.multiple.inbuf +
+        (*chunk)->count_offset * subreq->u.multiple.type->extent;
+
+    rc = yaksuri_seq_ipack(sbuf, rh_buf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    /* second copy the data into the target device */
+    char *dbuf;
+    dbuf =
+        (char *) subreq->u.multiple.outbuf + (*chunk)->count_offset * subreq->u.multiple.type->size;
+
+    rc = icopy(id, rh_buf, dbuf, (*chunk)->count * subreq->u.multiple.type->size, reqpriv->info,
+               reqpriv->outattr.device);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    event_create(id, reqpriv->outattr.device, &(*chunk)->event);
+    event_record(id, (*chunk)->event);
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
+static int unpack_d2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subreq,
+                              yaksuri_subreq_chunk_s ** chunk)
+{
+    int rc = YAKSA_SUCCESS;
+    yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+
+    assert(reqpriv->inattr.device != reqpriv->outattr.device);
+
+    *chunk = NULL;
+
+    bool is_enabled;
+    rc = check_p2p_comm(id, reqpriv->inattr.device, reqpriv->outattr.device, &is_enabled);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (is_enabled) {
+        /* p2p is enabled: we need a temporary buffer on the destination device */
+        void *d_buf;
+        rc = yaksu_buffer_pool_elem_alloc(yaksuri_global.
+                                          gpudriver[id].device[reqpriv->outattr.device], &d_buf);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        if (d_buf == NULL)
+            goto fn_exit;
+
+        /* we have the temporary buffer, so we can safely issue this
+         * operation */
+        rc = alloc_chunk(reqpriv, subreq, chunk);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        (*chunk)->num_tmpbufs = 1;
+        (*chunk)->tmpbufs[0].buf = d_buf;
+        (*chunk)->tmpbufs[0].pool = yaksuri_global.gpudriver[id].device[reqpriv->outattr.device];
+
+        /* first copy the data from the origin buffer into the
+         * temporary buffer */
+        const char *sbuf;
+        sbuf = (const char *) subreq->u.multiple.inbuf +
+            (*chunk)->count_offset * subreq->u.multiple.type->size;
+
+        rc = icopy(id, sbuf, d_buf, (*chunk)->count * subreq->u.multiple.type->size, reqpriv->info,
+                   reqpriv->inattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        /* second unpack the data into the destination buffer */
+        void *event;
+        rc = event_create(id, reqpriv->inattr.device, &event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = event_record(id, event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = event_add_dependency(id, event, reqpriv->outattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = event_destroy(id, event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        char *dbuf;
+        dbuf = (char *) subreq->u.multiple.outbuf +
+            (*chunk)->count_offset * subreq->u.multiple.type->extent;
+
+        rc = iunpack(id, d_buf, dbuf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+                     reqpriv->outattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        event_create(id, reqpriv->outattr.device, &(*chunk)->event);
+        event_record(id, (*chunk)->event);
     } else {
-        for (progress_subop_s * tmp = elem->pup.subop_head; tmp->next; tmp = tmp->next) {
-            if (tmp->next == subop) {
-                tmp->next = subop->next;
-                if (elem->pup.subop_tail == subop)
-                    elem->pup.subop_tail = tmp;
-                break;
+        /* p2p is not enabled: we need two temporary buffers, one on
+         * the destination device and one on the host */
+        void *d_buf, *rh_buf;
+
+        rc = yaksu_buffer_pool_elem_alloc(yaksuri_global.
+                                          gpudriver[id].device[reqpriv->outattr.device], &d_buf);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        if (d_buf == NULL)
+            goto fn_exit;
+
+        rc = yaksu_buffer_pool_elem_alloc(yaksuri_global.gpudriver[id].host, &rh_buf);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        if (rh_buf == NULL) {
+            if (d_buf) {
+                rc = yaksu_buffer_pool_elem_free(yaksuri_global.
+                                                 gpudriver[id].device[reqpriv->outattr.device],
+                                                 d_buf);
+                YAKSU_ERR_CHECK(rc, fn_fail);
+            }
+            goto fn_exit;
+        }
+
+        /* we have the temporary buffers, so we can safely issue this
+         * operation */
+        rc = alloc_chunk(reqpriv, subreq, chunk);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        (*chunk)->num_tmpbufs = 2;
+        (*chunk)->tmpbufs[0].buf = d_buf;
+        (*chunk)->tmpbufs[0].pool = yaksuri_global.gpudriver[id].device[reqpriv->outattr.device];
+        (*chunk)->tmpbufs[1].buf = rh_buf;
+        (*chunk)->tmpbufs[1].pool = yaksuri_global.gpudriver[id].host;
+
+        /* first copy data from the origin buffer into the temporary host buffer */
+        const char *sbuf;
+        sbuf = (const char *) subreq->u.multiple.inbuf +
+            (*chunk)->count_offset * subreq->u.multiple.type->size;
+
+        rc = icopy(id, sbuf, rh_buf, (*chunk)->count * subreq->u.multiple.type->size, reqpriv->info,
+                   reqpriv->inattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        /* second copy the data from the temporary host buffer into the
+         * temporary destination device buffer */
+        void *event;
+        rc = event_create(id, reqpriv->inattr.device, &event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = event_record(id, event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = event_add_dependency(id, event, reqpriv->outattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = event_destroy(id, event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = icopy(id, rh_buf, d_buf, (*chunk)->count * subreq->u.multiple.type->size,
+                   reqpriv->info, reqpriv->outattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        /* third unpack from the temporary device buffer to the destination buffer */
+        char *dbuf;
+        dbuf = (char *) subreq->u.multiple.outbuf +
+            (*chunk)->count_offset * subreq->u.multiple.type->extent;
+
+        rc = iunpack(id, d_buf, dbuf, (*chunk)->count, subreq->u.multiple.type,
+                     reqpriv->info, reqpriv->outattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = event_create(id, reqpriv->outattr.device, &(*chunk)->event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = event_record(id, (*chunk)->event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+    }
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
+static int unpack_rh2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subreq,
+                               yaksuri_subreq_chunk_s ** chunk)
+{
+    int rc = YAKSA_SUCCESS;
+    yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+
+    *chunk = NULL;
+
+    /* we need a temporary buffer on the destination device */
+    void *d_buf;
+    rc = yaksu_buffer_pool_elem_alloc(yaksuri_global.gpudriver[id].device[reqpriv->outattr.device],
+                                      &d_buf);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (d_buf == NULL)
+        goto fn_exit;
+
+    /* we have the temporary buffer, so we can safely issue this
+     * operation */
+    rc = alloc_chunk(reqpriv, subreq, chunk);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    (*chunk)->num_tmpbufs = 1;
+    (*chunk)->tmpbufs[0].buf = d_buf;
+    (*chunk)->tmpbufs[0].pool = yaksuri_global.gpudriver[id].device[reqpriv->outattr.device];
+
+    /* first copy the data from the origin buffer into the temporary
+     * device buffer */
+    const char *sbuf;
+    sbuf = (const char *) subreq->u.multiple.inbuf +
+        (*chunk)->count_offset * subreq->u.multiple.type->size;
+
+    rc = icopy(id, sbuf, d_buf, (*chunk)->count * subreq->u.multiple.type->size, reqpriv->info,
+               reqpriv->outattr.device);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    /* second unpack the data into the destination buffer */
+    char *dbuf;
+    dbuf = (char *) subreq->u.multiple.outbuf +
+        (*chunk)->count_offset * subreq->u.multiple.type->extent;
+
+    rc = iunpack(id, d_buf, dbuf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+                 reqpriv->outattr.device);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    event_create(id, reqpriv->outattr.device, &(*chunk)->event);
+    event_record(id, (*chunk)->event);
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
+static int unpack_urh2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subreq,
+                                yaksuri_subreq_chunk_s ** chunk)
+{
+    int rc = YAKSA_SUCCESS;
+    yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+
+    *chunk = NULL;
+
+    /* we need two temporary buffers, one on the destination device
+     * and one on the host */
+    void *d_buf, *rh_buf;
+
+    rc = yaksu_buffer_pool_elem_alloc(yaksuri_global.gpudriver[id].device[reqpriv->outattr.device],
+                                      &d_buf);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (d_buf == NULL)
+        goto fn_exit;
+
+    rc = yaksu_buffer_pool_elem_alloc(yaksuri_global.gpudriver[id].host, &rh_buf);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (rh_buf == NULL) {
+        if (d_buf) {
+            rc = yaksu_buffer_pool_elem_free(yaksuri_global.
+                                             gpudriver[id].device[reqpriv->outattr.device], d_buf);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+        }
+        goto fn_exit;
+    }
+
+    /* we have the temporary buffer, so we can safely issue this
+     * operation */
+    rc = alloc_chunk(reqpriv, subreq, chunk);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    (*chunk)->num_tmpbufs = 2;
+    (*chunk)->tmpbufs[0].buf = d_buf;
+    (*chunk)->tmpbufs[0].pool = yaksuri_global.gpudriver[id].device[reqpriv->outattr.device];
+    (*chunk)->tmpbufs[1].buf = rh_buf;
+    (*chunk)->tmpbufs[1].pool = yaksuri_global.gpudriver[id].host;
+
+    /* first copy the data into a temporary host buffer */
+    const char *sbuf;
+    sbuf = (const char *) subreq->u.multiple.inbuf +
+        (*chunk)->count_offset * subreq->u.multiple.type->size;
+
+    yaksi_type_s *byte_type;
+    rc = yaksi_type_get(YAKSA_TYPE__BYTE, &byte_type);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    rc = yaksuri_seq_ipack(sbuf, rh_buf, (*chunk)->count * subreq->u.multiple.type->size,
+                           byte_type, reqpriv->info);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    /* second copy the data from the origin buffer into the temporary
+     * buffer */
+    rc = icopy(id, rh_buf, d_buf, (*chunk)->count * subreq->u.multiple.type->size, reqpriv->info,
+               reqpriv->outattr.device);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    /* third unpack the data into the destination buffer */
+    char *dbuf;
+    dbuf = (char *) subreq->u.multiple.outbuf +
+        (*chunk)->count_offset * subreq->u.multiple.type->extent;
+
+    rc = iunpack(id, d_buf, dbuf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+                 reqpriv->outattr.device);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    event_create(id, reqpriv->outattr.device, &(*chunk)->event);
+    event_record(id, (*chunk)->event);
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
+static int unpack_d2h_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subreq,
+                              yaksuri_subreq_chunk_s ** chunk)
+{
+    int rc = YAKSA_SUCCESS;
+    yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+
+    *chunk = NULL;
+
+    /* we need a temporary buffer on the host */
+    void *rh_buf;
+    rc = yaksu_buffer_pool_elem_alloc(yaksuri_global.gpudriver[id].host, &rh_buf);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (rh_buf == NULL)
+        goto fn_exit;
+
+    /* we have the temporary buffer, so we can safely issue this
+     * operation */
+    rc = alloc_chunk(reqpriv, subreq, chunk);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    (*chunk)->num_tmpbufs = 1;
+    (*chunk)->tmpbufs[0].buf = rh_buf;
+    (*chunk)->tmpbufs[0].pool = yaksuri_global.gpudriver[id].host;
+
+    /* first copy the data from the origin buffer into the temporary
+     * host buffer */
+    const char *sbuf;
+    sbuf = (const char *) subreq->u.multiple.inbuf +
+        (*chunk)->count_offset * subreq->u.multiple.type->size;
+
+    rc = icopy(id, sbuf, rh_buf, (*chunk)->count * subreq->u.multiple.type->size, reqpriv->info,
+               reqpriv->inattr.device);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    event_create(id, reqpriv->inattr.device, &(*chunk)->event);
+    event_record(id, (*chunk)->event);
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
+static int unpack_d2h_release(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subreq,
+                              yaksuri_subreq_chunk_s * chunk)
+{
+    int rc = YAKSA_SUCCESS;
+
+    char *dbuf;
+    dbuf =
+        (char *) subreq->u.multiple.outbuf + chunk->count_offset * subreq->u.multiple.type->extent;
+    rc = yaksuri_seq_iunpack(chunk->tmpbufs[0].buf, dbuf, chunk->count, subreq->u.multiple.type,
+                             reqpriv->info);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    rc = simple_release(reqpriv, subreq, chunk);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
+int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
+                             yaksi_info_s * info, yaksi_request_s * request)
+{
+    int rc = YAKSA_SUCCESS;
+    yaksuri_request_s *reqpriv = (yaksuri_request_s *) request->backend.priv;
+    yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+
+    assert(yaksuri_global.gpudriver[id].hooks);
+    assert(reqpriv->inattr.type == YAKSUR_PTR_TYPE__GPU ||
+           reqpriv->outattr.type == YAKSUR_PTR_TYPE__GPU);
+
+    reqpriv->info = info;
+
+    /* if the GPU reqpriv cannot support this type, return */
+    bool is_supported;
+    rc = yaksuri_global.gpudriver[id].hooks->pup_is_supported(type, &is_supported);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (!is_supported) {
+        rc = YAKSA_ERR__NOT_SUPPORTED;
+        goto fn_exit;
+    }
+
+    yaksuri_subreq_s *subreq;
+    subreq = (yaksuri_subreq_s *) malloc(sizeof(yaksuri_subreq_s));
+
+    int (*pupfn) (yaksuri_gpudriver_id_e id, const void *inbuf, void *outbuf, uintptr_t count,
+                  struct yaksi_type_s * type, struct yaksi_info_s * info, int device);
+    if (reqpriv->optype == YAKSURI_OPTYPE__PACK) {
+        pupfn = ipack;
+    } else {
+        pupfn = iunpack;
+    }
+
+    uintptr_t threshold;
+    if (reqpriv->optype == YAKSURI_OPTYPE__PACK) {
+        threshold = yaksuri_global.gpudriver[id].hooks->get_iov_pack_threshold(info);
+    } else {
+        threshold = yaksuri_global.gpudriver[id].hooks->get_iov_unpack_threshold(info);
+    }
+
+    if (reqpriv->inattr.type == YAKSUR_PTR_TYPE__GPU &&
+        reqpriv->outattr.type == YAKSUR_PTR_TYPE__GPU &&
+        reqpriv->inattr.device == reqpriv->outattr.device) {
+
+        subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
+        rc = pupfn(id, inbuf, outbuf, count, type, info, reqpriv->inattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+        event_create(id, reqpriv->inattr.device, &subreq->u.single.event);
+        event_record(id, subreq->u.single.event);
+
+        goto enqueue_subreq;
+    }
+
+    if (reqpriv->inattr.type == YAKSUR_PTR_TYPE__GPU &&
+        reqpriv->outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
+        (type->is_contig || type->size / type->num_contig >= threshold)) {
+
+        subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
+        rc = pupfn(id, inbuf, outbuf, count, type, info, reqpriv->inattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+        event_create(id, reqpriv->inattr.device, &subreq->u.single.event);
+        event_record(id, subreq->u.single.event);
+
+        goto enqueue_subreq;
+    }
+
+    if (reqpriv->inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
+        reqpriv->outattr.type == YAKSUR_PTR_TYPE__GPU &&
+        (type->is_contig || type->size / type->num_contig >= threshold)) {
+
+        subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
+        rc = pupfn(id, inbuf, outbuf, count, type, info, reqpriv->outattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+        event_create(id, reqpriv->outattr.device, &subreq->u.single.event);
+        event_record(id, subreq->u.single.event);
+
+        goto enqueue_subreq;
+    }
+
+    /* we can only take on types where at least one count of the type
+     * fits into our temporary buffers. */
+    if (type->size > YAKSURI_TMPBUF_EL_SIZE) {
+        rc = YAKSA_ERR__NOT_SUPPORTED;
+        free(subreq);
+        goto fn_exit;
+    }
+
+    subreq->kind = YAKSURI_SUBREQ_KIND__MULTI_CHUNK;
+
+    subreq->u.multiple.inbuf = inbuf;
+    subreq->u.multiple.outbuf = outbuf;
+    subreq->u.multiple.count = count;
+    subreq->u.multiple.type = type;
+    subreq->u.multiple.issued_count = 0;
+    subreq->u.multiple.chunks = NULL;
+
+    if (reqpriv->optype == YAKSURI_OPTYPE__PACK) {
+        if (reqpriv->inattr.type == YAKSUR_PTR_TYPE__GPU &&
+            reqpriv->outattr.type == YAKSUR_PTR_TYPE__GPU) {
+            subreq->u.multiple.acquire = pack_d2d_acquire;
+            subreq->u.multiple.release = simple_release;
+        } else if (reqpriv->inattr.type == YAKSUR_PTR_TYPE__GPU) {
+            if (reqpriv->outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
+                subreq->u.multiple.acquire = pack_d2rh_acquire;
+                subreq->u.multiple.release = simple_release;
+            } else {
+                subreq->u.multiple.acquire = pack_d2urh_acquire;
+                subreq->u.multiple.release = pack_d2urh_release;
+            }
+        } else if (reqpriv->outattr.type == YAKSUR_PTR_TYPE__GPU) {
+            subreq->u.multiple.acquire = pack_h2d_acquire;
+            subreq->u.multiple.release = simple_release;
+        }
+    } else {
+        if (reqpriv->inattr.type == YAKSUR_PTR_TYPE__GPU &&
+            reqpriv->outattr.type == YAKSUR_PTR_TYPE__GPU) {
+            subreq->u.multiple.acquire = unpack_d2d_acquire;
+            subreq->u.multiple.release = simple_release;
+        } else if (reqpriv->inattr.type == YAKSUR_PTR_TYPE__GPU) {
+            subreq->u.multiple.acquire = unpack_d2h_acquire;
+            subreq->u.multiple.release = unpack_d2h_release;
+        } else if (reqpriv->outattr.type == YAKSUR_PTR_TYPE__GPU) {
+            if (reqpriv->inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
+                subreq->u.multiple.acquire = unpack_rh2d_acquire;
+                subreq->u.multiple.release = simple_release;
+            } else {
+                subreq->u.multiple.acquire = unpack_urh2d_acquire;
+                subreq->u.multiple.release = simple_release;
             }
         }
     }
 
-    free(subop);
+  enqueue_subreq:
+    pthread_mutex_lock(&progress_mutex);
+    DL_APPEND(reqpriv->subreqs, subreq);
+
+    /* if the request is not in our pending list, add it */
+    yaksuri_request_s *req;
+    HASH_FIND_PTR(pending_reqs, &request, req);
+    if (req == NULL) {
+        HASH_ADD_PTR(pending_reqs, request, reqpriv);
+        yaksu_atomic_incr(&request->cc);
+    }
+    pthread_mutex_unlock(&progress_mutex);
+
+    rc = yaksuri_progress_poke();
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
     return rc;
@@ -410,266 +1047,87 @@ static int free_subop(progress_subop_s * subop)
 int yaksuri_progress_poke(void)
 {
     int rc = YAKSA_SUCCESS;
+    yaksuri_gpudriver_id_e id;
 
-    /* We only poke the head of the progress engine as all of our
-     * operations are independent.  This reduces the complexity of the
-     * progress engine and keeps the amount of time we spend in the
-     * progress engine small. */
+    /* A progress poke is in two steps.  In the first step, we check
+     * for event completions, finish any post-processing and retire
+     * any temporary resources.  In the second steps, we issue out any
+     * pending operations. */
 
     pthread_mutex_lock(&progress_mutex);
 
-    /* if there's nothing to do, return */
-    if (progress_head == NULL)
-        goto fn_exit;
-
-    /* the progress engine has three steps: (1) check for completions
-     * and free up any held up resources; (2) if we don't have
-     * anything else to do, return; and (3) issue any pending
-     * subops. */
     yaksi_type_s *byte_type;
     rc = yaksi_type_get(YAKSA_TYPE__BYTE, &byte_type);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    progress_elem_s *elem;
-    elem = progress_head;
-    yaksuri_request_s *request_backend;
-    request_backend = (yaksuri_request_s *) elem->request->backend.priv;
-    yaksuri_gpudriver_id_e id;
-    id = request_backend->gpudriver_id;
+    /**********************************************************************/
+    /* Step 1: Check for completions */
+    /**********************************************************************/
+    yaksuri_request_s *reqpriv, *tmp;
+    HASH_ITER(hh, pending_reqs, reqpriv, tmp) {
+        id = reqpriv->gpudriver_id;
+        assert(reqpriv->subreqs);
 
-    /****************************************************************************/
-    /* Step 1: Check for completion and free up any held up resources */
-    /****************************************************************************/
-    for (progress_subop_s * subop = elem->pup.subop_head; subop;) {
-        int completed;
-        rc = yaksuri_global.gpudriver[id].info->event_query(subop->event, &completed);
-        YAKSU_ERR_CHECK(rc, fn_fail);
+        yaksuri_subreq_s *subreq, *tmp2;
+        DL_FOREACH_SAFE(reqpriv->subreqs, subreq, tmp2) {
+            if (subreq->kind == YAKSURI_SUBREQ_KIND__SINGLE_CHUNK) {
+                int completed;
+                rc = event_query(id, subreq->u.single.event, &completed);
+                YAKSU_ERR_CHECK(rc, fn_fail);
 
-        if (completed) {
-            if (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
-                elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-                elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) {
-                char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->size;
-                rc = yaksuri_seq_ipack(subop->host_tmpbuf, dbuf,
-                                       subop->count * elem->pup.type->size, elem->info, byte_type);
+                if (!completed)
+                    continue;
+
+                rc = event_destroy(id, subreq->u.single.event);
                 YAKSU_ERR_CHECK(rc, fn_fail);
-            } else if (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
-                       elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-                       (elem->pup.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST ||
-                        elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST)) {
-                char *dbuf =
-                    (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->extent;
-                rc = yaksuri_seq_iunpack(subop->host_tmpbuf, dbuf, subop->count, elem->info,
-                                         elem->pup.type);
-                YAKSU_ERR_CHECK(rc, fn_fail);
+
+                DL_DELETE(reqpriv->subreqs, subreq);
+                free(subreq);
+                if (reqpriv->subreqs == NULL) {
+                    HASH_DEL(pending_reqs, reqpriv);
+                    yaksu_atomic_decr(&reqpriv->request->cc);
+                }
+            } else {
+                yaksuri_subreq_chunk_s *chunk, *tmp3;
+                DL_FOREACH_SAFE(subreq->u.multiple.chunks, chunk, tmp3) {
+                    int completed;
+                    rc = event_query(id, chunk->event, &completed);
+                    YAKSU_ERR_CHECK(rc, fn_fail);
+
+                    if (!completed)
+                        continue;
+
+                    rc = subreq->u.multiple.release(reqpriv, subreq, chunk);
+                    YAKSU_ERR_CHECK(rc, fn_fail);
+                }
             }
-
-            elem->pup.completed_count += subop->count;
-            elem->pup.issued_count -= subop->count;
-
-            progress_subop_s *tmp = subop->next;
-            rc = free_subop(subop);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-            subop = tmp;
-        } else {
-            break;
         }
     }
 
+    /**********************************************************************/
+    /* Step 2: Issue new operations */
+    /**********************************************************************/
+    HASH_ITER(hh, pending_reqs, reqpriv, tmp) {
+        id = reqpriv->gpudriver_id;
+        assert(reqpriv->subreqs);
 
-    /****************************************************************************/
-    /* Step 2: If we don't have any more work to do, return */
-    /****************************************************************************/
-    if (elem->pup.completed_count == elem->pup.count) {
-        rc = progress_dequeue(elem);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-        goto fn_exit;
-    }
+        yaksuri_subreq_s *subreq, *tmp2;
+        DL_FOREACH_SAFE(reqpriv->subreqs, subreq, tmp2) {
+            if (subreq->kind == YAKSURI_SUBREQ_KIND__SINGLE_CHUNK)
+                continue;
 
+            while (subreq->u.multiple.issued_count < subreq->u.multiple.count) {
+                yaksuri_subreq_chunk_s *chunk;
 
-    /****************************************************************************/
-    /* Step 3: Issue any pending subops */
-    /****************************************************************************/
-    while (elem->pup.completed_count + elem->pup.issued_count < elem->pup.count) {
-        progress_subop_s *subop;
-
-        rc = alloc_subop(&subop);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-
-        if (subop == NULL) {
-            break;
-        }
-
-        if (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
-            elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-            elem->pup.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
-            const char *sbuf = (const char *) elem->pup.inbuf +
-                subop->count_offset * elem->pup.type->extent;
-            char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->size;
-
-            rc = yaksuri_global.gpudriver[id].info->ipack(sbuf, dbuf, subop->count, elem->pup.type,
-                                                          subop->gpu_tmpbuf,
-                                                          elem->pup.inattr.device, elem->info,
-                                                          &subop->event);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        } else if (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
-                   elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-                   elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) {
-            const char *sbuf = (const char *) elem->pup.inbuf +
-                subop->count_offset * elem->pup.type->extent;
-
-            rc = yaksuri_global.gpudriver[id].info->ipack(sbuf, subop->host_tmpbuf, subop->count,
-                                                          elem->pup.type, subop->gpu_tmpbuf,
-                                                          elem->pup.inattr.device, elem->info,
-                                                          &subop->event);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        } else if ((elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
-                    elem->pup.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
-                    elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU) ||
-                   (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
-                    elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
-                    elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU)) {
-            const char *sbuf = (const char *) elem->pup.inbuf +
-                subop->count_offset * elem->pup.type->extent;
-            char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->size;
-
-            rc = yaksuri_seq_ipack(sbuf, subop->host_tmpbuf, subop->count, elem->info,
-                                   elem->pup.type);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-
-            rc = yaksuri_global.gpudriver[id].info->ipack(subop->host_tmpbuf, dbuf,
-                                                          subop->count * elem->pup.type->size,
-                                                          byte_type, NULL, elem->pup.outattr.device,
-                                                          elem->info, &subop->event);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        } else if (elem->pup.puptype == YAKSURI_PUPTYPE__PACK &&
-                   elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-                   elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU) {
-            assert(elem->pup.inattr.device != elem->pup.outattr.device);
-            const char *sbuf = (const char *) elem->pup.inbuf +
-                subop->count_offset * elem->pup.type->extent;
-            char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->size;
-
-            bool is_enabled;
-            rc = yaksuri_global.gpudriver[id].info->check_p2p_comm(elem->pup.inattr.device,
-                                                                   elem->pup.outattr.device,
-                                                                   &is_enabled);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-
-            if (is_enabled) {
-                rc = yaksuri_global.gpudriver[id].info->ipack(sbuf, dbuf, subop->count,
-                                                              elem->pup.type, subop->gpu_tmpbuf,
-                                                              elem->pup.inattr.device,
-                                                              elem->info, &subop->event);
-                YAKSU_ERR_CHECK(rc, fn_fail);
-            } else {
-                rc = yaksuri_global.gpudriver[id].info->ipack(sbuf, subop->host_tmpbuf,
-                                                              subop->count, elem->pup.type,
-                                                              subop->gpu_tmpbuf,
-                                                              elem->pup.inattr.device,
-                                                              elem->info, &subop->interm_event);
+                rc = subreq->u.multiple.acquire(reqpriv, subreq, &chunk);
                 YAKSU_ERR_CHECK(rc, fn_fail);
 
-                rc = yaksuri_global.gpudriver[id].info->event_add_dependency(subop->interm_event,
-                                                                             elem->pup.
-                                                                             outattr.device);
-                YAKSU_ERR_CHECK(rc, fn_fail);
+                if (chunk == NULL)
+                    goto fn_exit;
 
-                rc = yaksuri_global.gpudriver[id].info->ipack(subop->host_tmpbuf, dbuf,
-                                                              subop->count * elem->pup.type->size,
-                                                              byte_type, NULL,
-                                                              elem->pup.outattr.device,
-                                                              elem->info, &subop->event);
-                YAKSU_ERR_CHECK(rc, fn_fail);
+                subreq->u.multiple.issued_count += chunk->count;
             }
-        } else if (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
-                   elem->pup.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
-                   elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU) {
-            const char *sbuf = (const char *) elem->pup.inbuf +
-                subop->count_offset * elem->pup.type->size;
-            char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->extent;
-
-            rc = yaksuri_global.gpudriver[id].info->iunpack(sbuf, dbuf, subop->count,
-                                                            elem->pup.type, subop->gpu_tmpbuf,
-                                                            elem->pup.outattr.device,
-                                                            elem->info, &subop->event);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        } else if (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
-                   elem->pup.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
-                   elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU) {
-            const char *sbuf = (const char *) elem->pup.inbuf +
-                subop->count_offset * elem->pup.type->size;
-            char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->extent;
-
-            rc = yaksuri_seq_iunpack(sbuf, subop->host_tmpbuf,
-                                     subop->count * elem->pup.type->size, elem->info, byte_type);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-
-            rc = yaksuri_global.gpudriver[id].info->iunpack(subop->host_tmpbuf, dbuf, subop->count,
-                                                            elem->pup.type, subop->gpu_tmpbuf,
-                                                            elem->pup.outattr.device,
-                                                            elem->info, &subop->event);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        } else if ((elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
-                    elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-                    elem->pup.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
-                   (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
-                    elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-                    elem->pup.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST)) {
-            const char *sbuf = (const char *) elem->pup.inbuf +
-                subop->count_offset * elem->pup.type->size;
-
-            rc = yaksuri_global.gpudriver[id].info->iunpack(sbuf, subop->host_tmpbuf,
-                                                            subop->count * elem->pup.type->size,
-                                                            byte_type, NULL,
-                                                            elem->pup.inattr.device, elem->info,
-                                                            &subop->event);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        } else if (elem->pup.puptype == YAKSURI_PUPTYPE__UNPACK &&
-                   elem->pup.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-                   elem->pup.outattr.type == YAKSUR_PTR_TYPE__GPU) {
-            const char *sbuf = (const char *) elem->pup.inbuf +
-                subop->count_offset * elem->pup.type->size;
-            char *dbuf = (char *) elem->pup.outbuf + subop->count_offset * elem->pup.type->extent;
-
-            bool is_enabled;
-            rc = yaksuri_global.gpudriver[id].info->check_p2p_comm(elem->pup.inattr.device,
-                                                                   elem->pup.outattr.device,
-                                                                   &is_enabled);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-
-            if (is_enabled) {
-                rc = yaksuri_global.gpudriver[id].info->iunpack(sbuf, dbuf, subop->count,
-                                                                elem->pup.type, subop->gpu_tmpbuf,
-                                                                elem->pup.inattr.device,
-                                                                elem->info, &subop->event);
-                YAKSU_ERR_CHECK(rc, fn_fail);
-            } else {
-                rc = yaksuri_global.gpudriver[id].info->iunpack(sbuf, subop->host_tmpbuf,
-                                                                subop->count * elem->pup.type->size,
-                                                                byte_type, NULL,
-                                                                elem->pup.inattr.device,
-                                                                elem->info, &subop->interm_event);
-                YAKSU_ERR_CHECK(rc, fn_fail);
-
-                rc = yaksuri_global.gpudriver[id].info->event_add_dependency(subop->interm_event,
-                                                                             elem->pup.
-                                                                             outattr.device);
-                YAKSU_ERR_CHECK(rc, fn_fail);
-
-                rc = yaksuri_global.gpudriver[id].info->iunpack(subop->host_tmpbuf, dbuf,
-                                                                subop->count, elem->pup.type,
-                                                                subop->gpu_tmpbuf,
-                                                                elem->pup.outattr.device,
-                                                                elem->info, &subop->event);
-                YAKSU_ERR_CHECK(rc, fn_fail);
-            }
-        } else {
-            rc = YAKSA_ERR__INTERNAL;
-            goto fn_fail;
         }
-
-        elem->pup.issued_count += subop->count;
     }
 
   fn_exit:

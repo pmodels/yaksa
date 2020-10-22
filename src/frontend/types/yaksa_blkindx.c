@@ -124,11 +124,8 @@ int yaksa_type_create_hindexed_block(int count, int blocklength, const intptr_t 
     rc = yaksi_type_create_hindexed_block(count, blocklength, array_of_displs, intype, &outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    yaksu_handle_t id;
-    rc = yaksi_type_handle_alloc(outtype, &id);
+    rc = yaksi_type_handle_alloc(outtype, newtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
-
-    *newtype = (yaksa_type_t) id;
 
   fn_exit:
     return rc;
@@ -164,11 +161,8 @@ int yaksa_type_create_indexed_block(int count, int blocklength, const int *array
                                           &outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    yaksu_handle_t id;
-    rc = yaksi_type_handle_alloc(outtype, &id);
+    rc = yaksi_type_handle_alloc(outtype, newtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
-
-    *newtype = (yaksa_type_t) id;
 
   fn_exit:
     if (real_array_of_displs)

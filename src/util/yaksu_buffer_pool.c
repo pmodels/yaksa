@@ -60,6 +60,7 @@ typedef struct pool_head {
 
     yaksu_malloc_fn malloc_fn;
     yaksu_free_fn free_fn;
+    void *state;
 
     pthread_mutex_t mutex;
 
@@ -74,7 +75,7 @@ typedef struct pool_head {
 static pthread_mutex_t global_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int yaksu_buffer_pool_alloc(uintptr_t elemsize, unsigned int elems_in_chunk, unsigned int maxelems,
-                            yaksu_malloc_fn malloc_fn, yaksu_free_fn free_fn,
+                            yaksu_malloc_fn malloc_fn, yaksu_free_fn free_fn, void *state,
                             yaksu_buffer_pool_s * pool)
 {
     int rc = YAKSA_SUCCESS;
@@ -90,6 +91,7 @@ int yaksu_buffer_pool_alloc(uintptr_t elemsize, unsigned int elems_in_chunk, uns
 
     pool_head->malloc_fn = malloc_fn;
     pool_head->free_fn = free_fn;
+    pool_head->state = state;
 
     pthread_mutex_init(&pool_head->mutex, NULL);
 
@@ -130,7 +132,7 @@ int yaksu_buffer_pool_free(yaksu_buffer_pool_s pool)
     chunk_s *chunk, *tmp;
     DL_FOREACH_SAFE(pool_head->chunks, chunk, tmp) {
         DL_DELETE(pool_head->chunks, chunk);
-        pool_head->free_fn(chunk->slab);
+        pool_head->free_fn(chunk->slab, pool_head->state);
         free(chunk);
     }
 
@@ -149,6 +151,7 @@ int yaksu_buffer_pool_elem_alloc(yaksu_buffer_pool_s pool, void **elem)
 
     pthread_mutex_lock(&pool_head->mutex);
 
+    *elem = NULL;
     chunk_s *chunk = NULL;
     if (pool_head->free_elems == NULL) {
         /* no more free elements left; see if we can allocate more
@@ -161,7 +164,8 @@ int yaksu_buffer_pool_elem_alloc(yaksu_buffer_pool_s pool, void **elem)
         chunk = (chunk_s *) malloc(sizeof(chunk_s));
         YAKSU_ERR_CHKANDJUMP(!chunk, rc, YAKSA_ERR__OUT_OF_MEM, fn_fail);
 
-        chunk->slab = pool_head->malloc_fn(pool_head->elems_in_chunk * pool_head->elemsize);
+        chunk->slab = pool_head->malloc_fn(pool_head->elems_in_chunk * pool_head->elemsize,
+                                           pool_head->state);
         YAKSU_ERR_CHKANDJUMP(!chunk->slab, rc, YAKSA_ERR__OUT_OF_MEM, fn_fail);
 
         /* keep track of the allocated chunk */

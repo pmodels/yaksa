@@ -17,7 +17,7 @@
         YAKSU_ERR_CHKANDJUMP(!tmp_type_, rc, YAKSA_ERR__OUT_OF_MEM, fn_fail); \
         yaksu_atomic_store(&tmp_type_->refcount, 1);                    \
                                                                         \
-        yaksu_handle_t id;                                              \
+        yaksa_type_t id;                                                \
         rc = yaksi_type_handle_alloc(tmp_type_, &id);                   \
         YAKSU_ERR_CHECK(rc, fn_fail);                                   \
                                                                         \
@@ -32,7 +32,7 @@
         YAKSU_ERR_CHECK(rc, fn_fail);                                   \
         yaksu_atomic_incr(&tmp_type_->refcount);                        \
                                                                         \
-        yaksu_handle_t id;                                              \
+        yaksa_type_t id;                                                \
         rc = yaksi_type_handle_alloc(tmp_type_, &id);                   \
         YAKSU_ERR_CHECK(rc, fn_fail);                                   \
                                                                         \

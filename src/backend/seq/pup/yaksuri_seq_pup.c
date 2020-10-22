@@ -9,7 +9,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#define MAX_IOV_LENGTH (16384)
+#define MAX_IOV_LENGTH (8192)
 
 int yaksuri_seq_pup_is_supported(yaksi_type_s * type, bool * is_supported)
 {
@@ -24,8 +24,8 @@ int yaksuri_seq_pup_is_supported(yaksi_type_s * type, bool * is_supported)
     return rc;
 }
 
-int yaksuri_seq_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_info_s * info,
-                      yaksi_type_s * type)
+int yaksuri_seq_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
+                      yaksi_info_s * info)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_seqi_type_s *seq_type = (yaksuri_seqi_type_s *) type->backend.seq.priv;
@@ -39,51 +39,25 @@ int yaksuri_seq_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_in
     if (type->is_contig) {
         memcpy(outbuf, (const char *) inbuf + type->true_lb, type->size * count);
     } else if (type->size / type->num_contig >= iov_pack_threshold) {
-        struct iovec *iov;
-        uintptr_t actual_iov_len;
-
-        if (type->num_contig * count <= MAX_IOV_LENGTH) {
-            iov = (struct iovec *) malloc(type->num_contig * count * sizeof(struct iovec));
-
-            rc = yaksi_iov(inbuf, count, type, 0, iov, MAX_IOV_LENGTH, &actual_iov_len);
+        struct iovec iov[MAX_IOV_LENGTH];
+        char *dbuf = (char *) outbuf;
+        uintptr_t offset = 0;
+        while (offset < type->num_contig * count) {
+            uintptr_t actual_iov_len;
+            rc = yaksi_iov(inbuf, count, type, offset, iov, MAX_IOV_LENGTH, &actual_iov_len);
             YAKSU_ERR_CHECK(rc, fn_fail);
-            assert(actual_iov_len == type->num_contig * count);
 
-            char *dbuf = (char *) outbuf;
             for (uintptr_t i = 0; i < actual_iov_len; i++) {
                 memcpy(dbuf, iov[i].iov_base, iov[i].iov_len);
                 dbuf += iov[i].iov_len;
             }
 
-            free(iov);
-        } else if (type->num_contig <= MAX_IOV_LENGTH) {
-            iov = (struct iovec *) malloc(type->num_contig * sizeof(struct iovec));
-
-            uintptr_t iov_offset = 0;
-            char *dbuf = (char *) outbuf;
-            const char *sbuf = (const char *) inbuf;
-            for (uintptr_t i = 0; i < count; i++) {
-                rc = yaksi_iov(sbuf, 1, type, iov_offset, iov, MAX_IOV_LENGTH, &actual_iov_len);
-                YAKSU_ERR_CHECK(rc, fn_fail);
-                assert(actual_iov_len == type->num_contig);
-
-                for (uintptr_t j = 0; j < actual_iov_len; j++) {
-                    memcpy(dbuf, iov[j].iov_base, iov[j].iov_len);
-                    dbuf += iov[j].iov_len;
-                }
-
-                sbuf += type->extent;
-            }
-
-            free(iov);
-        } else {
-            rc = YAKSA_ERR__NOT_SUPPORTED;
+            offset += actual_iov_len;
         }
-    } else if (seq_type->pack) {
+    } else {
+        assert(seq_type->pack);
         rc = seq_type->pack(inbuf, outbuf, count, type);
         YAKSU_ERR_CHECK(rc, fn_fail);
-    } else {
-        rc = YAKSA_ERR__NOT_SUPPORTED;
     }
 
   fn_exit:
@@ -92,8 +66,8 @@ int yaksuri_seq_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_in
     goto fn_exit;
 }
 
-int yaksuri_seq_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_info_s * info,
-                        yaksi_type_s * type)
+int yaksuri_seq_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
+                        yaksi_info_s * info)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_seqi_type_s *seq_type = (yaksuri_seqi_type_s *) type->backend.seq.priv;
@@ -107,51 +81,26 @@ int yaksuri_seq_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
     if (type->is_contig) {
         memcpy((char *) outbuf + type->true_lb, inbuf, type->size * count);
     } else if (type->size / type->num_contig >= iov_unpack_threshold) {
-        struct iovec *iov;
-        uintptr_t actual_iov_len;
+        struct iovec iov[MAX_IOV_LENGTH];
+        const char *sbuf = (const char *) inbuf;
+        uintptr_t offset = 0;
 
-        if (type->num_contig * count <= MAX_IOV_LENGTH) {
-            iov = (struct iovec *) malloc(type->num_contig * count * sizeof(struct iovec));
-
-            rc = yaksi_iov(outbuf, count, type, 0, iov, MAX_IOV_LENGTH, &actual_iov_len);
+        while (offset < type->num_contig * count) {
+            uintptr_t actual_iov_len;
+            rc = yaksi_iov(outbuf, count, type, offset, iov, MAX_IOV_LENGTH, &actual_iov_len);
             YAKSU_ERR_CHECK(rc, fn_fail);
-            assert(actual_iov_len == type->num_contig * count);
 
-            const char *sbuf = (const char *) inbuf;
             for (uintptr_t i = 0; i < actual_iov_len; i++) {
                 memcpy(iov[i].iov_base, sbuf, iov[i].iov_len);
                 sbuf += iov[i].iov_len;
             }
 
-            free(iov);
-        } else if (type->num_contig <= MAX_IOV_LENGTH) {
-            iov = (struct iovec *) malloc(type->num_contig * sizeof(struct iovec));
-
-            uintptr_t iov_offset = 0;
-            char *dbuf = (char *) outbuf;
-            const char *sbuf = (const char *) inbuf;
-            for (uintptr_t i = 0; i < count; i++) {
-                rc = yaksi_iov(dbuf, 1, type, iov_offset, iov, MAX_IOV_LENGTH, &actual_iov_len);
-                YAKSU_ERR_CHECK(rc, fn_fail);
-                assert(actual_iov_len == type->num_contig);
-
-                for (uintptr_t j = 0; j < actual_iov_len; j++) {
-                    memcpy(iov[j].iov_base, sbuf, iov[j].iov_len);
-                    sbuf += iov[j].iov_len;
-                }
-
-                dbuf += type->extent;
-            }
-
-            free(iov);
-        } else {
-            rc = YAKSA_ERR__NOT_SUPPORTED;
+            offset += actual_iov_len;
         }
-    } else if (seq_type->unpack) {
+    } else {
+        assert(seq_type->unpack);
         rc = seq_type->unpack(inbuf, outbuf, count, type);
         YAKSU_ERR_CHECK(rc, fn_fail);
-    } else {
-        rc = YAKSA_ERR__NOT_SUPPORTED;
     }
 
   fn_exit:

@@ -108,7 +108,7 @@ static int check_p2p_comm(int sdev, int ddev, bool * is_enabled)
     return YAKSA_SUCCESS;
 }
 
-int yaksuri_cuda_init_hook(yaksur_gpudriver_info_s ** info)
+int yaksuri_cuda_init_hook(yaksur_gpudriver_hooks_s ** hooks)
 {
     int rc = YAKSA_SUCCESS;
     cudaError_t cerr;
@@ -159,24 +159,28 @@ int yaksuri_cuda_init_hook(yaksur_gpudriver_info_s ** info)
     cerr = cudaSetDevice(cur_device);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-    *info = (yaksur_gpudriver_info_s *) malloc(sizeof(yaksur_gpudriver_info_s));
-    (*info)->get_num_devices = get_num_devices;
-    (*info)->check_p2p_comm = check_p2p_comm;
-    (*info)->ipack = yaksuri_cudai_ipack;
-    (*info)->iunpack = yaksuri_cudai_iunpack;
-    (*info)->pup_is_supported = yaksuri_cudai_pup_is_supported;
-    (*info)->host_malloc = cuda_host_malloc;
-    (*info)->host_free = cuda_host_free;
-    (*info)->gpu_malloc = cuda_gpu_malloc;
-    (*info)->gpu_free = cuda_gpu_free;
-    (*info)->event_destroy = yaksuri_cudai_event_destroy;
-    (*info)->event_query = yaksuri_cudai_event_query;
-    (*info)->event_synchronize = yaksuri_cudai_event_synchronize;
-    (*info)->event_add_dependency = yaksuri_cudai_event_add_dependency;
-    (*info)->type_create = yaksuri_cudai_type_create_hook;
-    (*info)->type_free = yaksuri_cudai_type_free_hook;
-    (*info)->get_ptr_attr = yaksuri_cudai_get_ptr_attr;
-    (*info)->finalize = finalize_hook;
+    *hooks = (yaksur_gpudriver_hooks_s *) malloc(sizeof(yaksur_gpudriver_hooks_s));
+    (*hooks)->get_num_devices = get_num_devices;
+    (*hooks)->check_p2p_comm = check_p2p_comm;
+    (*hooks)->ipack = yaksuri_cudai_ipack;
+    (*hooks)->iunpack = yaksuri_cudai_iunpack;
+    (*hooks)->pup_is_supported = yaksuri_cudai_pup_is_supported;
+    (*hooks)->get_iov_pack_threshold = yaksuri_cudai_get_iov_pack_threshold;
+    (*hooks)->get_iov_unpack_threshold = yaksuri_cudai_get_iov_unpack_threshold;
+    (*hooks)->host_malloc = cuda_host_malloc;
+    (*hooks)->host_free = cuda_host_free;
+    (*hooks)->gpu_malloc = cuda_gpu_malloc;
+    (*hooks)->gpu_free = cuda_gpu_free;
+    (*hooks)->event_create = yaksuri_cudai_event_create;
+    (*hooks)->event_destroy = yaksuri_cudai_event_destroy;
+    (*hooks)->event_record = yaksuri_cudai_event_record;
+    (*hooks)->event_query = yaksuri_cudai_event_query;
+    (*hooks)->event_synchronize = yaksuri_cudai_event_synchronize;
+    (*hooks)->event_add_dependency = yaksuri_cudai_event_add_dependency;
+    (*hooks)->type_create = yaksuri_cudai_type_create_hook;
+    (*hooks)->type_free = yaksuri_cudai_type_free_hook;
+    (*hooks)->get_ptr_attr = yaksuri_cudai_get_ptr_attr;
+    (*hooks)->finalize = finalize_hook;
 
   fn_exit:
     return rc;

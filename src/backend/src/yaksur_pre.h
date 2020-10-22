@@ -27,7 +27,6 @@ struct yaksi_type_s;
 struct yaksi_info_s;
 
 typedef struct yaksur_type_s {
-    void *priv;
     yaksuri_seq_type_s seq;
     yaksuri_cuda_type_s cuda;
 } yaksur_type_s;
@@ -41,18 +40,21 @@ typedef struct {
     yaksuri_cuda_info_s cuda;
 } yaksur_info_s;
 
-typedef struct yaksur_gpudriver_info_s {
+typedef struct yaksur_gpudriver_hooks_s {
     /* miscellaneous */
     int (*get_num_devices) (int *ndevices);
     int (*check_p2p_comm) (int sdev, int ddev, bool * is_enabled);
     int (*finalize) (void);
 
     /* pup functions */
+    /* *INDENT-OFF* */
+    uintptr_t (*get_iov_pack_threshold) (struct yaksi_info_s * info);
+    uintptr_t (*get_iov_unpack_threshold) (struct yaksi_info_s * info);
+    /* *INDENT-ON* */
     int (*ipack) (const void *inbuf, void *outbuf, uintptr_t count,
-                  struct yaksi_type_s * type, void *device_tmpbuf, int device,
-                  struct yaksi_info_s * info, void **event);
+                  struct yaksi_type_s * type, struct yaksi_info_s * info, int device);
     int (*iunpack) (const void *inbuf, void *outbuf, uintptr_t count, struct yaksi_type_s * type,
-                    void *device_tmpbuf, int device, struct yaksi_info_s * info, void **event);
+                    struct yaksi_info_s * info, int device);
     int (*pup_is_supported) (struct yaksi_type_s * type, bool * is_supported);
 
     /* memory management */
@@ -63,7 +65,9 @@ typedef struct yaksur_gpudriver_info_s {
     int (*get_ptr_attr) (const void *buf, yaksur_ptr_attr_s * ptrattr);
 
     /* events */
+    int (*event_create) (int device, void **event);
     int (*event_destroy) (void *event);
+    int (*event_record) (void *event);
     int (*event_query) (void *event, int *completed);
     int (*event_synchronize) (void *event);
     int (*event_add_dependency) (void *event, int device);
@@ -77,6 +81,6 @@ typedef struct yaksur_gpudriver_info_s {
     int (*info_free) (struct yaksi_info_s * info);
     int (*info_keyval_append) (struct yaksi_info_s * info, const char *key, const void *val,
                                unsigned int vallen);
-} yaksur_gpudriver_info_s;
+} yaksur_gpudriver_hooks_s;
 
 #endif /* YAKSUR_PRE_H_INCLUDED */

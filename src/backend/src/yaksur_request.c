@@ -12,25 +12,9 @@
 int yaksur_request_test(yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
-    yaksuri_request_s *backend = (yaksuri_request_s *) request->backend.priv;
-    yaksuri_gpudriver_id_e id = backend->gpudriver_id;
 
-    assert(backend->kind != YAKSURI_REQUEST_KIND__UNSET);
-
-    if (backend->event) {
-        int completed;
-        rc = yaksuri_global.gpudriver[id].info->event_query(backend->event, &completed);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-
-        if (completed) {
-            yaksu_atomic_decr(&request->cc);
-        }
-    }
-
-    if (backend->kind == YAKSURI_REQUEST_KIND__STAGED) {
-        rc = yaksuri_progress_poke();
-        YAKSU_ERR_CHECK(rc, fn_fail);
-    }
+    rc = yaksuri_progress_poke();
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
     return rc;
@@ -41,24 +25,10 @@ int yaksur_request_test(yaksi_request_s * request)
 int yaksur_request_wait(yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
-    yaksuri_request_s *backend = (yaksuri_request_s *) request->backend.priv;
-    yaksuri_gpudriver_id_e id = backend->gpudriver_id;
 
-    assert(backend->kind != YAKSURI_REQUEST_KIND__UNSET);
-
-    if (backend->event) {
-        rc = yaksuri_global.gpudriver[id].info->event_synchronize(backend->event);
+    while (yaksu_atomic_load(&request->cc)) {
+        rc = yaksuri_progress_poke();
         YAKSU_ERR_CHECK(rc, fn_fail);
-        yaksu_atomic_decr(&request->cc);
-    }
-
-    if (backend->kind == YAKSURI_REQUEST_KIND__DIRECT) {
-        assert(!yaksu_atomic_load(&request->cc));
-    } else {
-        while (yaksu_atomic_load(&request->cc)) {
-            rc = yaksuri_progress_poke();
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        }
     }
 
   fn_exit:
