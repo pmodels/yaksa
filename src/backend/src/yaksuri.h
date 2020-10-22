@@ -86,8 +86,6 @@ typedef struct yaksuri_request {
 
     yaksi_info_s *info;
     yaksuri_optype_e optype;
-    yaksur_ptr_attr_s inattr;
-    yaksur_ptr_attr_s outattr;
 
     yaksuri_gpudriver_id_e gpudriver_id;
 

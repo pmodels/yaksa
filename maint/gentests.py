@@ -143,6 +143,10 @@ if __name__ == '__main__':
                        " -sbuf-memtype device" + \
                        " -tbuf-memtype unreg-host" + \
                        " -dbuf-memtype device")
+    gen_pack_iov_tests("pack", "test/pack/testlist.cuda.d-m-d.gen", \
+                       " -sbuf-memtype device" + \
+                       " -tbuf-memtype managed" + \
+                       " -dbuf-memtype device")
     gen_pack_iov_tests("pack", "test/pack/testlist.cuda.rh-d-rh.gen", \
                        " -sbuf-memtype reg-host" + \
                        " -tbuf-memtype device" + \

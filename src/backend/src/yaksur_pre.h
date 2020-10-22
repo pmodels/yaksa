@@ -19,12 +19,14 @@ typedef struct {
         YAKSUR_PTR_TYPE__UNREGISTERED_HOST,
         YAKSUR_PTR_TYPE__REGISTERED_HOST,
         YAKSUR_PTR_TYPE__GPU,
+        YAKSUR_PTR_TYPE__MANAGED,
     } type;
     int device;
 } yaksur_ptr_attr_s;
 
 struct yaksi_type_s;
 struct yaksi_info_s;
+struct yaksi_request_s;
 
 typedef struct yaksur_type_s {
     yaksuri_seq_type_s seq;
@@ -32,6 +34,8 @@ typedef struct yaksur_type_s {
 } yaksur_type_s;
 
 typedef struct {
+    yaksur_ptr_attr_s inattr;
+    yaksur_ptr_attr_s outattr;
     void *priv;
 } yaksur_request_s;
 
@@ -52,9 +56,10 @@ typedef struct yaksur_gpudriver_hooks_s {
     uintptr_t (*get_iov_unpack_threshold) (struct yaksi_info_s * info);
     /* *INDENT-ON* */
     int (*ipack) (const void *inbuf, void *outbuf, uintptr_t count,
-                  struct yaksi_type_s * type, struct yaksi_info_s * info, int device);
+                  struct yaksi_type_s * type, struct yaksi_info_s * info,
+                  struct yaksi_request_s * request, int device);
     int (*iunpack) (const void *inbuf, void *outbuf, uintptr_t count, struct yaksi_type_s * type,
-                    struct yaksi_info_s * info, int device);
+                    struct yaksi_info_s * info, struct yaksi_request_s * request, int device);
     int (*pup_is_supported) (struct yaksi_type_s * type, bool * is_supported);
 
     /* memory management */
