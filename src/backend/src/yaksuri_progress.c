@@ -260,8 +260,11 @@ static int pack_d2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subr
                    reqpriv->request, reqpriv->request->backend.inattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
-        event_create(id, reqpriv->request->backend.inattr.device, &(*chunk)->event);
-        event_record(id, (*chunk)->event);
+        rc = event_create(id, reqpriv->request->backend.inattr.device, &(*chunk)->event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = event_record(id, (*chunk)->event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
     } else {
         /* p2p is not enabled: we need two temporary buffers, one on
          * the source device and one on the host */
@@ -395,8 +398,11 @@ static int pack_d2rh_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * sub
                reqpriv->request, reqpriv->request->backend.inattr.device);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    event_create(id, reqpriv->request->backend.inattr.device, &(*chunk)->event);
-    event_record(id, (*chunk)->event);
+    rc = event_create(id, reqpriv->request->backend.inattr.device, &(*chunk)->event);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    rc = event_record(id, (*chunk)->event);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
     return rc;
@@ -542,8 +548,11 @@ static int pack_h2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subr
                reqpriv->request, reqpriv->request->backend.outattr.device);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    event_create(id, reqpriv->request->backend.outattr.device, &(*chunk)->event);
-    event_record(id, (*chunk)->event);
+    rc = event_create(id, reqpriv->request->backend.outattr.device, &(*chunk)->event);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    rc = event_record(id, (*chunk)->event);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
     return rc;
@@ -619,8 +628,11 @@ static int unpack_d2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * su
                      reqpriv->request, reqpriv->request->backend.outattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
-        event_create(id, reqpriv->request->backend.outattr.device, &(*chunk)->event);
-        event_record(id, (*chunk)->event);
+        rc = event_create(id, reqpriv->request->backend.outattr.device, &(*chunk)->event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = event_record(id, (*chunk)->event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
     } else {
         /* p2p is not enabled: we need two temporary buffers, one on
          * the destination device and one on the host */
@@ -756,8 +768,11 @@ static int unpack_rh2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * s
                  reqpriv->request, reqpriv->request->backend.outattr.device);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    event_create(id, reqpriv->request->backend.outattr.device, &(*chunk)->event);
-    event_record(id, (*chunk)->event);
+    rc = event_create(id, reqpriv->request->backend.outattr.device, &(*chunk)->event);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    rc = event_record(id, (*chunk)->event);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
     return rc;
@@ -838,8 +853,11 @@ static int unpack_urh2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * 
                  reqpriv->request, reqpriv->request->backend.outattr.device);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    event_create(id, reqpriv->request->backend.outattr.device, &(*chunk)->event);
-    event_record(id, (*chunk)->event);
+    rc = event_create(id, reqpriv->request->backend.outattr.device, &(*chunk)->event);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    rc = event_record(id, (*chunk)->event);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
     return rc;
@@ -882,8 +900,11 @@ static int unpack_d2h_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * su
                reqpriv->request, reqpriv->request->backend.inattr.device);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    event_create(id, reqpriv->request->backend.inattr.device, &(*chunk)->event);
-    event_record(id, (*chunk)->event);
+    rc = event_create(id, reqpriv->request->backend.inattr.device, &(*chunk)->event);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    rc = event_record(id, (*chunk)->event);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
     return rc;
@@ -961,8 +982,12 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
             rc = pupfn(id, inbuf, outbuf, count, type, info, request,
                        request->backend.inattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
-            event_create(id, request->backend.inattr.device, &subreq->u.single.event);
-            event_record(id, subreq->u.single.event);
+
+            rc = event_create(id, request->backend.inattr.device, &subreq->u.single.event);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+
+            rc = event_record(id, subreq->u.single.event);
+            YAKSU_ERR_CHECK(rc, fn_fail);
 
             goto enqueue_subreq;
         }
@@ -973,8 +998,12 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
             rc = pupfn(id, inbuf, outbuf, count, type, info, request,
                        request->backend.inattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
-            event_create(id, request->backend.inattr.device, &subreq->u.single.event);
-            event_record(id, subreq->u.single.event);
+
+            rc = event_create(id, request->backend.inattr.device, &subreq->u.single.event);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+
+            rc = event_record(id, subreq->u.single.event);
+            YAKSU_ERR_CHECK(rc, fn_fail);
 
             goto enqueue_subreq;
         }
@@ -986,8 +1015,12 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
             rc = pupfn(id, inbuf, outbuf, count, type, info, request,
                        request->backend.inattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
-            event_create(id, request->backend.inattr.device, &subreq->u.single.event);
-            event_record(id, subreq->u.single.event);
+
+            rc = event_create(id, request->backend.inattr.device, &subreq->u.single.event);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+
+            rc = event_record(id, subreq->u.single.event);
+            YAKSU_ERR_CHECK(rc, fn_fail);
 
             goto enqueue_subreq;
         }
@@ -1000,8 +1033,12 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
             rc = pupfn(id, inbuf, outbuf, count, type, info, request,
                        request->backend.outattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
-            event_create(id, request->backend.outattr.device, &subreq->u.single.event);
-            event_record(id, subreq->u.single.event);
+
+            rc = event_create(id, request->backend.outattr.device, &subreq->u.single.event);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+
+            rc = event_record(id, subreq->u.single.event);
+            YAKSU_ERR_CHECK(rc, fn_fail);
 
             goto enqueue_subreq;
         }
@@ -1013,8 +1050,12 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
             rc = pupfn(id, inbuf, outbuf, count, type, info, request,
                        request->backend.outattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
-            event_create(id, request->backend.outattr.device, &subreq->u.single.event);
-            event_record(id, subreq->u.single.event);
+
+            rc = event_create(id, request->backend.outattr.device, &subreq->u.single.event);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+
+            rc = event_record(id, subreq->u.single.event);
+            YAKSU_ERR_CHECK(rc, fn_fail);
 
             goto enqueue_subreq;
         }
