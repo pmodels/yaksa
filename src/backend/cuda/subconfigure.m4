@@ -111,41 +111,28 @@ if test ${have_cuda} = "yes" ; then
         case "$sm" in
             all)
                 if test ${cuda_version} -ge 11 ; then
-                    # ampere
-                    PAC_APPEND_FLAG([80],[CUDA_SM])
+                    # maxwell (52) to ampere (80)
+                    supported_cuda_sms="52 53 60 61 62 70 72 75 80"
+                elif test ${cuda_version} -ge 10 ; then
+                    # kepler (30) to turing (75)
+                    supported_cuda_sms="30 35 37 50 52 53 60 61 62 70 72 75"
+                elif test ${cuda_version} -ge 9 ; then
+                    # kepler (30) to volta (72)
+                    supported_cuda_sms="30 35 37 50 52 53 60 61 62 70 72"
+                elif test ${cuda_version} -ge 8 ; then
+                    # kepler (30) to pascal (62)
+                    supported_cuda_sms="30 35 37 50 52 53 60 61 62"
+                elif test ${cuda_version} -ge 6 ; then
+                    # kepler (30) to maxwell (53)
+                    supported_cuda_sms="30 35 37 50 52 53"
+                elif test ${cuda_version} -ge 5 ; then
+                    # kepler (30) to kepler (37)
+                    supported_cuda_sms="30 35 37"
                 fi
 
-                if test ${cuda_version} -ge 10 ; then
-                    # turing
-                    PAC_APPEND_FLAG([75],[CUDA_SM])
-                fi
-
-                if test ${cuda_version} -ge 9 ; then
-                    # volta
-                    PAC_APPEND_FLAG([70],[CUDA_SM])
-                    PAC_APPEND_FLAG([72],[CUDA_SM])
-                fi
-
-                if test ${cuda_version} -ge 8 ; then
-                    # pascal
-                    PAC_APPEND_FLAG([60],[CUDA_SM])
-                    PAC_APPEND_FLAG([61],[CUDA_SM])
-                    PAC_APPEND_FLAG([62],[CUDA_SM])
-                fi
-
-                if test ${cuda_version} -ge 6 ; then
-                    # maxwell
-                    PAC_APPEND_FLAG([50],[CUDA_SM])
-                    PAC_APPEND_FLAG([52],[CUDA_SM])
-                    PAC_APPEND_FLAG([53],[CUDA_SM])
-                fi
-
-                if test ${cuda_version} -ge 5 ; then
-                    # kepler
-                    PAC_APPEND_FLAG([30],[CUDA_SM])
-                    PAC_APPEND_FLAG([35],[CUDA_SM])
-                    PAC_APPEND_FLAG([37],[CUDA_SM])
-                fi
+                for supported_cuda_sm in $supported_cuda_sms ; do
+                    PAC_APPEND_FLAG([$supported_cuda_sm],[CUDA_SM])
+                done
                 ;;
 
             kepler)
