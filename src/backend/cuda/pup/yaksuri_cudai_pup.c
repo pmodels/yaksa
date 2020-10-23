@@ -83,20 +83,13 @@ uintptr_t yaksuri_cudai_get_iov_unpack_threshold(yaksi_info_s * info)
 }
 
 int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                        yaksi_info_s * info, yaksi_request_s * request, int target)
+                        yaksi_info_s * info, int target)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
     cudaError_t cerr;
 
     uintptr_t iov_pack_threshold = yaksuri_cudai_get_iov_pack_threshold(info);
-
-    int cur_device;
-    cerr = cudaGetDevice(&cur_device);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-
-    cerr = cudaSetDevice(target);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
     /* shortcut for contiguous types */
     if (type->is_contig) {
@@ -132,27 +125,19 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
         rc = get_thread_block_dims(count, type, &n_threads, &n_blocks_x, &n_blocks_y, &n_blocks_z);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
-        if ((request->backend.inattr.type == YAKSUR_PTR_TYPE__MANAGED &&
-             request->backend.outattr.type == YAKSUR_PTR_TYPE__MANAGED) ||
-            (request->backend.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-             request->backend.outattr.type == YAKSUR_PTR_TYPE__MANAGED) ||
-            (request->backend.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-             request->backend.outattr.type == YAKSUR_PTR_TYPE__GPU &&
-             request->backend.inattr.device == request->backend.outattr.device)) {
-            cuda_type->pack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks_x, n_blocks_y,
-                            n_blocks_z, target);
-        } else if (request->backend.inattr.type == YAKSUR_PTR_TYPE__MANAGED &&
-                   request->backend.outattr.type == YAKSUR_PTR_TYPE__GPU) {
-            cuda_type->pack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks_x, n_blocks_y,
-                            n_blocks_z, target);
-        } else {
-            rc = YAKSA_ERR__INTERNAL;
-            goto fn_fail;
-        }
-    }
+        int cur_device;
+        cerr = cudaGetDevice(&cur_device);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-    cerr = cudaSetDevice(cur_device);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+        cerr = cudaSetDevice(target);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
+        cuda_type->pack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks_x, n_blocks_y,
+                        n_blocks_z, target);
+
+        cerr = cudaSetDevice(cur_device);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    }
 
   fn_exit:
     return rc;
@@ -161,20 +146,13 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
 }
 
 int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                          yaksi_info_s * info, yaksi_request_s * request, int target)
+                          yaksi_info_s * info, int target)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
     cudaError_t cerr;
 
     uintptr_t iov_unpack_threshold = yaksuri_cudai_get_iov_unpack_threshold(info);
-
-    int cur_device;
-    cerr = cudaGetDevice(&cur_device);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-
-    cerr = cudaSetDevice(target);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
     /* shortcut for contiguous types */
     if (type->is_contig) {
@@ -210,27 +188,19 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
         rc = get_thread_block_dims(count, type, &n_threads, &n_blocks_x, &n_blocks_y, &n_blocks_z);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
-        if ((request->backend.inattr.type == YAKSUR_PTR_TYPE__MANAGED &&
-             request->backend.outattr.type == YAKSUR_PTR_TYPE__MANAGED) ||
-            (request->backend.inattr.type == YAKSUR_PTR_TYPE__MANAGED &&
-             request->backend.outattr.type == YAKSUR_PTR_TYPE__GPU) ||
-            (request->backend.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-             request->backend.outattr.type == YAKSUR_PTR_TYPE__GPU &&
-             request->backend.inattr.device == request->backend.outattr.device)) {
-            cuda_type->unpack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks_x,
-                              n_blocks_y, n_blocks_z, target);
-        } else if (request->backend.inattr.type == YAKSUR_PTR_TYPE__GPU &&
-                   request->backend.outattr.type == YAKSUR_PTR_TYPE__MANAGED) {
-            cuda_type->unpack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks_x,
-                              n_blocks_y, n_blocks_z, target);
-        } else {
-            rc = YAKSA_ERR__INTERNAL;
-            goto fn_fail;
-        }
-    }
+        int cur_device;
+        cerr = cudaGetDevice(&cur_device);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-    cerr = cudaSetDevice(cur_device);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+        cerr = cudaSetDevice(target);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
+        cuda_type->unpack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks_x,
+                          n_blocks_y, n_blocks_z, target);
+
+        cerr = cudaSetDevice(cur_device);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    }
 
   fn_exit:
     return rc;
