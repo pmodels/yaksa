@@ -75,9 +75,9 @@ int yaksuri_cudai_md_alloc(yaksi_type_s * type);
 int yaksuri_cudai_populate_pupfns(yaksi_type_s * type);
 
 int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                        yaksi_info_s * info, yaksi_request_s * request, int target);
+                        yaksi_info_s * info, int target);
 int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                          yaksi_info_s * info, yaksi_request_s * request, int target);
+                          yaksi_info_s * info, int target);
 int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, bool * is_supported);
 uintptr_t yaksuri_cudai_get_iov_pack_threshold(yaksi_info_s * info);
 uintptr_t yaksuri_cudai_get_iov_unpack_threshold(yaksi_info_s * info);
