@@ -171,12 +171,9 @@ int yaksuri_cuda_init_hook(yaksur_gpudriver_hooks_s ** hooks)
     (*hooks)->host_free = cuda_host_free;
     (*hooks)->gpu_malloc = cuda_gpu_malloc;
     (*hooks)->gpu_free = cuda_gpu_free;
-    (*hooks)->event_create = yaksuri_cudai_event_create;
-    (*hooks)->event_destroy = yaksuri_cudai_event_destroy;
     (*hooks)->event_record = yaksuri_cudai_event_record;
     (*hooks)->event_query = yaksuri_cudai_event_query;
-    (*hooks)->event_synchronize = yaksuri_cudai_event_synchronize;
-    (*hooks)->event_add_dependency = yaksuri_cudai_event_add_dependency;
+    (*hooks)->add_dependency = yaksuri_cudai_add_dependency;
     (*hooks)->type_create = yaksuri_cudai_type_create_hook;
     (*hooks)->type_free = yaksuri_cudai_type_free_hook;
     (*hooks)->get_ptr_attr = yaksuri_cudai_get_ptr_attr;

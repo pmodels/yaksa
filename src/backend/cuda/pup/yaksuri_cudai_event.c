@@ -10,7 +10,7 @@
 #include "yaksu.h"
 #include "yaksuri_cudai.h"
 
-int yaksuri_cudai_event_create(int device, void **event_)
+int yaksuri_cudai_event_record(int device, void **event_)
 {
     int rc = YAKSA_SUCCESS;
     cudaError_t cerr;
@@ -28,42 +28,13 @@ int yaksuri_cudai_event_create(int device, void **event_)
     cerr = cudaEventCreate(&event->event);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
+    cerr = cudaEventRecord(event->event, yaksuri_cudai_global.stream[device]);
+    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
     cerr = cudaSetDevice(cur_device);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-    event->device = device;
-
     *event_ = event;
-
-  fn_exit:
-    return rc;
-  fn_fail:
-    goto fn_exit;
-}
-
-int yaksuri_cudai_event_destroy(void *event_)
-{
-    int rc = YAKSA_SUCCESS;
-    yaksuri_cudai_event_s *event = (yaksuri_cudai_event_s *) event_;
-
-    cudaError_t cerr = cudaEventDestroy(event->event);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-
-    free(event);
-
-  fn_exit:
-    return rc;
-  fn_fail:
-    goto fn_exit;
-}
-
-int yaksuri_cudai_event_record(void *event_)
-{
-    int rc = YAKSA_SUCCESS;
-    yaksuri_cudai_event_s *event = (yaksuri_cudai_event_s *) event_;
-
-    cudaError_t cerr = cudaEventRecord(event->event, yaksuri_cudai_global.stream[event->device]);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
   fn_exit:
     return rc;
@@ -78,6 +49,11 @@ int yaksuri_cudai_event_query(void *event_, int *completed)
 
     cudaError_t cerr = cudaEventQuery(event->event);
     if (cerr == cudaSuccess) {
+        cerr = cudaEventDestroy(event->event);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
+        free(event);
+
         *completed = 1;
     } else if (cerr == cudaErrorNotReady) {
         *completed = 0;
@@ -91,37 +67,35 @@ int yaksuri_cudai_event_query(void *event_, int *completed)
     goto fn_exit;
 }
 
-int yaksuri_cudai_event_synchronize(void *event_)
-{
-    int rc = YAKSA_SUCCESS;
-    yaksuri_cudai_event_s *event = (yaksuri_cudai_event_s *) event_;
-
-    cudaError_t cerr = cudaEventSynchronize(event->event);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-
-  fn_exit:
-    return rc;
-  fn_fail:
-    goto fn_exit;
-}
-
-int yaksuri_cudai_event_add_dependency(void *event_, int device)
+int yaksuri_cudai_add_dependency(int device1, int device2)
 {
     int rc = YAKSA_SUCCESS;
     cudaError_t cerr;
-    yaksuri_cudai_event_s *event = (yaksuri_cudai_event_s *) event_;
 
+    /* create a temporary event on the first device */
     int cur_device;
     cerr = cudaGetDevice(&cur_device);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-    cerr = cudaSetDevice(device);
+    cerr = cudaSetDevice(device1);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-    cerr = cudaStreamWaitEvent(yaksuri_cudai_global.stream[device], event->event, 0);
+    cudaEvent_t event;
+    cerr = cudaEventCreate(&event);
+    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
+    cerr = cudaEventRecord(event, yaksuri_cudai_global.stream[device1]);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
     cerr = cudaSetDevice(cur_device);
+    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
+    /* add a dependency on that event for the second device */
+    cerr = cudaStreamWaitEvent(yaksuri_cudai_global.stream[device2], event, 0);
+    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
+    /* destroy the temporary event */
+    cerr = cudaEventDestroy(event);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
   fn_exit:
