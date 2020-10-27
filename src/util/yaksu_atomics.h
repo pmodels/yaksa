@@ -32,7 +32,7 @@ static inline int yaksu_atomic_load(yaksu_atomic_int * val)
 
 static inline void yaksu_atomic_store(yaksu_atomic_int * val, int x)
 {
-    return atomic_store_explicit(val, x, memory_order_release);
+    atomic_store_explicit(val, x, memory_order_release);
 }
 
 #else
