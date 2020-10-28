@@ -216,7 +216,6 @@ static int pack_d2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subr
     rc = check_p2p_comm(id, reqpriv->request->backend.inattr.device,
                         reqpriv->request->backend.outattr.device, &is_enabled);
     YAKSU_ERR_CHECK(rc, fn_fail);
-    assert(is_enabled);
 
     if (is_enabled) {
         /* p2p is enabled: we need a temporary buffer on the source device */
