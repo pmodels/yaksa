@@ -22,8 +22,10 @@ int yaksuri_cudai_event_record(int device, void **event_)
     cerr = cudaGetDevice(&cur_device);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-    cerr = cudaSetDevice(device);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    if (cur_device != device) {
+        cerr = cudaSetDevice(device);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    }
 
     cerr = cudaEventCreate(&event->event);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
@@ -31,8 +33,10 @@ int yaksuri_cudai_event_record(int device, void **event_)
     cerr = cudaEventRecord(event->event, yaksuri_cudai_global.stream[device]);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-    cerr = cudaSetDevice(cur_device);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    if (cur_device != device) {
+        cerr = cudaSetDevice(cur_device);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    }
 
     *event_ = event;
 
@@ -77,8 +81,10 @@ int yaksuri_cudai_add_dependency(int device1, int device2)
     cerr = cudaGetDevice(&cur_device);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-    cerr = cudaSetDevice(device1);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    if (cur_device != device1) {
+        cerr = cudaSetDevice(device1);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    }
 
     cudaEvent_t event;
     cerr = cudaEventCreate(&event);
@@ -87,8 +93,10 @@ int yaksuri_cudai_add_dependency(int device1, int device2)
     cerr = cudaEventRecord(event, yaksuri_cudai_global.stream[device1]);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-    cerr = cudaSetDevice(cur_device);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    if (cur_device != device1) {
+        cerr = cudaSetDevice(cur_device);
+        YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+    }
 
     /* add a dependency on that event for the second device */
     cerr = cudaStreamWaitEvent(yaksuri_cudai_global.stream[device2], event, 0);

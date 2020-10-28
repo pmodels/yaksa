@@ -29,14 +29,18 @@ static void *cuda_gpu_malloc(uintptr_t size, int device)
     cerr = cudaGetDevice(&cur_device);
     YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
 
-    cerr = cudaSetDevice(device);
-    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
+    if (cur_device != device) {
+        cerr = cudaSetDevice(device);
+        YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
+    }
 
     cerr = cudaMalloc(&ptr, size);
     YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
 
-    cerr = cudaSetDevice(cur_device);
-    YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
+    if (cur_device != device) {
+        cerr = cudaSetDevice(cur_device);
+        YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);
+    }
 
     return ptr;
 }
@@ -60,10 +64,6 @@ static int finalize_hook(void)
     int rc = YAKSA_SUCCESS;
     cudaError_t cerr;
 
-    int cur_device;
-    cerr = cudaGetDevice(&cur_device);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-
     for (int i = 0; i < yaksuri_cudai_global.ndevices; i++) {
         cerr = cudaSetDevice(i);
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
@@ -75,9 +75,6 @@ static int finalize_hook(void)
     }
     free(yaksuri_cudai_global.stream);
     free(yaksuri_cudai_global.p2p);
-
-    cerr = cudaSetDevice(cur_device);
-    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
   fn_exit:
     return rc;
