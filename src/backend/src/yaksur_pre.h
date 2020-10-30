@@ -68,12 +68,9 @@ typedef struct yaksur_gpudriver_hooks_s {
     int (*get_ptr_attr) (const void *buf, yaksur_ptr_attr_s * ptrattr);
 
     /* events */
-    int (*event_create) (int device, void **event);
-    int (*event_destroy) (void *event);
-    int (*event_record) (void *event);
+    int (*event_record) (int device, void **event);
     int (*event_query) (void *event, int *completed);
-    int (*event_synchronize) (void *event);
-    int (*event_add_dependency) (void *event, int device);
+    int (*add_dependency) (int device1, int device2);
 
     /* types */
     int (*type_create) (struct yaksi_type_s * type);

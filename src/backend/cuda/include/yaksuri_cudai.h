@@ -51,7 +51,6 @@ typedef struct {
 
 typedef struct {
     cudaEvent_t event;
-    int device;
 } yaksuri_cudai_event_s;
 
 int yaksuri_cudai_finalize_hook(void);
@@ -62,12 +61,9 @@ int yaksuri_cudai_info_free_hook(yaksi_info_s * info);
 int yaksuri_cudai_info_keyval_append(yaksi_info_s * info, const char *key, const void *val,
                                      unsigned int vallen);
 
-int yaksuri_cudai_event_create(int device, void **event);
-int yaksuri_cudai_event_destroy(void *event);
-int yaksuri_cudai_event_record(void *event);
+int yaksuri_cudai_event_record(int device, void **event);
 int yaksuri_cudai_event_query(void *event, int *completed);
-int yaksuri_cudai_event_synchronize(void *event);
-int yaksuri_cudai_event_add_dependency(void *event, int device);
+int yaksuri_cudai_add_dependency(int device1, int device2);
 
 int yaksuri_cudai_get_ptr_attr(const void *buf, yaksur_ptr_attr_s * ptrattr);
 
