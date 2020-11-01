@@ -68,7 +68,22 @@ EOF
         AC_DEFINE([HAVE_CUDA],[1],[Define is CUDA is available])
         AS_IF([test -n "${with_cuda}"],[NVCC=${with_cuda}/bin/nvcc],[NVCC=nvcc])
         AC_SUBST(NVCC)
-        AC_MSG_RESULT([yes])
+        # nvcc compiled applications need libstdc++ to be able to link
+        # with a C compiler
+        PAC_PUSH_FLAG([LIBS])
+        PAC_APPEND_FLAG([-lstdc++],[LIBS])
+        AC_LINK_IFELSE(
+            [AC_LANG_PROGRAM([int x = 5;],[x++;])],
+            [libstdcpp_works=yes],
+            [libstdcpp_works=no])
+        PAC_POP_FLAG([LIBS])
+        if test "${libstdcpp_works}" = "yes" ; then
+            PAC_APPEND_FLAG([-lstdc++],[LIBS])
+            AC_MSG_RESULT([yes])
+        else
+            have_cuda=no
+            AC_MSG_RESULT([no])
+        fi
     else
         have_cuda=no
         AC_MSG_RESULT([no])
