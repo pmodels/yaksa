@@ -157,6 +157,7 @@ static int simple_release(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subreq
 
     if (subreq->u.multiple.chunks == NULL) {
         DL_DELETE(reqpriv->subreqs, subreq);
+        yaksi_type_free(subreq->u.multiple.type);
         free(subreq);
     }
     if (reqpriv->subreqs == NULL) {
@@ -964,6 +965,8 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
     subreq->u.multiple.type = type;
     subreq->u.multiple.issued_count = 0;
     subreq->u.multiple.chunks = NULL;
+
+    yaksu_atomic_incr(&type->refcount);
 
     if (reqpriv->optype == YAKSURI_OPTYPE__PACK) {
         if (request->backend.inattr.type == YAKSUR_PTR_TYPE__GPU &&
