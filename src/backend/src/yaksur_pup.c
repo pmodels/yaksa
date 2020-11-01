@@ -9,77 +9,52 @@
 #include "yaksu.h"
 #include "yaksuri.h"
 
-static int get_ptr_attr(const void *buf, yaksur_ptr_attr_s * ptrattr, yaksuri_gpudriver_id_e * id)
-{
-    int rc = YAKSA_SUCCESS;
-
-    /* Each GPU driver can claim "ownership" of the input buffer */
-    for (*id = YAKSURI_GPUDRIVER_ID__UNSET; *id < YAKSURI_GPUDRIVER_ID__LAST; (*id)++) {
-        if (*id == YAKSURI_GPUDRIVER_ID__UNSET)
-            continue;
-
-        if (yaksuri_global.gpudriver[*id].hooks) {
-            rc = yaksuri_global.gpudriver[*id].hooks->get_ptr_attr(buf, ptrattr);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-
-            if (ptrattr->type != YAKSUR_PTR_TYPE__UNREGISTERED_HOST)
-                break;
-        }
-    }
-
-    if (*id == YAKSURI_GPUDRIVER_ID__LAST) {
-        *id = YAKSURI_GPUDRIVER_ID__UNSET;
-        ptrattr->type = YAKSUR_PTR_TYPE__UNREGISTERED_HOST;
-    }
-
-  fn_exit:
-    return rc;
-  fn_fail:
-    goto fn_exit;
-}
-
 static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
                 yaksi_info_s * info, yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
-    yaksuri_gpudriver_id_e inbuf_gpudriver, outbuf_gpudriver;
     yaksuri_request_s *reqpriv = (yaksuri_request_s *) request->backend.priv;
+    yaksuri_info_s *infopriv;
+    int (*hookfn) (const void *inbuf, void *outbuf, yaksi_info_s * info,
+                   yaksur_ptr_attr_s * inattr, yaksur_ptr_attr_s * outattr);
 
-    if (reqpriv->optype == YAKSURI_OPTYPE__PACK) {
-        rc = get_ptr_attr((const char *) inbuf + type->true_lb, &request->backend.inattr,
-                          &inbuf_gpudriver);
-        YAKSU_ERR_CHECK(rc, fn_fail);
+    reqpriv->gpudriver_id = YAKSURI_GPUDRIVER_ID__UNSET;
 
-        rc = get_ptr_attr(outbuf, &request->backend.outattr, &outbuf_gpudriver);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-    } else {
-        rc = get_ptr_attr(inbuf, &request->backend.inattr, &inbuf_gpudriver);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-
-        rc = get_ptr_attr((char *) outbuf + type->true_lb, &request->backend.outattr,
-                          &outbuf_gpudriver);
-        YAKSU_ERR_CHECK(rc, fn_fail);
+    if (info) {
+        infopriv = (yaksuri_info_s *) info->backend.priv;
     }
 
+    yaksuri_gpudriver_id_e id;
+    for (id = YAKSURI_GPUDRIVER_ID__UNSET; id < YAKSURI_GPUDRIVER_ID__LAST; id++) {
+        if (id == YAKSURI_GPUDRIVER_ID__UNSET || yaksuri_global.gpudriver[id].hooks == NULL)
+            continue;
+
+        if (info && infopriv->gpudriver_id != YAKSURI_GPUDRIVER_ID__UNSET &&
+            infopriv->gpudriver_id != id)
+            continue;
+
+        hookfn = yaksuri_global.gpudriver[id].hooks->get_ptr_attr;
+        if (reqpriv->optype == YAKSURI_OPTYPE__PACK) {
+            rc = hookfn((const char *) inbuf + type->true_lb, outbuf, info,
+                        &request->backend.inattr, &request->backend.outattr);
+        } else {
+            rc = hookfn(inbuf, (char *) outbuf + type->true_lb, info,
+                        &request->backend.inattr, &request->backend.outattr);
+        }
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        if (request->backend.inattr.type == YAKSUR_PTR_TYPE__GPU ||
+            request->backend.outattr.type == YAKSUR_PTR_TYPE__GPU) {
+            reqpriv->gpudriver_id = id;
+            break;
+        }
+    }
+
+    if (id == YAKSURI_GPUDRIVER_ID__LAST)
+        reqpriv->gpudriver_id = YAKSURI_GPUDRIVER_ID__UNSET;
+
     /* if this can be handled by the CPU, wrap it up */
-    if ((request->backend.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
-         request->backend.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
-        (request->backend.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
-         request->backend.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) ||
-        (request->backend.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST &&
-         request->backend.outattr.type == YAKSUR_PTR_TYPE__MANAGED) ||
-        (request->backend.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
-         request->backend.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
-        (request->backend.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
-         request->backend.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) ||
-        (request->backend.inattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST &&
-         request->backend.outattr.type == YAKSUR_PTR_TYPE__MANAGED) ||
-        (request->backend.inattr.type == YAKSUR_PTR_TYPE__MANAGED &&
-         request->backend.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) ||
-        (request->backend.inattr.type == YAKSUR_PTR_TYPE__MANAGED &&
-         request->backend.outattr.type == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) ||
-        (request->backend.inattr.type == YAKSUR_PTR_TYPE__MANAGED &&
-         request->backend.outattr.type == YAKSUR_PTR_TYPE__MANAGED)) {
+    if (reqpriv->gpudriver_id == YAKSURI_GPUDRIVER_ID__UNSET) {
         bool is_supported;
         rc = yaksuri_seq_pup_is_supported(type, &is_supported);
         YAKSU_ERR_CHECK(rc, fn_fail);
@@ -100,18 +75,7 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
 
     /* if this cannot be handled by the CPU, queue it up for the GPU
      * to handle */
-    assert(inbuf_gpudriver != YAKSURI_GPUDRIVER_ID__UNSET ||
-           outbuf_gpudriver != YAKSURI_GPUDRIVER_ID__UNSET);
-
-    if (inbuf_gpudriver != YAKSURI_GPUDRIVER_ID__UNSET &&
-        outbuf_gpudriver != YAKSURI_GPUDRIVER_ID__UNSET) {
-        assert(inbuf_gpudriver == outbuf_gpudriver);
-        reqpriv->gpudriver_id = inbuf_gpudriver;
-    } else if (inbuf_gpudriver != YAKSURI_GPUDRIVER_ID__UNSET) {
-        reqpriv->gpudriver_id = inbuf_gpudriver;
-    } else if (outbuf_gpudriver != YAKSURI_GPUDRIVER_ID__UNSET) {
-        reqpriv->gpudriver_id = outbuf_gpudriver;
-    }
+    assert(reqpriv->gpudriver_id != YAKSURI_GPUDRIVER_ID__UNSET);
 
     rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, info, request);
     YAKSU_ERR_CHECK(rc, fn_fail);

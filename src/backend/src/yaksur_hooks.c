@@ -241,6 +241,12 @@ int yaksur_info_create_hook(yaksi_info_s * info)
         }
     }
 
+    info->backend.priv = (yaksuri_info_s *) malloc(sizeof(yaksuri_info_s));
+
+    yaksuri_info_s *infopriv;
+    infopriv = (yaksuri_info_s *) info->backend.priv;
+    infopriv->gpudriver_id = YAKSURI_GPUDRIVER_ID__UNSET;
+
   fn_exit:
     return rc;
   fn_fail:
@@ -250,6 +256,8 @@ int yaksur_info_create_hook(yaksi_info_s * info)
 int yaksur_info_free_hook(yaksi_info_s * info)
 {
     int rc = YAKSA_SUCCESS;
+
+    free(info->backend.priv);
 
     rc = yaksuri_seq_info_free_hook(info);
     YAKSU_ERR_CHECK(rc, fn_fail);
@@ -275,6 +283,16 @@ int yaksur_info_keyval_append(yaksi_info_s * info, const char *key, const void *
                               unsigned int vallen)
 {
     int rc = YAKSA_SUCCESS;
+
+    if (!strncmp(key, "yaksa_gpu_driver", YAKSA_INFO_MAX_KEYLEN)) {
+        yaksuri_info_s *infopriv = info->backend.priv;
+        if (!strncmp(val, "cuda", vallen)) {
+            infopriv->gpudriver_id = YAKSURI_GPUDRIVER_ID__CUDA;
+        } else {
+            assert(0);
+        }
+        goto fn_exit;
+    }
 
     rc = yaksuri_seq_info_keyval_append(info, key, val, vallen);
     YAKSU_ERR_CHECK(rc, fn_fail);
