@@ -294,6 +294,10 @@ void *runtest(void *arg)
             assert(rc == YAKSA_SUCCESS);
             assert(actual_pack_bytes <= segment_lengths[j]);
 
+            if (j == segments - 1) {
+                DTP_obj_free(sobj);
+            }
+
             rc = yaksa_request_wait(request);
             assert(rc == YAKSA_SUCCESS);
 
@@ -318,7 +322,6 @@ void *runtest(void *arg)
         free_mem(dbuf_memtype, dbuf_h, dbuf_d);
         free_mem(tbuf_memtype, NULL, tbuf);
 
-        DTP_obj_free(sobj);
         DTP_obj_free(dobj);
     }
 
