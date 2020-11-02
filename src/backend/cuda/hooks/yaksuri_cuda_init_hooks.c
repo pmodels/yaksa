@@ -113,6 +113,35 @@ int yaksuri_cuda_init_hook(yaksur_gpudriver_hooks_s ** hooks)
     cerr = cudaGetDeviceCount(&yaksuri_cudai_global.ndevices);
     YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
+    if (getenv("CUDA_VISIBLE_DEVICES") == NULL) {
+        /* user did not do any filtering for us; if any of the devices
+         * is in exclusive mode, disable GPU support to avoid
+         * incorrect device sharing */
+        bool excl = false;
+        for (int i = 0; i < yaksuri_cudai_global.ndevices; i++) {
+            struct cudaDeviceProp prop;
+
+            cerr = cudaGetDeviceProperties(&prop, i);
+            YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
+            if (prop.computeMode != cudaComputeModeDefault) {
+                excl = true;
+                break;
+            }
+        }
+
+        if (excl == true) {
+            fprintf(stderr, "[yaksa] ====> Disabling CUDA support <====\n");
+            fprintf(stderr,
+                    "[yaksa] CUDA is setup in exclusive compute mode, but CUDA_VISIBLE_DEVICES is not set\n");
+            fprintf(stderr,
+                    "[yaksa] You can silence this warning by setting CUDA_VISIBLE_DEVICES\n");
+            fflush(stderr);
+            *hooks = NULL;
+            goto fn_exit;
+        }
+    }
+
     yaksuri_cudai_global.stream = (cudaStream_t *)
         malloc(yaksuri_cudai_global.ndevices * sizeof(cudaStream_t));
 
