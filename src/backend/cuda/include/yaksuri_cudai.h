@@ -47,6 +47,10 @@ typedef struct yaksuri_cudai_type_s {
 typedef struct {
     uintptr_t iov_pack_threshold;
     uintptr_t iov_unpack_threshold;
+    struct {
+        bool is_valid;
+        struct cudaPointerAttributes attr;
+    } inbuf, outbuf;
 } yaksuri_cudai_info_s;
 
 typedef struct {
@@ -65,7 +69,8 @@ int yaksuri_cudai_event_record(int device, void **event);
 int yaksuri_cudai_event_query(void *event, int *completed);
 int yaksuri_cudai_add_dependency(int device1, int device2);
 
-int yaksuri_cudai_get_ptr_attr(const void *buf, yaksur_ptr_attr_s * ptrattr);
+int yaksuri_cudai_get_ptr_attr(const void *inbuf, void *outbuf, yaksi_info_s * info,
+                               yaksur_ptr_attr_s * inattr, yaksur_ptr_attr_s * outattr);
 
 int yaksuri_cudai_md_alloc(yaksi_type_s * type);
 int yaksuri_cudai_populate_pupfns(yaksi_type_s * type);

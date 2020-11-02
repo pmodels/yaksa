@@ -156,6 +156,7 @@ typedef struct yaksi_request_s {
 } yaksi_request_s;
 
 typedef struct yaksi_info_s {
+    yaksu_atomic_int refcount;
     yaksur_info_s backend;
 } yaksi_info_s;
 

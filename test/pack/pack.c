@@ -122,6 +122,33 @@ static void free_mem(mem_type_e type, void *hostbuf, void *devicebuf)
     }
 }
 
+static void get_ptr_attr(const void *inbuf, void *outbuf, yaksa_info_t * info)
+{
+#ifdef HAVE_CUDA
+    static int count = 0;
+    if ((++count) % 2 == 0) {
+        int rc;
+
+        rc = yaksa_info_create(info);
+        assert(rc == YAKSA_SUCCESS);
+
+        rc = yaksa_info_keyval_append(*info, "yaksa_gpu_driver", "cuda", strlen("cuda"));
+        assert(rc == YAKSA_SUCCESS);
+
+        struct cudaPointerAttributes attr;
+
+        cudaPointerGetAttributes(&attr, inbuf);
+        rc = yaksa_info_keyval_append(*info, "yaksa_cuda_inbuf_ptr_attr", &attr, sizeof(attr));
+        assert(rc == YAKSA_SUCCESS);
+
+        cudaPointerGetAttributes(&attr, outbuf);
+        rc = yaksa_info_keyval_append(*info, "yaksa_cuda_outbuf_ptr_attr", &attr, sizeof(attr));
+        assert(rc == YAKSA_SUCCESS);
+    } else
+#endif
+        *info = NULL;
+}
+
 static void copy_content(const void *sbuf, void *dbuf, size_t size, mem_type_e type)
 {
 #ifdef HAVE_CUDA
@@ -284,15 +311,23 @@ void *runtest(void *arg)
         uintptr_t tbufsize = ssize * sobj.DTP_type_count;
         alloc_mem(tbufsize, tbuf_memtype, NULL, (void **) &tbuf);
 
+        yaksa_info_t pack_info, unpack_info;
+        get_ptr_attr(sbuf_d + sobj.DTP_buf_offset, tbuf, &pack_info);
+        get_ptr_attr(tbuf, dbuf_d + dobj.DTP_buf_offset, &unpack_info);
+
         for (int j = 0; j < segments; j++) {
             uintptr_t actual_pack_bytes;
             yaksa_request_t request;
 
             rc = yaksa_ipack(sbuf_d + sobj.DTP_buf_offset, sobj.DTP_type_count, sobj.DTP_datatype,
                              segment_starts[j], tbuf, segment_lengths[j], &actual_pack_bytes,
-                             NULL, &request);
+                             pack_info, &request);
             assert(rc == YAKSA_SUCCESS);
             assert(actual_pack_bytes <= segment_lengths[j]);
+
+            if (j == segments - 1) {
+                DTP_obj_free(sobj);
+            }
 
             rc = yaksa_request_wait(request);
             assert(rc == YAKSA_SUCCESS);
@@ -300,11 +335,21 @@ void *runtest(void *arg)
             uintptr_t actual_unpack_bytes;
             rc = yaksa_iunpack(tbuf, actual_pack_bytes, dbuf_d + dobj.DTP_buf_offset,
                                dobj.DTP_type_count, dobj.DTP_datatype, segment_starts[j],
-                               &actual_unpack_bytes, NULL, &request);
+                               &actual_unpack_bytes, unpack_info, &request);
             assert(rc == YAKSA_SUCCESS);
             assert(actual_pack_bytes == actual_unpack_bytes);
 
             rc = yaksa_request_wait(request);
+            assert(rc == YAKSA_SUCCESS);
+        }
+
+        if (pack_info) {
+            rc = yaksa_info_free(pack_info);
+            assert(rc == YAKSA_SUCCESS);
+        }
+
+        if (unpack_info) {
+            rc = yaksa_info_free(unpack_info);
             assert(rc == YAKSA_SUCCESS);
         }
 
@@ -318,7 +363,6 @@ void *runtest(void *arg)
         free_mem(dbuf_memtype, dbuf_h, dbuf_d);
         free_mem(tbuf_memtype, NULL, tbuf);
 
-        DTP_obj_free(sobj);
         DTP_obj_free(dobj);
     }
 

@@ -41,6 +41,7 @@ typedef struct {
 typedef struct {
     yaksuri_seq_info_s seq;
     yaksuri_cuda_info_s cuda;
+    void *priv;
 } yaksur_info_s;
 
 typedef struct yaksur_gpudriver_hooks_s {
@@ -65,7 +66,8 @@ typedef struct yaksur_gpudriver_hooks_s {
     void (*host_free) (void *ptr);
     void *(*gpu_malloc) (uintptr_t size, int device);
     void (*gpu_free) (void *ptr);
-    int (*get_ptr_attr) (const void *buf, yaksur_ptr_attr_s * ptrattr);
+    int (*get_ptr_attr) (const void *inbuf, void *outbuf, struct yaksi_info_s * info,
+                         yaksur_ptr_attr_s * inattr, yaksur_ptr_attr_s * outattr);
 
     /* events */
     int (*event_record) (int device, void **event);

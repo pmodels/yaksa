@@ -94,6 +94,10 @@ typedef struct yaksuri_request {
     UT_hash_handle hh;
 } yaksuri_request_s;
 
+typedef struct {
+    yaksuri_gpudriver_id_e gpudriver_id;
+} yaksuri_info_s;
+
 int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
                              yaksi_info_s * info, yaksi_request_s * request);
 int yaksuri_progress_poke(void);
