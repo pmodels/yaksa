@@ -18,35 +18,35 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
     int (*hookfn) (const void *inbuf, void *outbuf, yaksi_info_s * info,
                    yaksur_ptr_attr_s * inattr, yaksur_ptr_attr_s * outattr);
 
-    reqpriv->gpudriver_id = YAKSURI_GPUDRIVER_ID__UNSET;
-
     if (info) {
         infopriv = (yaksuri_info_s *) info->backend.priv;
     }
 
-    yaksuri_gpudriver_id_e id;
-    for (id = YAKSURI_GPUDRIVER_ID__UNSET; id < YAKSURI_GPUDRIVER_ID__LAST; id++) {
-        if (id == YAKSURI_GPUDRIVER_ID__UNSET || yaksuri_global.gpudriver[id].hooks == NULL)
-            continue;
+    yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+    if (id == YAKSURI_GPUDRIVER_ID__UNSET) {
+        for (id = YAKSURI_GPUDRIVER_ID__UNSET; id < YAKSURI_GPUDRIVER_ID__LAST; id++) {
+            if (id == YAKSURI_GPUDRIVER_ID__UNSET || yaksuri_global.gpudriver[id].hooks == NULL)
+                continue;
 
-        if (info && infopriv->gpudriver_id != YAKSURI_GPUDRIVER_ID__UNSET &&
-            infopriv->gpudriver_id != id)
-            continue;
+            if (info && infopriv->gpudriver_id != YAKSURI_GPUDRIVER_ID__UNSET &&
+                infopriv->gpudriver_id != id)
+                continue;
 
-        hookfn = yaksuri_global.gpudriver[id].hooks->get_ptr_attr;
-        if (reqpriv->optype == YAKSURI_OPTYPE__PACK) {
-            rc = hookfn((const char *) inbuf + type->true_lb, outbuf, info,
-                        &request->backend.inattr, &request->backend.outattr);
-        } else {
-            rc = hookfn(inbuf, (char *) outbuf + type->true_lb, info,
-                        &request->backend.inattr, &request->backend.outattr);
-        }
-        YAKSU_ERR_CHECK(rc, fn_fail);
+            hookfn = yaksuri_global.gpudriver[id].hooks->get_ptr_attr;
+            if (reqpriv->optype == YAKSURI_OPTYPE__PACK) {
+                rc = hookfn((const char *) inbuf + type->true_lb, outbuf, info,
+                            &request->backend.inattr, &request->backend.outattr);
+            } else {
+                rc = hookfn(inbuf, (char *) outbuf + type->true_lb, info,
+                            &request->backend.inattr, &request->backend.outattr);
+            }
+            YAKSU_ERR_CHECK(rc, fn_fail);
 
-        if (request->backend.inattr.type == YAKSUR_PTR_TYPE__GPU ||
-            request->backend.outattr.type == YAKSUR_PTR_TYPE__GPU) {
-            reqpriv->gpudriver_id = id;
-            break;
+            if (request->backend.inattr.type == YAKSUR_PTR_TYPE__GPU ||
+                request->backend.outattr.type == YAKSUR_PTR_TYPE__GPU) {
+                reqpriv->gpudriver_id = id;
+                break;
+            }
         }
     }
 
