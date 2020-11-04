@@ -8,9 +8,11 @@ EXTRA_DIST += $(top_srcdir)/test/simple/testlist.gen
 
 EXTRA_PROGRAMS += \
 	test/simple/simple_test \
+        test/simple/lbub \
 	test/simple/threaded_test
 
 test_simple_simple_test_CPPFLAGS = $(test_cppflags)
+test_simple_lbub_CPPFLAGS = $(test_cppflags)
 test_simple_threaded_test_CPPFLAGS = $(test_cppflags)
 
 test-simple:
