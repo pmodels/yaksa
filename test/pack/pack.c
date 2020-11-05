@@ -307,20 +307,20 @@ void *runtest(void *arg)
         copy_content(sbuf_h, sbuf_d, sobj.DTP_bufsize, sbuf_memtype);
         copy_content(dbuf_h, dbuf_d, dobj.DTP_bufsize, dbuf_memtype);
 
-        void *tbuf;
+        void *tbuf_h, *tbuf_d;
         uintptr_t tbufsize = ssize * sobj.DTP_type_count;
-        alloc_mem(tbufsize, tbuf_memtype, NULL, &tbuf);
+        alloc_mem(tbufsize, tbuf_memtype, &tbuf_h, &tbuf_d);
 
         yaksa_info_t pack_info, unpack_info;
-        get_ptr_attr(sbuf_d + sobj.DTP_buf_offset, tbuf, &pack_info);
-        get_ptr_attr(tbuf, dbuf_d + dobj.DTP_buf_offset, &unpack_info);
+        get_ptr_attr(sbuf_d + sobj.DTP_buf_offset, tbuf_d, &pack_info);
+        get_ptr_attr(tbuf_d, dbuf_d + dobj.DTP_buf_offset, &unpack_info);
 
         for (int j = 0; j < segments; j++) {
             uintptr_t actual_pack_bytes;
             yaksa_request_t request;
 
             rc = yaksa_ipack(sbuf_d + sobj.DTP_buf_offset, sobj.DTP_type_count, sobj.DTP_datatype,
-                             segment_starts[j], tbuf, segment_lengths[j], &actual_pack_bytes,
+                             segment_starts[j], tbuf_d, segment_lengths[j], &actual_pack_bytes,
                              pack_info, &request);
             assert(rc == YAKSA_SUCCESS);
             assert(actual_pack_bytes <= segment_lengths[j]);
@@ -333,7 +333,7 @@ void *runtest(void *arg)
             assert(rc == YAKSA_SUCCESS);
 
             uintptr_t actual_unpack_bytes;
-            rc = yaksa_iunpack(tbuf, actual_pack_bytes, dbuf_d + dobj.DTP_buf_offset,
+            rc = yaksa_iunpack(tbuf_d, actual_pack_bytes, dbuf_d + dobj.DTP_buf_offset,
                                dobj.DTP_type_count, dobj.DTP_datatype, segment_starts[j],
                                &actual_unpack_bytes, unpack_info, &request);
             assert(rc == YAKSA_SUCCESS);
@@ -361,7 +361,7 @@ void *runtest(void *arg)
         /* free allocated buffers and objects */
         free_mem(sbuf_memtype, sbuf_h, sbuf_d);
         free_mem(dbuf_memtype, dbuf_h, dbuf_d);
-        free_mem(tbuf_memtype, NULL, tbuf);
+        free_mem(tbuf_memtype, tbuf_h, tbuf_d);
 
         DTP_obj_free(dobj);
     }
