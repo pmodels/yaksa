@@ -309,7 +309,7 @@ void *runtest(void *arg)
 
         void *tbuf;
         uintptr_t tbufsize = ssize * sobj.DTP_type_count;
-        alloc_mem(tbufsize, tbuf_memtype, NULL, (void **) &tbuf);
+        alloc_mem(tbufsize, tbuf_memtype, NULL, &tbuf);
 
         yaksa_info_t pack_info, unpack_info;
         get_ptr_attr(sbuf_d + sobj.DTP_buf_offset, tbuf, &pack_info);
