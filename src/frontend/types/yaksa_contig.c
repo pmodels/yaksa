@@ -31,8 +31,14 @@ int yaksi_type_create_contig(int count, yaksi_type_s * intype, yaksi_type_s ** n
     outtype->size = intype->size * count;
     outtype->alignment = intype->alignment;
 
-    outtype->lb = intype->lb;
-    outtype->ub = intype->lb + count * intype->extent;
+    if (intype->extent > 0) {
+        outtype->lb = intype->lb;
+        outtype->ub = intype->ub + (count - 1) * intype->extent;
+    } else {
+        outtype->lb = intype->lb + (count - 1) * intype->extent;
+        outtype->ub = intype->ub;
+    }
+
     outtype->true_lb = outtype->lb + intype->true_lb - intype->lb;
     outtype->true_ub = outtype->ub - intype->ub + intype->true_ub;
     outtype->extent = outtype->ub - outtype->lb;

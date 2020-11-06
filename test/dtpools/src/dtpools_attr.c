@@ -9,13 +9,13 @@
 #include <inttypes.h>
 
 #define VALUE_FITS_IN_INT(val) ((val) <= INT_MAX)
-#define VALUE_FITS_IN_UINTPTR_T(val) ((val) <= (((uint64_t) 1 << (sizeof(uintptr_t) * 8 - 1)) - 1))
+#define VALUE_FITS_IN_INTPTR_T(val) (((val) * 2) <= (((uint64_t) 1 << (sizeof(uintptr_t) * 8 - 1)) - 1))
 
 #define confirm_extent(type, extent)                                    \
     do {                                                                \
-        uintptr_t type_extent;                                          \
+        intptr_t type_extent;                                           \
         intptr_t lb_;                                                   \
-        yaksa_type_get_extent(type, &lb_, &type_extent);                     \
+        yaksa_type_get_extent(type, &lb_, &type_extent);                \
         if (type_extent != extent) {                                    \
             fprintf(stderr, "expected extent of %" PRIu64 ", but got %" PRIuPTR "\n", extent, type_extent); \
             fflush(stderr);                                             \
@@ -30,7 +30,7 @@ static int construct_contig(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
     uintptr_t count = 0;
     DTPI_pool_s *dtpi = dtp.priv;
     int rc = DTP_SUCCESS;
-    uint64_t extent;
+    int64_t extent;
 
     /* setup the child type first */
     rc = DTPI_construct_datatype(dtp, attr_tree_depth - 1, &attr->child, &type, &count);
@@ -58,7 +58,7 @@ static int construct_contig(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
 
         count /= attr->u.contig.blklen;
 
-        if (VALUE_FITS_IN_UINTPTR_T(extent * count))
+        if (VALUE_FITS_IN_INTPTR_T(extent * count))
             break;
     }
 
@@ -113,8 +113,8 @@ static int construct_resized(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
                              yaksa_type_t * newtype, uintptr_t * new_count)
 {
     intptr_t true_lb, lb;
-    uintptr_t true_extent;
-    uint64_t extent;
+    intptr_t true_extent;
+    int64_t extent;
     yaksa_type_t type;
     uintptr_t count = 0;
     DTPI_pool_s *dtpi = dtp.priv;
@@ -160,11 +160,13 @@ static int construct_resized(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
             e = ((int64_t) 2) * extent;
         } else if (extent_attr == DTPI_ATTR_RESIZED_EXTENT__VERY_HIGH) {
             e = ((int64_t) 10) * extent;
+        } else if (extent_attr == DTPI_ATTR_RESIZED_EXTENT__NEGATIVE) {
+            e = -((int64_t) 2) * extent;
         } else {
             DTPI_ERR_ASSERT(0, rc);
         }
 
-        if (!VALUE_FITS_IN_UINTPTR_T(e * count))
+        if (!VALUE_FITS_IN_INTPTR_T(e * count))
             continue;
 
         attr->u.resized.extent = (intptr_t) e;
@@ -174,7 +176,7 @@ static int construct_resized(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
     rc = yaksa_type_create_resized(type, attr->u.resized.lb, attr->u.resized.extent, NULL, newtype);
     DTPI_ERR_CHK_RC(rc);
 
-    confirm_extent(*newtype, (uint64_t) attr->u.resized.extent);
+    confirm_extent(*newtype, (int64_t) attr->u.resized.extent);
 
   fn_exit:
     *new_count = count;
@@ -195,7 +197,7 @@ static int construct_vector(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
     uintptr_t count = 0;
     DTPI_pool_s *dtpi = dtp.priv;
     int rc = DTP_SUCCESS;
-    uint64_t extent;
+    int64_t extent;
 
     /* setup the child type first */
     rc = DTPI_construct_datatype(dtp, attr_tree_depth - 1, &attr->child, &type, &count);
@@ -274,7 +276,7 @@ static int construct_vector(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
         extent *= attr->u.vector.stride * max_displ_idx -
             attr->u.vector.stride * min_displ_idx + attr->u.vector.blklen;
 
-        if (VALUE_FITS_IN_UINTPTR_T(extent * count))
+        if (VALUE_FITS_IN_INTPTR_T(extent * count))
             break;
     }
 
@@ -304,7 +306,7 @@ static int construct_hvector(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
     uintptr_t count = 0;
     DTPI_pool_s *dtpi = dtp.priv;
     int rc = DTP_SUCCESS;
-    uint64_t extent;
+    int64_t extent;
 
     /* setup the child type first */
     rc = DTPI_construct_datatype(dtp, attr_tree_depth - 1, &attr->child, &type, &count);
@@ -363,7 +365,7 @@ static int construct_hvector(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
         } else {
             DTPI_ERR_ASSERT(0, rc);
         }
-        if (!VALUE_FITS_IN_UINTPTR_T(stride))
+        if (!VALUE_FITS_IN_INTPTR_T(stride))
             goto retry;
         attr->u.hvector.stride = (intptr_t) stride;
 
@@ -387,7 +389,7 @@ static int construct_hvector(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
             attr->u.hvector.stride * min_displ_idx +
             attr->u.hvector.blklen * attr->child_type_extent;
 
-        if (VALUE_FITS_IN_UINTPTR_T(extent * count))
+        if (VALUE_FITS_IN_INTPTR_T(extent * count))
             break;
     }
 
@@ -417,7 +419,7 @@ static int construct_blkindx(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
     uintptr_t count = 0;
     DTPI_pool_s *dtpi = dtp.priv;
     int rc = DTP_SUCCESS;
-    uint64_t extent;
+    int64_t extent;
 
     /* setup the child type first */
     rc = DTPI_construct_datatype(dtp, attr_tree_depth - 1, &attr->child, &type, &count);
@@ -524,7 +526,7 @@ static int construct_blkindx(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
         extent *= attr->u.blkindx.array_of_displs[max_displ_idx] -
             attr->u.blkindx.array_of_displs[min_displ_idx] + attr->u.blkindx.blklen;
 
-        if (VALUE_FITS_IN_UINTPTR_T(extent * count))
+        if (VALUE_FITS_IN_INTPTR_T(extent * count))
             break;
     }
 
@@ -554,7 +556,7 @@ static int construct_blkhindx(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
     uintptr_t count = 0;
     DTPI_pool_s *dtpi = dtp.priv;
     int rc = DTP_SUCCESS;
-    uint64_t extent;
+    int64_t extent;
 
     /* setup the child type first */
     rc = DTPI_construct_datatype(dtp, attr_tree_depth - 1, &attr->child, &type, &count);
@@ -613,14 +615,14 @@ static int construct_blkhindx(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
             for (int i = 0; i < attr->u.blkhindx.numblks; i++) {
                 attr->u.blkhindx.array_of_displs[i] = (intptr_t) total_displ;
                 total_displ += (attr->u.blkhindx.blklen + 1) * attr->child_type_extent;
-                if (!VALUE_FITS_IN_UINTPTR_T(total_displ))
+                if (!VALUE_FITS_IN_INTPTR_T(total_displ))
                     goto retry;
             }
         } else if (displs_attr == DTPI_ATTR_BLKHINDX_DISPLS__LARGE) {
             for (int i = 0; i < attr->u.blkhindx.numblks; i++) {
                 attr->u.blkhindx.array_of_displs[i] = (intptr_t) total_displ;
                 total_displ += (attr->u.blkhindx.blklen * 4) * attr->child_type_extent;
-                if (!VALUE_FITS_IN_UINTPTR_T(total_displ))
+                if (!VALUE_FITS_IN_INTPTR_T(total_displ))
                     goto retry;
             }
         } else if (displs_attr == DTPI_ATTR_BLKHINDX_DISPLS__REDUCING) {
@@ -628,14 +630,14 @@ static int construct_blkhindx(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
                 int idx = attr->u.blkhindx.numblks - i - 1;
                 attr->u.blkhindx.array_of_displs[idx] = (intptr_t) total_displ;
                 total_displ += (attr->u.blkhindx.blklen + 1) * attr->child_type_extent;
-                if (!VALUE_FITS_IN_UINTPTR_T(total_displ))
+                if (!VALUE_FITS_IN_INTPTR_T(total_displ))
                     goto retry;
             }
         } else if (displs_attr == DTPI_ATTR_BLKHINDX_DISPLS__UNEVEN) {
             for (int i = 0; i < attr->u.blkhindx.numblks; i++) {
                 attr->u.blkhindx.array_of_displs[i] = (intptr_t) total_displ;
                 total_displ += (attr->u.blkhindx.blklen + i) * attr->child_type_extent;
-                if (!VALUE_FITS_IN_UINTPTR_T(total_displ))
+                if (!VALUE_FITS_IN_INTPTR_T(total_displ))
                     goto retry;
             }
         } else {
@@ -664,7 +666,7 @@ static int construct_blkhindx(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
             attr->u.blkhindx.array_of_displs[min_displ_idx] +
             attr->u.blkindx.blklen * attr->child_type_extent;
 
-        if (VALUE_FITS_IN_UINTPTR_T(extent * count))
+        if (VALUE_FITS_IN_INTPTR_T(extent * count))
             break;
     }
 
@@ -694,7 +696,7 @@ static int construct_indexed(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
     uintptr_t count = 0;
     DTPI_pool_s *dtpi = dtp.priv;
     int rc = DTP_SUCCESS;
-    uint64_t extent;
+    int64_t extent;
 
     /* setup the child type first */
     rc = DTPI_construct_datatype(dtp, attr_tree_depth - 1, &attr->child, &type, &count);
@@ -835,7 +837,7 @@ static int construct_indexed(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
             attr->u.indexed.array_of_displs[min_displ_idx] +
             attr->u.indexed.array_of_blklens[max_displ_idx];
 
-        if (VALUE_FITS_IN_UINTPTR_T(extent * count))
+        if (VALUE_FITS_IN_INTPTR_T(extent * count))
             break;
     }
 
@@ -865,7 +867,7 @@ static int construct_hindexed(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
     uintptr_t count = 0;
     DTPI_pool_s *dtpi = dtp.priv;
     int rc = DTP_SUCCESS;
-    uint64_t extent;
+    int64_t extent;
 
     /* setup the child type first */
     rc = DTPI_construct_datatype(dtp, attr_tree_depth - 1, &attr->child, &type, &count);
@@ -956,14 +958,14 @@ static int construct_hindexed(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
             for (int i = 0; i < attr->u.hindexed.numblks; i++) {
                 attr->u.hindexed.array_of_displs[i] = (intptr_t) total_displ;
                 total_displ += attr->child_type_extent * (attr->u.hindexed.array_of_blklens[i] + 1);
-                if (!VALUE_FITS_IN_UINTPTR_T(total_displ))
+                if (!VALUE_FITS_IN_INTPTR_T(total_displ))
                     goto retry;
             }
         } else if (displs_attr == DTPI_ATTR_HINDEXED_DISPLS__LARGE) {
             for (int i = 0; i < attr->u.hindexed.numblks; i++) {
                 attr->u.hindexed.array_of_displs[i] = (intptr_t) total_displ;
                 total_displ += attr->child_type_extent * (attr->u.hindexed.array_of_blklens[i] * 4);
-                if (!VALUE_FITS_IN_UINTPTR_T(total_displ))
+                if (!VALUE_FITS_IN_INTPTR_T(total_displ))
                     goto retry;
             }
         } else if (displs_attr == DTPI_ATTR_HINDEXED_DISPLS__REDUCING) {
@@ -972,14 +974,14 @@ static int construct_hindexed(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
                 attr->u.hindexed.array_of_displs[idx] = (intptr_t) total_displ;
                 total_displ +=
                     attr->child_type_extent * (attr->u.hindexed.array_of_blklens[idx] + 1);
-                if (!VALUE_FITS_IN_UINTPTR_T(total_displ))
+                if (!VALUE_FITS_IN_INTPTR_T(total_displ))
                     goto retry;
             }
         } else if (displs_attr == DTPI_ATTR_HINDEXED_DISPLS__UNEVEN) {
             for (int i = 0; i < attr->u.hindexed.numblks; i++) {
                 attr->u.hindexed.array_of_displs[i] = (intptr_t) total_displ;
                 total_displ += attr->child_type_extent * (attr->u.hindexed.array_of_blklens[i] + i);
-                if (!VALUE_FITS_IN_UINTPTR_T(total_displ))
+                if (!VALUE_FITS_IN_INTPTR_T(total_displ))
                     goto retry;
             }
         } else {
@@ -1010,7 +1012,7 @@ static int construct_hindexed(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
             attr->u.hindexed.array_of_displs[min_displ_idx] +
             attr->u.hindexed.array_of_blklens[max_displ_idx] * extent;
 
-        if (VALUE_FITS_IN_UINTPTR_T(extent * count))
+        if (VALUE_FITS_IN_INTPTR_T(extent * count))
             break;
     }
 
@@ -1040,7 +1042,7 @@ static int construct_subarray(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
     uintptr_t count;
     DTPI_pool_s *dtpi = dtp.priv;
     int rc = DTP_SUCCESS;
-    uint64_t extent;
+    int64_t extent;
 
     /* setup the child type first */
     rc = DTPI_construct_datatype(dtp, attr_tree_depth - 1, &attr->child, &type, &count);
@@ -1116,7 +1118,7 @@ static int construct_subarray(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
             DTPI_ERR_ASSERT(0, rc);
         }
 
-        if (VALUE_FITS_IN_UINTPTR_T(extent * count))
+        if (VALUE_FITS_IN_INTPTR_T(extent * count))
             break;
     }
 
@@ -1157,7 +1159,7 @@ static int construct_struct(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
     uintptr_t count = 0;
     DTPI_pool_s *dtpi = dtp.priv;
     int rc = DTP_SUCCESS;
-    uint64_t extent;
+    int64_t extent;
 
     /* setup the child type first */
     rc = DTPI_construct_datatype(dtp, attr_tree_depth - 1, &attr->child, &type, &count);
@@ -1249,7 +1251,7 @@ static int construct_struct(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
                 attr->u.structure.array_of_displs[i] = (intptr_t) total_displ;
                 total_displ +=
                     attr->child_type_extent * (attr->u.structure.array_of_blklens[i] + 1);
-                if (!VALUE_FITS_IN_UINTPTR_T(total_displ))
+                if (!VALUE_FITS_IN_INTPTR_T(total_displ))
                     goto retry;
             }
         } else if (displs_attr == DTPI_ATTR_STRUCTURE_DISPLS__LARGE) {
@@ -1257,7 +1259,7 @@ static int construct_struct(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
                 attr->u.structure.array_of_displs[i] = (intptr_t) total_displ;
                 total_displ +=
                     attr->child_type_extent * (attr->u.structure.array_of_blklens[i] * 4);
-                if (!VALUE_FITS_IN_UINTPTR_T(total_displ))
+                if (!VALUE_FITS_IN_INTPTR_T(total_displ))
                     goto retry;
             }
         } else if (displs_attr == DTPI_ATTR_STRUCTURE_DISPLS__REDUCING) {
@@ -1266,7 +1268,7 @@ static int construct_struct(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
                 attr->u.structure.array_of_displs[idx] = (intptr_t) total_displ;
                 total_displ +=
                     attr->child_type_extent * (attr->u.structure.array_of_blklens[idx] + 1);
-                if (!VALUE_FITS_IN_UINTPTR_T(total_displ))
+                if (!VALUE_FITS_IN_INTPTR_T(total_displ))
                     goto retry;
             }
         } else if (displs_attr == DTPI_ATTR_STRUCTURE_DISPLS__UNEVEN) {
@@ -1274,7 +1276,7 @@ static int construct_struct(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
                 attr->u.structure.array_of_displs[i] = (intptr_t) total_displ;
                 total_displ +=
                     attr->child_type_extent * (attr->u.structure.array_of_blklens[i] + i);
-                if (!VALUE_FITS_IN_UINTPTR_T(total_displ))
+                if (!VALUE_FITS_IN_INTPTR_T(total_displ))
                     goto retry;
             }
         } else {
@@ -1306,7 +1308,7 @@ static int construct_struct(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
             attr->u.structure.array_of_displs[min_displ_idx] +
             attr->u.structure.array_of_blklens[max_displ_idx] * extent;
 
-        if (VALUE_FITS_IN_UINTPTR_T(extent * count))
+        if (VALUE_FITS_IN_INTPTR_T(extent * count))
             break;
     }
 

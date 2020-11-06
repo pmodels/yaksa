@@ -67,7 +67,7 @@ int yaksi_type_create_subarray(int ndims, const int *array_of_sizes, const int *
         }
     }
 
-    uintptr_t extent;
+    intptr_t extent;
     extent = intype->extent;
     for (int i = 0; i < ndims; i++)
         extent *= array_of_sizes[i];

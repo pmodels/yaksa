@@ -58,8 +58,14 @@ int yaksi_type_create_hindexed_block(int count, int blocklength, const intptr_t 
             max_disp = array_of_displs[i];
     }
 
-    outtype->lb = min_disp + intype->lb;
-    outtype->ub = max_disp + intype->lb + blocklength * intype->extent;
+    if (intype->extent > 0) {
+        outtype->lb = min_disp + intype->lb;
+        outtype->ub = max_disp + intype->ub + intype->extent * (blocklength - 1);
+    } else {
+        outtype->lb = min_disp + intype->lb + intype->extent * (blocklength - 1);
+        outtype->ub = max_disp + intype->ub;
+    }
+
     outtype->true_lb = outtype->lb + intype->true_lb - intype->lb;
     outtype->true_ub = outtype->ub - intype->ub + intype->true_ub;
     outtype->extent = outtype->ub - outtype->lb;

@@ -48,10 +48,17 @@ int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
         if (array_of_blocklengths[idx] == 0)
             continue;
 
-        intptr_t lb = array_of_displs[idx] + array_of_intypes[idx]->lb;
-        intptr_t ub =
-            array_of_displs[idx] + array_of_intypes[idx]->lb +
-            array_of_blocklengths[idx] * array_of_intypes[idx]->extent;
+        intptr_t lb, ub;
+        if (array_of_intypes[idx]->extent > 0) {
+            lb = array_of_displs[idx] + array_of_intypes[idx]->lb;
+            ub = array_of_displs[idx] + array_of_intypes[idx]->ub +
+                array_of_intypes[idx]->extent * (array_of_blocklengths[idx] - 1);
+        } else {
+            lb = array_of_displs[idx] + array_of_intypes[idx]->lb +
+                array_of_intypes[idx]->extent * (array_of_blocklengths[idx] - 1);
+            ub = array_of_displs[idx] + array_of_intypes[idx]->ub;
+        }
+
         intptr_t true_lb = lb - array_of_intypes[idx]->lb + array_of_intypes[idx]->true_lb;
         intptr_t true_ub = ub - array_of_intypes[idx]->ub + array_of_intypes[idx]->true_ub;
         int tree_depth = array_of_intypes[idx]->tree_depth;
