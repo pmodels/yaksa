@@ -160,6 +160,8 @@ static int construct_resized(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
             e = ((int64_t) 2) * extent;
         } else if (extent_attr == DTPI_ATTR_RESIZED_EXTENT__VERY_HIGH) {
             e = ((int64_t) 10) * extent;
+        } else if (extent_attr == DTPI_ATTR_RESIZED_EXTENT__NEGATIVE) {
+            e = -((int64_t) 2) * extent;
         } else {
             DTPI_ERR_ASSERT(0, rc);
         }
