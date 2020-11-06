@@ -26,7 +26,7 @@ int yaksa_type_get_size(yaksa_type_t type, uintptr_t * size)
     goto fn_exit;
 }
 
-int yaksa_type_get_extent(yaksa_type_t type, intptr_t * lb, uintptr_t * extent)
+int yaksa_type_get_extent(yaksa_type_t type, intptr_t * lb, intptr_t * extent)
 {
     yaksi_type_s *yaksi_type;
     int rc = YAKSA_SUCCESS;
@@ -45,7 +45,7 @@ int yaksa_type_get_extent(yaksa_type_t type, intptr_t * lb, uintptr_t * extent)
     goto fn_exit;
 }
 
-int yaksa_type_get_true_extent(yaksa_type_t type, intptr_t * lb, uintptr_t * extent)
+int yaksa_type_get_true_extent(yaksa_type_t type, intptr_t * lb, intptr_t * extent)
 {
     yaksi_type_s *yaksi_type;
     int rc = YAKSA_SUCCESS;

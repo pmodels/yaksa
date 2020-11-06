@@ -126,9 +126,9 @@ int DTP_obj_create(DTP_pool_s dtp, DTP_obj_s * obj, uintptr_t maxbufsize)
 
         /* find the buffer size that we need */
         intptr_t true_lb;
-        uintptr_t true_extent;
+        intptr_t true_extent;
         intptr_t lb;
-        uintptr_t extent;
+        intptr_t extent;
 
         rc = yaksa_type_get_true_extent(obj->DTP_datatype, &true_lb, &true_extent);
         DTPI_ERR_CHK_RC(rc);
@@ -219,7 +219,7 @@ int DTP_obj_free(DTP_obj_s obj)
 int DTP_obj_buf_init(DTP_obj_s obj, void *buf, int val_start, int val_stride, uintptr_t val_count)
 {
     intptr_t lb;
-    uintptr_t extent;
+    intptr_t extent;
     int val = val_start;
     int rem_val_count = val_count;
     DTPI_obj_s *obj_priv = obj.priv;
@@ -253,7 +253,7 @@ int DTP_obj_buf_init(DTP_obj_s obj, void *buf, int val_start, int val_stride, ui
 int DTP_obj_buf_check(DTP_obj_s obj, void *buf, int val_start, int val_stride, uintptr_t val_count)
 {
     intptr_t lb;
-    uintptr_t extent;
+    intptr_t extent;
     int val = val_start;
     int rem_val_count = val_count;
     DTPI_obj_s *obj_priv = obj.priv;

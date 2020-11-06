@@ -86,7 +86,7 @@ typedef struct yaksi_type_s {
 
     uint8_t alignment;
     uintptr_t size;
-    uintptr_t extent;
+    intptr_t extent;
     intptr_t lb;
     intptr_t ub;
     intptr_t true_lb;
@@ -223,7 +223,7 @@ int yaksi_type_create_hindexed(int count, const int *array_of_blocklengths,
 int yaksi_type_create_hindexed_block(int count, int blocklength,
                                      const intptr_t * array_of_displacements, yaksi_type_s * intype,
                                      yaksi_type_s ** outtype);
-int yaksi_type_create_resized(yaksi_type_s * intype, intptr_t lb, uintptr_t extent,
+int yaksi_type_create_resized(yaksi_type_s * intype, intptr_t lb, intptr_t extent,
                               yaksi_type_s ** outtype);
 int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
                              const intptr_t * array_of_displacements,

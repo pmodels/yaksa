@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-int yaksi_type_create_resized(yaksi_type_s * intype, intptr_t lb, uintptr_t extent,
+int yaksi_type_create_resized(yaksi_type_s * intype, intptr_t lb, intptr_t extent,
                               yaksi_type_s ** newtype)
 {
     int rc = YAKSA_SUCCESS;
@@ -57,7 +57,7 @@ int yaksi_type_create_resized(yaksi_type_s * intype, intptr_t lb, uintptr_t exte
     goto fn_exit;
 }
 
-int yaksa_type_create_resized(yaksa_type_t oldtype, intptr_t lb, uintptr_t extent,
+int yaksa_type_create_resized(yaksa_type_t oldtype, intptr_t lb, intptr_t extent,
                               yaksa_info_t info, yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;

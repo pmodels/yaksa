@@ -341,7 +341,7 @@ int yaksa_type_create_hindexed(int count, const int *array_of_blocklengths,
  * \param[in]  info                   Hint object
  * \param[out] newtype                Final generated type
  */
-int yaksa_type_create_resized(yaksa_type_t oldtype, intptr_t lb, uintptr_t extent,
+int yaksa_type_create_resized(yaksa_type_t oldtype, intptr_t lb, intptr_t extent,
                               yaksa_info_t info, yaksa_type_t * newtype);
 
 /*!
@@ -397,7 +397,7 @@ int yaksa_type_get_size(yaksa_type_t type, uintptr_t * size);
  *                          which can be larger than the size of the
  *                          datatype, if the layout is noncontiguous)
  */
-int yaksa_type_get_true_extent(yaksa_type_t type, intptr_t * lb, uintptr_t * extent);
+int yaksa_type_get_true_extent(yaksa_type_t type, intptr_t * lb, intptr_t * extent);
 
 /*!
  * \brief gets the extent (span) of the datatype
@@ -414,7 +414,7 @@ int yaksa_type_get_true_extent(yaksa_type_t type, intptr_t * lb, uintptr_t * ext
  *                          values were modified by creating a resized
  *                          datatype)
  */
-int yaksa_type_get_extent(yaksa_type_t type, intptr_t * lb, uintptr_t * extent);
+int yaksa_type_get_extent(yaksa_type_t type, intptr_t * lb, intptr_t * extent);
 
 /*!
  * \brief frees the datatype
