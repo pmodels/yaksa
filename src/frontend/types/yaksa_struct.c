@@ -94,15 +94,13 @@ int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
     outtype->extent = outtype->ub - outtype->lb;
 
     /* detect if the outtype is contiguous */
-    if (outtype->ub == outtype->size) {
+    if ((outtype->ub - outtype->lb) == outtype->size) {
         outtype->is_contig = true;
-        uintptr_t expected_disp = 0;
         for (int i = 0; i < count; i++) {
-            if (array_of_intypes[i]->is_contig == false || array_of_displs[i] != expected_disp) {
+            if (array_of_intypes[i]->is_contig == false) {
                 outtype->is_contig = false;
                 break;
             }
-            expected_disp = array_of_blocklengths[i] * array_of_intypes[i]->extent;
         }
     } else {
         outtype->is_contig = false;
