@@ -32,18 +32,22 @@ int yaksi_type_create_hvector(int count, int blocklength, intptr_t stride, yaksi
     outtype->size = intype->size * blocklength * count;
     outtype->alignment = intype->alignment;
 
-    intptr_t min_disp;
-    intptr_t max_disp;
-    if (stride > 0) {
-        min_disp = 0;
-        max_disp = stride * (count - 1);
-    } else {
-        min_disp = stride * (count - 1);
-        max_disp = 0;
+    outtype->lb = intype->lb;
+    if (stride < 0) {
+        outtype->lb += stride * (count - 1);
+    }
+    if (intype->extent < 0) {
+        outtype->lb += intype->extent * (blocklength - 1);
     }
 
-    outtype->lb = min_disp + intype->lb;
-    outtype->ub = max_disp + intype->lb + blocklength * intype->extent;
+    outtype->ub = intype->ub;
+    if (stride > 0) {
+        outtype->ub += stride * (count - 1);
+    }
+    if (intype->extent > 0) {
+        outtype->ub += intype->extent * (blocklength - 1);
+    }
+
     outtype->true_lb = outtype->lb + intype->true_lb - intype->lb;
     outtype->true_ub = outtype->ub - intype->ub + intype->true_ub;
     outtype->extent = outtype->ub - outtype->lb;

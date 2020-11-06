@@ -49,9 +49,17 @@ int yaksi_type_create_hindexed(int count, const int *array_of_blocklengths,
         if (array_of_blocklengths[idx] == 0)
             continue;
 
-        intptr_t lb = array_of_displs[idx] + intype->lb;
-        intptr_t ub =
-            array_of_displs[idx] + intype->lb + array_of_blocklengths[idx] * intype->extent;
+        intptr_t lb, ub;
+        if (intype->extent > 0) {
+            lb = array_of_displs[idx] + intype->lb;
+            ub = array_of_displs[idx] + intype->ub +
+                intype->extent * (array_of_blocklengths[idx] - 1);
+        } else {
+            lb = array_of_displs[idx] + intype->lb +
+                intype->extent * (array_of_blocklengths[idx] - 1);
+            ub = array_of_displs[idx] + intype->ub;
+        }
+
         intptr_t true_lb = lb - intype->lb + intype->true_lb;
         intptr_t true_ub = ub - intype->ub + intype->true_ub;
 
