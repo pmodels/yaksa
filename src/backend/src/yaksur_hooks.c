@@ -17,7 +17,7 @@ static void *malloc_fn(uintptr_t size, void *state)
     yaksuri_gpudriver_id_e id;
 
     for (id = YAKSURI_GPUDRIVER_ID__UNSET; id < YAKSURI_GPUDRIVER_ID__LAST; id++) {
-        if (id == YAKSURI_GPUDRIVER_ID__UNSET)
+        if (id == YAKSURI_GPUDRIVER_ID__UNSET || yaksuri_global.gpudriver[id].hooks == NULL)
             continue;
 
         if (state == &yaksuri_global.gpudriver[id].host) {
@@ -43,7 +43,7 @@ static void free_fn(void *buf, void *state)
     yaksuri_gpudriver_id_e id;
 
     for (id = YAKSURI_GPUDRIVER_ID__UNSET; id < YAKSURI_GPUDRIVER_ID__LAST; id++) {
-        if (id == YAKSURI_GPUDRIVER_ID__UNSET)
+        if (id == YAKSURI_GPUDRIVER_ID__UNSET || yaksuri_global.gpudriver[id].hooks == NULL)
             continue;
 
         if (state == &yaksuri_global.gpudriver[id].host) {
