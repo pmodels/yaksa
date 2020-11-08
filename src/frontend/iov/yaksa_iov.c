@@ -62,7 +62,7 @@ int yaksi_iov(const char *buf, uintptr_t count, yaksi_type_s * type, uintptr_t i
         /* unfortunately, struct iovec uses "char *" instead of "const
          * char *" because the same structure is used in readv calls
          * too, where the buffer is modified */
-        iov[0].iov_base = (char *) buf;
+        iov[0].iov_base = (char *) buf + type->true_lb;
         iov[0].iov_len = count * type->size;
         *actual_iov_len = 1;
         goto fn_exit;
