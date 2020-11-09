@@ -33,6 +33,7 @@ def gen_simple_tests(testlist):
     sys.stdout.write("generating simple tests ... ")
     outfile.write(os.path.join(prefix, "simple_test") + "\n")
     outfile.write(os.path.join(prefix, "threaded_test") + "\n")
+    outfile.write(os.path.join(prefix, "lbub") + "\n")
     outfile.close()
     sys.stdout.write("done\n")
 

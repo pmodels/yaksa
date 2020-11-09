@@ -40,13 +40,13 @@ int main(int argc, char **argv)
 
 void int_with_lb_ub_test(void)
 {
-    int val;
+    uintptr_t val;
     intptr_t lb, extent;
     yaksa_type_t tmptype, eviltype;
 
     yaksa_type_create_contig(4, YAKSA_TYPE__BYTE, NULL, &tmptype);
     yaksa_type_create_resized(tmptype, -3, 9, NULL, &eviltype);
-    yaksa_type_get_size(eviltype, (uintptr_t *) (void *) &val);
+    yaksa_type_get_size(eviltype, &val);
     assert(val == 4);
 
     yaksa_type_get_extent(eviltype, &lb, &extent);
@@ -63,7 +63,7 @@ void int_with_lb_ub_test(void)
 
 void contig_of_int_with_lb_ub_test(void)
 {
-    int val;
+    uintptr_t val;
     intptr_t lb, extent;
     yaksa_type_t tmptype, inttype, eviltype;
 
@@ -71,7 +71,7 @@ void contig_of_int_with_lb_ub_test(void)
     yaksa_type_create_resized(tmptype, -3, 9, NULL, &inttype);
     yaksa_type_create_contig(3, inttype, NULL, &eviltype);
 
-    yaksa_type_get_size(eviltype, (uintptr_t *) (void *) &val);
+    yaksa_type_get_size(eviltype, &val);
     assert(val == 12);
 
     yaksa_type_get_extent(eviltype, &lb, &extent);
@@ -89,7 +89,7 @@ void contig_of_int_with_lb_ub_test(void)
 
 void contig_negextent_of_int_with_lb_ub_test(void)
 {
-    int val;
+    uintptr_t val;
     intptr_t lb, extent;
     yaksa_type_t tmptype, inttype, eviltype;
 
@@ -97,7 +97,7 @@ void contig_negextent_of_int_with_lb_ub_test(void)
     yaksa_type_create_resized(tmptype, 6, -9, NULL, &inttype);
     yaksa_type_create_contig(3, inttype, NULL, &eviltype);
 
-    yaksa_type_get_size(eviltype, (uintptr_t *) (void *) &val);
+    yaksa_type_get_size(eviltype, &val);
     assert(val == 12);
 
     yaksa_type_get_extent(eviltype, &lb, &extent);
@@ -115,7 +115,7 @@ void contig_negextent_of_int_with_lb_ub_test(void)
 
 void vector_of_int_with_lb_ub_test(void)
 {
-    int val;
+    uintptr_t val;
     intptr_t lb, extent;
     yaksa_type_t tmptype, inttype, eviltype;
 
@@ -123,7 +123,7 @@ void vector_of_int_with_lb_ub_test(void)
     yaksa_type_create_resized(tmptype, -3, 9, NULL, &inttype);
     yaksa_type_create_vector(3, 1, 1, inttype, NULL, &eviltype);
 
-    yaksa_type_get_size(eviltype, (uintptr_t *) (void *) &val);
+    yaksa_type_get_size(eviltype, &val);
     assert(val == 12);
 
     yaksa_type_get_extent(eviltype, &lb, &extent);
@@ -141,7 +141,7 @@ void vector_of_int_with_lb_ub_test(void)
 
 void vector_blklen_of_int_with_lb_ub_test(void)
 {
-    int val;
+    uintptr_t val;
     intptr_t lb, extent;
     yaksa_type_t tmptype, inttype, eviltype;
 
@@ -149,7 +149,7 @@ void vector_blklen_of_int_with_lb_ub_test(void)
     yaksa_type_create_resized(tmptype, -3, 9, NULL, &inttype);
     yaksa_type_create_vector(3, 4, 1, inttype, NULL, &eviltype);
 
-    yaksa_type_get_size(eviltype, (uintptr_t *) (void *) &val);
+    yaksa_type_get_size(eviltype, &val);
     assert(val == 48);
 
     yaksa_type_get_extent(eviltype, &lb, &extent);
@@ -167,7 +167,7 @@ void vector_blklen_of_int_with_lb_ub_test(void)
 
 void vector_blklen_stride_of_int_with_lb_ub_test(void)
 {
-    int val;
+    uintptr_t val;
     intptr_t lb, extent;
     yaksa_type_t tmptype, inttype, eviltype;
 
@@ -175,7 +175,7 @@ void vector_blklen_stride_of_int_with_lb_ub_test(void)
     yaksa_type_create_resized(tmptype, -3, 9, NULL, &inttype);
     yaksa_type_create_vector(3, 4, 5, inttype, NULL, &eviltype);
 
-    yaksa_type_get_size(eviltype, (uintptr_t *) (void *) &val);
+    yaksa_type_get_size(eviltype, &val);
     assert(val == 48);
 
     yaksa_type_get_extent(eviltype, &lb, &extent);
@@ -193,7 +193,7 @@ void vector_blklen_stride_of_int_with_lb_ub_test(void)
 
 void vector_blklen_negstride_of_int_with_lb_ub_test(void)
 {
-    int val;
+    uintptr_t val;
     intptr_t lb, extent;
     yaksa_type_t tmptype, inttype, eviltype;
 
@@ -201,7 +201,7 @@ void vector_blklen_negstride_of_int_with_lb_ub_test(void)
     yaksa_type_create_resized(tmptype, -3, 9, NULL, &inttype);
     yaksa_type_create_vector(3, 4, -5, inttype, NULL, &eviltype);
 
-    yaksa_type_get_size(eviltype, (uintptr_t *) (void *) &val);
+    yaksa_type_get_size(eviltype, &val);
     assert(val == 48);
 
     yaksa_type_get_extent(eviltype, &lb, &extent);
@@ -219,14 +219,14 @@ void vector_blklen_negstride_of_int_with_lb_ub_test(void)
 
 void int_with_negextent_test(void)
 {
-    int val;
+    uintptr_t val;
     intptr_t lb, extent;
     yaksa_type_t tmptype, eviltype;
 
     yaksa_type_create_contig(4, YAKSA_TYPE__BYTE, NULL, &tmptype);
     yaksa_type_create_resized(tmptype, 6, -9, NULL, &eviltype);
 
-    yaksa_type_get_size(eviltype, (uintptr_t *) (void *) &val);
+    yaksa_type_get_size(eviltype, &val);
     assert(val == 4);
 
     yaksa_type_get_extent(eviltype, &lb, &extent);
@@ -243,7 +243,7 @@ void int_with_negextent_test(void)
 
 void vector_blklen_stride_negextent_of_int_with_lb_ub_test(void)
 {
-    int val;
+    uintptr_t val;
     intptr_t lb, extent;
     yaksa_type_t tmptype, inttype, eviltype;
 
@@ -251,7 +251,7 @@ void vector_blklen_stride_negextent_of_int_with_lb_ub_test(void)
     yaksa_type_create_resized(tmptype, 6, -9, NULL, &inttype);
     yaksa_type_create_vector(3, 4, 5, inttype, NULL, &eviltype);
 
-    yaksa_type_get_size(eviltype, (uintptr_t *) (void *) &val);
+    yaksa_type_get_size(eviltype, &val);
     assert(val == 48);
 
     yaksa_type_get_extent(eviltype, &lb, &extent);
@@ -269,7 +269,7 @@ void vector_blklen_stride_negextent_of_int_with_lb_ub_test(void)
 
 void vector_blklen_negstride_negextent_of_int_with_lb_ub_test(void)
 {
-    int val;
+    uintptr_t val;
     intptr_t lb, extent;
     yaksa_type_t tmptype, inttype, eviltype;
 
@@ -277,7 +277,7 @@ void vector_blklen_negstride_negextent_of_int_with_lb_ub_test(void)
     yaksa_type_create_resized(tmptype, 6, -9, NULL, &inttype);
     yaksa_type_create_vector(3, 4, -5, inttype, NULL, &eviltype);
 
-    yaksa_type_get_size(eviltype, (uintptr_t *) (void *) &val);
+    yaksa_type_get_size(eviltype, &val);
     assert(val == 48);
 
     yaksa_type_get_extent(eviltype, &lb, &extent);
