@@ -95,8 +95,9 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
     if (type->is_contig) {
         /* cuda performance is optimized when we synchronize on the
          * source buffer's GPU */
-        cerr = cudaMemcpyAsync(outbuf, inbuf, count * type->size, cudaMemcpyDefault,
-                               yaksuri_cudai_global.stream[target]);
+        cerr =
+            cudaMemcpyAsync(outbuf, (const char *) inbuf + type->true_lb, count * type->size,
+                            cudaMemcpyDefault, yaksuri_cudai_global.stream[target]);
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
     } else if (type->size / type->num_contig >= iov_pack_threshold) {
         struct iovec iov[MAX_IOV_LENGTH];
@@ -158,8 +159,9 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
     if (type->is_contig) {
         /* cuda performance is optimized when we synchronize on the
          * source buffer's GPU */
-        cerr = cudaMemcpyAsync(outbuf, inbuf, count * type->size, cudaMemcpyDefault,
-                               yaksuri_cudai_global.stream[target]);
+        cerr =
+            cudaMemcpyAsync((char *) outbuf + type->true_lb, inbuf, count * type->size,
+                            cudaMemcpyDefault, yaksuri_cudai_global.stream[target]);
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
     } else if (type->size / type->num_contig >= iov_unpack_threshold) {
         struct iovec iov[MAX_IOV_LENGTH];

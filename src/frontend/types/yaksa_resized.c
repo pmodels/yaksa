@@ -38,7 +38,7 @@ int yaksi_type_create_resized(yaksi_type_s * intype, intptr_t lb, intptr_t exten
     outtype->extent = outtype->ub - outtype->lb;
 
     /* detect if the outtype is contiguous */
-    if (intype->is_contig && outtype->ub == outtype->size) {
+    if (intype->is_contig && ((outtype->ub - outtype->lb) == outtype->size)) {
         outtype->is_contig = true;
     } else {
         outtype->is_contig = false;

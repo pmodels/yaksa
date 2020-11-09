@@ -109,18 +109,8 @@ int yaksi_type_create_subarray(int ndims, const int *array_of_sizes, const int *
     }
 
     /* detect if the outtype is contiguous */
-    if (intype->is_contig && outtype->ub == outtype->size) {
+    if (intype->is_contig && ((outtype->ub - outtype->lb) == outtype->size)) {
         outtype->is_contig = true;
-        for (int i = 0; i < ndims; i++) {
-            if (array_of_starts[i]) {
-                outtype->is_contig = false;
-                break;
-            }
-            if (array_of_subsizes[i] != array_of_sizes[i]) {
-                outtype->is_contig = false;
-                break;
-            }
-        }
     } else {
         outtype->is_contig = false;
     }

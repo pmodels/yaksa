@@ -90,16 +90,8 @@ int yaksi_type_create_hindexed(int count, const int *array_of_blocklengths,
     outtype->u.hindexed.child = intype;
 
     /* detect if the outtype is contiguous */
-    if (intype->is_contig && outtype->ub == outtype->size) {
+    if (intype->is_contig && ((outtype->ub - outtype->lb) == outtype->size)) {
         outtype->is_contig = true;
-        uintptr_t expected_disp = 0;
-        for (int i = 0; i < count; i++) {
-            if (array_of_displs[i] != expected_disp) {
-                outtype->is_contig = false;
-                break;
-            }
-            expected_disp = array_of_blocklengths[i] * intype->extent;
-        }
     } else {
         outtype->is_contig = false;
     }
