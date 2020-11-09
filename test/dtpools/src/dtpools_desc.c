@@ -50,6 +50,8 @@ static const char *kind_to_name(DTPI_Datatype_kind_e kind)
     return ret;
 }
 
+#define DTPI_MAX_DESC_ENTRIES (6)
+
 int DTPI_populate_dtp_desc(DTPI_obj_s * obj_priv, DTPI_pool_s * dtp, char **desc_)
 {
     char *desc;
@@ -101,6 +103,10 @@ int DTPI_populate_dtp_desc(DTPI_obj_s * obj_priv, DTPI_pool_s * dtp, char **desc
                                   attr->u.blkindx.array_of_displs[j]);
                     if (j < attr->u.blkindx.numblks - 1)
                         DTPI_snprintf(rc, desc, desclen, maxlen, ",");
+                    if (j == DTPI_MAX_DESC_ENTRIES) {
+                        DTPI_snprintf(rc, desc, desclen, maxlen, "...");
+                        break;
+                    }
                 }
                 DTPI_snprintf(rc, desc, desclen, maxlen, ")");
                 break;
@@ -113,6 +119,10 @@ int DTPI_populate_dtp_desc(DTPI_obj_s * obj_priv, DTPI_pool_s * dtp, char **desc
                                   attr->u.blkhindx.array_of_displs[j]);
                     if (j < attr->u.blkhindx.numblks - 1)
                         DTPI_snprintf(rc, desc, desclen, maxlen, ",");
+                    if (j == DTPI_MAX_DESC_ENTRIES) {
+                        DTPI_snprintf(rc, desc, desclen, maxlen, "...");
+                        break;
+                    }
                 }
                 DTPI_snprintf(rc, desc, desclen, maxlen, ")");
                 break;
@@ -125,6 +135,10 @@ int DTPI_populate_dtp_desc(DTPI_obj_s * obj_priv, DTPI_pool_s * dtp, char **desc
                                   attr->u.indexed.array_of_blklens[j]);
                     if (j < attr->u.indexed.numblks - 1)
                         DTPI_snprintf(rc, desc, desclen, maxlen, ",");
+                    if (j == DTPI_MAX_DESC_ENTRIES) {
+                        DTPI_snprintf(rc, desc, desclen, maxlen, "...");
+                        break;
+                    }
                 }
                 DTPI_snprintf(rc, desc, desclen, maxlen, "), displs (");
                 for (int j = 0; j < attr->u.indexed.numblks; j++) {
@@ -132,6 +146,10 @@ int DTPI_populate_dtp_desc(DTPI_obj_s * obj_priv, DTPI_pool_s * dtp, char **desc
                                   attr->u.indexed.array_of_displs[j]);
                     if (j < attr->u.indexed.numblks - 1)
                         DTPI_snprintf(rc, desc, desclen, maxlen, ",");
+                    if (j == DTPI_MAX_DESC_ENTRIES) {
+                        DTPI_snprintf(rc, desc, desclen, maxlen, "...");
+                        break;
+                    }
                 }
                 DTPI_snprintf(rc, desc, desclen, maxlen, ")");
                 break;
@@ -144,6 +162,10 @@ int DTPI_populate_dtp_desc(DTPI_obj_s * obj_priv, DTPI_pool_s * dtp, char **desc
                                   attr->u.hindexed.array_of_blklens[j]);
                     if (j < attr->u.hindexed.numblks - 1)
                         DTPI_snprintf(rc, desc, desclen, maxlen, ",");
+                    if (j == DTPI_MAX_DESC_ENTRIES) {
+                        DTPI_snprintf(rc, desc, desclen, maxlen, "...");
+                        break;
+                    }
                 }
                 DTPI_snprintf(rc, desc, desclen, maxlen, "), displs (");
                 for (int j = 0; j < attr->u.hindexed.numblks; j++) {
@@ -151,6 +173,10 @@ int DTPI_populate_dtp_desc(DTPI_obj_s * obj_priv, DTPI_pool_s * dtp, char **desc
                                   attr->u.hindexed.array_of_displs[j]);
                     if (j < attr->u.hindexed.numblks - 1)
                         DTPI_snprintf(rc, desc, desclen, maxlen, ",");
+                    if (j == DTPI_MAX_DESC_ENTRIES) {
+                        DTPI_snprintf(rc, desc, desclen, maxlen, "...");
+                        break;
+                    }
                 }
                 DTPI_snprintf(rc, desc, desclen, maxlen, ")");
                 break;
@@ -193,6 +219,10 @@ int DTPI_populate_dtp_desc(DTPI_obj_s * obj_priv, DTPI_pool_s * dtp, char **desc
                                   attr->u.structure.array_of_blklens[j]);
                     if (j < attr->u.structure.numblks - 1)
                         DTPI_snprintf(rc, desc, desclen, maxlen, ",");
+                    if (j == DTPI_MAX_DESC_ENTRIES) {
+                        DTPI_snprintf(rc, desc, desclen, maxlen, "...");
+                        break;
+                    }
                 }
                 DTPI_snprintf(rc, desc, desclen, maxlen, "), displs (");
                 for (int j = 0; j < attr->u.structure.numblks; j++) {
@@ -200,6 +230,10 @@ int DTPI_populate_dtp_desc(DTPI_obj_s * obj_priv, DTPI_pool_s * dtp, char **desc
                                   attr->u.structure.array_of_displs[j]);
                     if (j < attr->u.structure.numblks - 1)
                         DTPI_snprintf(rc, desc, desclen, maxlen, ",");
+                    if (j == DTPI_MAX_DESC_ENTRIES) {
+                        DTPI_snprintf(rc, desc, desclen, maxlen, "...");
+                        break;
+                    }
                 }
                 DTPI_snprintf(rc, desc, desclen, maxlen, ")");
                 break;
