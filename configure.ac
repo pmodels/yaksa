@@ -126,12 +126,23 @@ if test "${enable_debug}" != "no" ; then
 fi
 
 # --enable-fast
-AC_ARG_ENABLE([fast],AS_HELP_STRING([--enable-fast=O<opt>],[adds -O<opt> to CFLAGS]),,[enable_fast=yes])
-if test "`echo ${enable_fast} | cut -c1`" = "O" ; then
-    PAC_APPEND_FLAG([-${enable_fast}],[CFLAGS])
-elif test "${enable_fast}" != "no" ; then
-    PAC_APPEND_FLAG([-O2],[CFLAGS])
-fi
+AC_ARG_ENABLE([fast],AS_HELP_STRING([--enable-fast=O<opt>],[adds -O<opt> to CFLAGS]),,[enable_fast=O2])
+PAC_PUSH_FLAG(IFS)
+IFS=","
+for option in ${enable_fast} ; do
+    case "$option" in
+        O*)
+            PAC_APPEND_FLAG([-${option}],[CFLAGS])
+	    ;;
+	ndebug)
+	    PAC_APPEND_FLAG([-DNDEBUG],[CFLAGS])
+	    ;;
+	*)
+	    # ignore unknown options
+	    ;;
+    esac
+done
+PAC_POP_FLAG(IFS)
 
 
 dnl ----------------------------------------------------------------------------
