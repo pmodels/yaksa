@@ -288,11 +288,6 @@ int yaksa_finalize(void)
         goto fn_exit;
     }
 
-    /* finalize the backend */
-    rc = yaksur_finalize_hook();
-    YAKSU_ERR_CHECK(rc, fn_fail);
-
-
     /* free the builtin datatypes */
     FINALIZE_BUILTIN_TYPE(NULL, rc, fn_fail);
     FINALIZE_BUILTIN_TYPE(_BOOL, rc, fn_fail);
@@ -362,6 +357,10 @@ int yaksa_finalize(void)
     /* *INDENT-ON* */
     FINALIZE_BUILTIN_TYPE(SHORT_INT, rc, fn_fail);
     FINALIZE_BUILTIN_TYPE(LONG_DOUBLE_INT, rc, fn_fail);
+
+    /* finalize the backend */
+    rc = yaksur_finalize_hook();
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
     rc = yaksu_handle_pool_free(yaksi_global.type_handle_pool);
     YAKSU_ERR_CHECK(rc, fn_fail);
