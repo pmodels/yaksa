@@ -77,6 +77,11 @@ int yaksur_init_hook(void)
     rc = yaksuri_cuda_init_hook(&yaksuri_global.gpudriver[id].hooks);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
+    /* ZE hooks */
+    id = YAKSURI_GPUDRIVER_ID__ZE;
+    yaksuri_global.gpudriver[id].hooks = NULL;
+    rc = yaksuri_ze_init_hook(&yaksuri_global.gpudriver[id].hooks);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
     /* final setup for all drivers */
     for (id = YAKSURI_GPUDRIVER_ID__UNSET; id < YAKSURI_GPUDRIVER_ID__LAST; id++) {
@@ -276,6 +281,8 @@ int yaksur_info_keyval_append(yaksi_info_s * info, const char *key, const void *
         yaksuri_info_s *infopriv = info->backend.priv;
         if (!strncmp(val, "cuda", vallen)) {
             infopriv->gpudriver_id = YAKSURI_GPUDRIVER_ID__CUDA;
+        } else if (!strncmp(val, "ze", vallen)) {
+            infopriv->gpudriver_id = YAKSURI_GPUDRIVER_ID__ZE;
         } else {
             assert(0);
         }

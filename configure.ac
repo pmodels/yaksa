@@ -169,6 +169,7 @@ fi
 # backend devices
 supported_backends="seq"
 m4_include([src/backend/cuda/subconfigure.m4])
+m4_include([src/backend/ze/subconfigure.m4])
 
 
 dnl ----------------------------------------------------------------------------

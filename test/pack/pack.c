@@ -11,10 +11,7 @@
 #include "yaksa_config.h"
 #include "yaksa.h"
 #include "dtpools.h"
-
-#ifdef HAVE_CUDA
-#include <cuda_runtime_api.h>
-#endif /* HAVE_CUDA */
+#include "pack-common.h"
 
 uintptr_t maxbufsize = 512 * 1024 * 1024;
 
@@ -52,111 +49,8 @@ static void swap_segments(uintptr_t * starts, uintptr_t * lengths, int x, int y)
     lengths[y] = tmp;
 }
 
-typedef enum {
-    MEM_TYPE__UNSET,
-    MEM_TYPE__UNREGISTERED_HOST,
-    MEM_TYPE__REGISTERED_HOST,
-    MEM_TYPE__MANAGED,
-    MEM_TYPE__DEVICE,
-} mem_type_e;
-
-#ifdef HAVE_CUDA
-static int ndevices = -1;
-#endif
-static int device_id = 0;
-static int device_stride = 0;
-
-static void init_devices(void)
-{
-#ifdef HAVE_CUDA
-    cudaGetDeviceCount(&ndevices);
-    assert(ndevices != -1);
-    cudaSetDevice(device_id);
-#endif
-}
-
-static void alloc_mem(size_t size, mem_type_e type, void **hostbuf, void **devicebuf)
-{
-    if (type == MEM_TYPE__UNREGISTERED_HOST) {
-        *devicebuf = malloc(size);
-        if (hostbuf)
-            *hostbuf = *devicebuf;
-#ifdef HAVE_CUDA
-    } else if (type == MEM_TYPE__REGISTERED_HOST) {
-        cudaMallocHost(devicebuf, size);
-        if (hostbuf)
-            *hostbuf = *devicebuf;
-    } else if (type == MEM_TYPE__MANAGED) {
-        cudaMallocManaged(devicebuf, size, cudaMemAttachGlobal);
-        if (hostbuf)
-            *hostbuf = *devicebuf;
-    } else if (type == MEM_TYPE__DEVICE) {
-        cudaSetDevice(device_id);
-        cudaMalloc(devicebuf, size);
-        if (hostbuf)
-            cudaMallocHost(hostbuf, size);
-        device_id += device_stride;
-        device_id %= ndevices;
-#endif
-    } else {
-        fprintf(stderr, "ERROR: unsupported memory type\n");
-        exit(1);
-    }
-}
-
-static void free_mem(mem_type_e type, void *hostbuf, void *devicebuf)
-{
-    if (type == MEM_TYPE__UNREGISTERED_HOST) {
-        free(hostbuf);
-#ifdef HAVE_CUDA
-    } else if (type == MEM_TYPE__REGISTERED_HOST) {
-        cudaFreeHost(devicebuf);
-    } else if (type == MEM_TYPE__MANAGED) {
-        cudaFree(devicebuf);
-    } else if (type == MEM_TYPE__DEVICE) {
-        cudaFree(devicebuf);
-        if (hostbuf) {
-            cudaFreeHost(hostbuf);
-        }
-#endif
-    }
-}
-
-static void get_ptr_attr(const void *inbuf, void *outbuf, yaksa_info_t * info)
-{
-#ifdef HAVE_CUDA
-    static int count = 0;
-    if ((++count) % 2 == 0) {
-        int rc;
-
-        rc = yaksa_info_create(info);
-        assert(rc == YAKSA_SUCCESS);
-
-        rc = yaksa_info_keyval_append(*info, "yaksa_gpu_driver", "cuda", strlen("cuda"));
-        assert(rc == YAKSA_SUCCESS);
-
-        struct cudaPointerAttributes attr;
-
-        cudaPointerGetAttributes(&attr, inbuf);
-        rc = yaksa_info_keyval_append(*info, "yaksa_cuda_inbuf_ptr_attr", &attr, sizeof(attr));
-        assert(rc == YAKSA_SUCCESS);
-
-        cudaPointerGetAttributes(&attr, outbuf);
-        rc = yaksa_info_keyval_append(*info, "yaksa_cuda_outbuf_ptr_attr", &attr, sizeof(attr));
-        assert(rc == YAKSA_SUCCESS);
-    } else
-#endif
-        *info = NULL;
-}
-
-static void copy_content(const void *sbuf, void *dbuf, size_t size, mem_type_e type)
-{
-#ifdef HAVE_CUDA
-    if (type == MEM_TYPE__DEVICE) {
-        cudaMemcpy(dbuf, sbuf, size, cudaMemcpyDefault);
-    }
-#endif
-}
+int device_id = 0;
+int device_stride = 0;
 
 char typestr[MAX_DTP_BASESTRLEN + 1] = { 0 };
 
@@ -189,7 +83,7 @@ void *runtest(void *arg)
         assert(rc == DTP_SUCCESS);
 
         char *sbuf_h = NULL, *sbuf_d = NULL;
-        alloc_mem(sobj.DTP_bufsize, sbuf_memtype, (void **) &sbuf_h, (void **) &sbuf_d);
+        pack_alloc_mem(sobj.DTP_bufsize, sbuf_memtype, (void **) &sbuf_h, (void **) &sbuf_d);
         assert(sbuf_h);
         assert(sbuf_d);
 
@@ -215,7 +109,7 @@ void *runtest(void *arg)
         assert(rc == DTP_SUCCESS);
 
         char *dbuf_h, *dbuf_d;
-        alloc_mem(dobj.DTP_bufsize, dbuf_memtype, (void **) &dbuf_h, (void **) &dbuf_d);
+        pack_alloc_mem(dobj.DTP_bufsize, dbuf_memtype, (void **) &dbuf_h, (void **) &dbuf_d);
         assert(dbuf_h);
         assert(dbuf_d);
 
@@ -304,16 +198,16 @@ void *runtest(void *arg)
         }
 
         /* the actual pack/unpack loop */
-        copy_content(sbuf_h, sbuf_d, sobj.DTP_bufsize, sbuf_memtype);
-        copy_content(dbuf_h, dbuf_d, dobj.DTP_bufsize, dbuf_memtype);
+        pack_copy_content(sbuf_h, sbuf_d, sobj.DTP_bufsize, sbuf_memtype);
+        pack_copy_content(dbuf_h, dbuf_d, dobj.DTP_bufsize, dbuf_memtype);
 
         void *tbuf_h, *tbuf_d;
         uintptr_t tbufsize = ssize * sobj.DTP_type_count;
-        alloc_mem(tbufsize, tbuf_memtype, &tbuf_h, &tbuf_d);
+        pack_alloc_mem(tbufsize, tbuf_memtype, &tbuf_h, &tbuf_d);
 
         yaksa_info_t pack_info, unpack_info;
-        get_ptr_attr(sbuf_d + sobj.DTP_buf_offset, tbuf_d, &pack_info);
-        get_ptr_attr(tbuf_d, dbuf_d + dobj.DTP_buf_offset, &unpack_info);
+        pack_get_ptr_attr(sbuf_d + sobj.DTP_buf_offset, tbuf_d, &pack_info);
+        pack_get_ptr_attr(tbuf_d, dbuf_d + dobj.DTP_buf_offset, &unpack_info);
 
         for (int j = 0; j < segments; j++) {
             uintptr_t actual_pack_bytes;
@@ -353,15 +247,15 @@ void *runtest(void *arg)
             assert(rc == YAKSA_SUCCESS);
         }
 
-        copy_content(dbuf_d, dbuf_h, dobj.DTP_bufsize, dbuf_memtype);
+        pack_copy_content(dbuf_d, dbuf_h, dobj.DTP_bufsize, dbuf_memtype);
         rc = DTP_obj_buf_check(dobj, dbuf_h, 0, 1, basecount);
         assert(rc == DTP_SUCCESS);
 
 
         /* free allocated buffers and objects */
-        free_mem(sbuf_memtype, sbuf_h, sbuf_d);
-        free_mem(dbuf_memtype, dbuf_h, dbuf_d);
-        free_mem(tbuf_memtype, tbuf_h, tbuf_d);
+        pack_free_mem(sbuf_memtype, sbuf_h, sbuf_d);
+        pack_free_mem(dbuf_memtype, dbuf_h, dbuf_d);
+        pack_free_mem(tbuf_memtype, tbuf_h, tbuf_d);
 
         DTP_obj_free(dobj);
     }
@@ -508,7 +402,7 @@ int main(int argc, char **argv)
     }
 
     yaksa_init(NULL);
-    init_devices();
+    pack_init_devices();
 
     dtp = (DTP_pool_s *) malloc(num_threads * sizeof(DTP_pool_s));
     for (uintptr_t i = 0; i < num_threads; i++) {
@@ -532,6 +426,7 @@ int main(int argc, char **argv)
     }
     free(dtp);
 
+    pack_finalize_devices();
     yaksa_finalize();
 
     return 0;

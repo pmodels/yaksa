@@ -11,6 +11,7 @@
 typedef enum yaksuri_gpudriver_id_e {
     YAKSURI_GPUDRIVER_ID__UNSET = -1,
     YAKSURI_GPUDRIVER_ID__CUDA = 0,
+    YAKSURI_GPUDRIVER_ID__ZE,
     YAKSURI_GPUDRIVER_ID__LAST,
 } yaksuri_gpudriver_id_e;
 
