@@ -35,14 +35,14 @@ def hvector(suffix, dtp, b, last):
     global s
     global idx
     global need_extent
-    yutils.display(OUTFILE, "intptr_t stride%d = %s->u.hvector.stride / sizeof(%s);\n" % (suffix, dtp, b))
+    yutils.display(OUTFILE, "intptr_t stride%d = %s->u.hvector.stride;\n" % (suffix, dtp))
     if (need_extent == True):
-        yutils.display(OUTFILE, "uintptr_t extent%d = %s->extent / sizeof(%s);\n" % (suffix, dtp, b))
+        yutils.display(OUTFILE, "uintptr_t extent%d = %s->extent;\n" % (suffix, dtp))
     if (last != 1):
         s += " + x%d * stride%d + x%d * extent%d" % (idx, suffix, idx + 1, suffix + 1)
         need_extent = True
     else:
-        s += " + x%d * stride%d + x%d" % (idx, suffix, idx + 1)
+        s += " + x%d * stride%d + x%d * sizeof(%s)" % (idx, suffix, idx + 1, b)
         need_extent = False
     idx = idx + 2
 
@@ -53,13 +53,13 @@ def blkhindx(suffix, dtp, b, last):
     global need_extent
     yutils.display(OUTFILE, "intptr_t *array_of_displs%d = %s->u.blkhindx.array_of_displs;\n" % (suffix, dtp))
     if (need_extent == True):
-        yutils.display(OUTFILE, "uintptr_t extent%d = %s->extent / sizeof(%s);\n" % (suffix, dtp, b))
+        yutils.display(OUTFILE, "uintptr_t extent%d = %s->extent;\n" % (suffix, dtp))
     if (last != 1):
-        s += " + array_of_displs%d[x%d] / sizeof(%s) + x%d * extent%d" % \
-             (suffix, idx, b, idx + 1, suffix + 1)
+        s += " + array_of_displs%d[x%d] + x%d * extent%d" % \
+             (suffix, idx, idx + 1, suffix + 1)
         need_extent = True
     else:
-        s += " + array_of_displs%d[x%d] / sizeof(%s) + x%d" % (suffix, idx, b, idx + 1)
+        s += " + array_of_displs%d[x%d] + x%d * sizeof(%s)" % (suffix, idx, idx + 1, b)
         need_extent = False
     idx = idx + 2
 
@@ -70,13 +70,13 @@ def hindexed(suffix, dtp, b, last):
     global need_extent
     yutils.display(OUTFILE, "intptr_t *array_of_displs%d = %s->u.hindexed.array_of_displs;\n" % (suffix, dtp))
     if (need_extent == True):
-        yutils.display(OUTFILE, "uintptr_t extent%d = %s->extent / sizeof(%s);\n" % (suffix, dtp, b))
+        yutils.display(OUTFILE, "uintptr_t extent%d = %s->extent;\n" % (suffix, dtp))
     if (last != 1):
-        s += " + array_of_displs%d[x%d] / sizeof(%s) + x%d * extent%d" % \
-             (suffix, idx, b, idx + 1, suffix + 1)
+        s += " + array_of_displs%d[x%d] + x%d * extent%d" % \
+             (suffix, idx, idx + 1, suffix + 1)
         need_extent = True
     else:
-        s += " + array_of_displs%d[x%d] / sizeof(%s) + x%d" % (suffix, idx, b, idx + 1)
+        s += " + array_of_displs%d[x%d] + x%d * sizeof(%s)" % (suffix, idx, idx + 1, b)
         need_extent = False
     idx = idx + 2
 
@@ -85,9 +85,9 @@ def contig(suffix, dtp, b, last):
     global s
     global idx
     global need_extent
-    yutils.display(OUTFILE, "intptr_t stride%d = %s->u.contig.child->extent / sizeof(%s);\n" % (suffix, dtp, b))
+    yutils.display(OUTFILE, "intptr_t stride%d = %s->u.contig.child->extent;\n" % (suffix, dtp))
     if (need_extent == True):
-        yutils.display(OUTFILE, "uintptr_t extent%d = %s->extent / sizeof(%s);\n" % (suffix, dtp, b))
+        yutils.display(OUTFILE, "uintptr_t extent%d = %s->extent;\n" % (suffix, dtp))
     need_extent = False
     s += " + x%d * stride%d" % (idx, suffix)
     idx = idx + 1
@@ -96,7 +96,7 @@ def contig(suffix, dtp, b, last):
 def resized(suffix, dtp, b, last):
     global need_extent
     if (need_extent == True):
-        yutils.display(OUTFILE, "uintptr_t extent%d = %s->extent / sizeof(%s);\n" % (suffix, dtp, b))
+        yutils.display(OUTFILE, "uintptr_t extent%d = %s->extent;\n" % (suffix, dtp))
     need_extent = False
 
 
@@ -122,9 +122,9 @@ def generate_kernels(b, darray):
         ##### generate the CUDA kernel
         yutils.display(OUTFILE, "__global__ void yaksuri_cudai_kernel_%s(const void *inbuf, void *outbuf, uintptr_t count, const yaksuri_cudai_md_s *__restrict__ md)\n" % funcprefix)
         yutils.display(OUTFILE, "{\n")
-        yutils.display(OUTFILE, "const %s *__restrict__ sbuf = (const %s *) inbuf;\n" % (b, b));
-        yutils.display(OUTFILE, "%s *__restrict__ dbuf = (%s *) outbuf;\n" % (b, b));
-        yutils.display(OUTFILE, "uintptr_t extent = md->extent / sizeof(%s);\n" % b)
+        yutils.display(OUTFILE, "const char *__restrict__ sbuf = (const char *) inbuf;\n");
+        yutils.display(OUTFILE, "char *__restrict__ dbuf = (char *) outbuf;\n");
+        yutils.display(OUTFILE, "uintptr_t extent = md->extent;\n")
         yutils.display(OUTFILE, "uintptr_t idx = blockIdx.x * blockDim.x + threadIdx.x;\n")
         yutils.display(OUTFILE, "uintptr_t res = idx;\n")
         yutils.display(OUTFILE, "uintptr_t inner_elements = md->num_elements;\n")
@@ -188,9 +188,11 @@ def generate_kernels(b, darray):
             dtp = dtp + "->u.%s.child" % d
 
         if (func == "pack"):
-            yutils.display(OUTFILE, "dbuf[idx] = sbuf[%s];\n" % s)
+            yutils.display(OUTFILE, "*((%s *) (void *) (dbuf + idx * sizeof(%s))) = *((const %s *) (const void *) (sbuf + %s));\n"
+                           % (b, b, b, s))
         else:
-            yutils.display(OUTFILE, "dbuf[%s] = sbuf[idx];\n" % s)
+            yutils.display(OUTFILE, "*((%s *) (void *) (dbuf + %s)) = *((const %s *) (const void *) (sbuf + idx * sizeof(%s)));\n"
+                           % (b, s, b, b))
 
         yutils.display(OUTFILE, "}\n\n")
 

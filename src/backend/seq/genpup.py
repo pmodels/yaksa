@@ -33,8 +33,8 @@ builtin_maps = { }
 def hvector_decl(nesting, dtp, b):
     yutils.display(OUTFILE, "int count%d = %s->u.hvector.count;\n" % (nesting, dtp))
     yutils.display(OUTFILE, "int blocklength%d ATTRIBUTE((unused)) = %s->u.hvector.blocklength;\n" % (nesting, dtp))
-    yutils.display(OUTFILE, "intptr_t stride%d = %s->u.hvector.stride / sizeof(%s);\n" % (nesting, dtp, b))
-    yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent / sizeof(%s);\n" % (nesting, dtp, b))
+    yutils.display(OUTFILE, "intptr_t stride%d = %s->u.hvector.stride;\n" % (nesting, dtp))
+    yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent;\n" % (nesting, dtp))
 
 def hvector(suffix, b, blklen, last):
     global num_paren_open
@@ -48,14 +48,14 @@ def hvector(suffix, b, blklen, last):
     if (last != 1):
         s += " + j%d * stride%d + k%d * extent%d" % (suffix, suffix, suffix, suffix + 1)
     else:
-        s += " + j%d * stride%d + k%d" % (suffix, suffix, suffix)
+        s += " + j%d * stride%d + k%d * sizeof(%s)" % (suffix, suffix, suffix, b)
 
 ## blkhindx routines
 def blkhindx_decl(nesting, dtp, b):
     yutils.display(OUTFILE, "int count%d = %s->u.blkhindx.count;\n" % (nesting, dtp))
     yutils.display(OUTFILE, "int blocklength%d ATTRIBUTE((unused)) = %s->u.blkhindx.blocklength;\n" % (nesting, dtp))
     yutils.display(OUTFILE, "intptr_t *restrict array_of_displs%d = %s->u.blkhindx.array_of_displs;\n" % (nesting, dtp))
-    yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent / sizeof(%s);\n" % (nesting, dtp, b))
+    yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent;\n" % (nesting, dtp))
 
 def blkhindx(suffix, b, blklen, last):
     global num_paren_open
@@ -67,17 +67,17 @@ def blkhindx(suffix, b, blklen, last):
         yutils.display(OUTFILE, "for (int k%d = 0; k%d < %s; k%d++) {\n" % (suffix, suffix, blklen, suffix))
     global s
     if (last != 1):
-        s += " + array_of_displs%d[j%d] / sizeof(%s) + k%d * extent%d" % \
-             (suffix, suffix, b, suffix, suffix + 1)
+        s += " + array_of_displs%d[j%d] + k%d * extent%d" % \
+             (suffix, suffix, suffix, suffix + 1)
     else:
-        s += " + array_of_displs%d[j%d] / sizeof(%s) + k%d" % (suffix, suffix, b, suffix)
+        s += " + array_of_displs%d[j%d] + k%d * sizeof(%s)" % (suffix, suffix, suffix, b)
 
 ## hindexed routines
 def hindexed_decl(nesting, dtp, b):
     yutils.display(OUTFILE, "int count%d = %s->u.hindexed.count;\n" % (nesting, dtp))
     yutils.display(OUTFILE, "int *restrict array_of_blocklengths%d = %s->u.hindexed.array_of_blocklengths;\n" % (nesting, dtp))
     yutils.display(OUTFILE, "intptr_t *restrict array_of_displs%d = %s->u.hindexed.array_of_displs;\n" % (nesting, dtp))
-    yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent / sizeof(%s);\n" % (nesting, dtp, b))
+    yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent;\n" % (nesting, dtp))
 
 def hindexed(suffix, b, blklen, last):
     global num_paren_open
@@ -87,16 +87,16 @@ def hindexed(suffix, b, blklen, last):
             (suffix, suffix, suffix, suffix, suffix))
     global s
     if (last != 1):
-        s += " + array_of_displs%d[j%d] / sizeof(%s) + k%d * extent%d" % \
-             (suffix, suffix, b, suffix, suffix + 1)
+        s += " + array_of_displs%d[j%d] + k%d * extent%d" % \
+             (suffix, suffix, suffix, suffix + 1)
     else:
-        s += " + array_of_displs%d[j%d] / sizeof(%s) + k%d" % (suffix, suffix, b, suffix)
+        s += " + array_of_displs%d[j%d] + k%d * sizeof(%s)" % (suffix, suffix, suffix, b)
 
 ## contig routines
 def contig_decl(nesting, dtp, b):
     yutils.display(OUTFILE, "int count%d = %s->u.contig.count;\n" % (nesting, dtp))
-    yutils.display(OUTFILE, "intptr_t stride%d = %s->u.contig.child->extent / sizeof(%s);\n" % (nesting, dtp, b))
-    yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent / sizeof(%s);\n" % (nesting, dtp, b))
+    yutils.display(OUTFILE, "intptr_t stride%d = %s->u.contig.child->extent;\n" % (nesting, dtp))
+    yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent;\n" % (nesting, dtp))
 
 def contig(suffix, b, blklen, last):
     global num_paren_open
@@ -107,7 +107,7 @@ def contig(suffix, b, blklen, last):
 
 # resized routines
 def resized_decl(nesting, dtp, b):
-    yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent / sizeof(%s);\n" % (nesting, dtp, b))
+    yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent;\n" % (nesting, dtp))
 
 def resized(suffix, b, blklen, last):
     pass
@@ -146,9 +146,9 @@ def generate_kernels(b, darray, blklen):
         ##### variable declarations
         # generic variables
         yutils.display(OUTFILE, "int rc = YAKSA_SUCCESS;\n");
-        yutils.display(OUTFILE, "const %s *restrict sbuf = (const %s *) inbuf;\n" % (b, b));
-        yutils.display(OUTFILE, "%s *restrict dbuf = (%s *) outbuf;\n" % (b, b));
-        yutils.display(OUTFILE, "uintptr_t extent ATTRIBUTE((unused)) = type->extent / sizeof(%s);\n" % b)
+        yutils.display(OUTFILE, "const char *restrict sbuf = (const char *) inbuf;\n");
+        yutils.display(OUTFILE, "char *restrict dbuf = (char *) outbuf;\n");
+        yutils.display(OUTFILE, "uintptr_t extent ATTRIBUTE((unused)) = type->extent;\n")
         yutils.display(OUTFILE, "\n");
 
         # variables specific to each nesting level
@@ -171,9 +171,12 @@ def generate_kernels(b, darray, blklen):
                 getattr(sys.modules[__name__], darray[x])(x + 1, b, blklen, 1)
 
         if (func == "pack"):
-            yutils.display(OUTFILE, "dbuf[idx++] = sbuf[%s];\n" % s)
+            yutils.display(OUTFILE, "*((%s *) (void *) (dbuf + idx)) = *((const %s *) (const void *) (sbuf + %s));\n"
+                           % (b, b, s))
         else:
-            yutils.display(OUTFILE, "dbuf[%s] = sbuf[idx++];\n" % s)
+            yutils.display(OUTFILE, "*((%s *) (void *) (dbuf + %s)) = *((const %s *) (const void *) (sbuf + idx));\n"
+                           % (b, s, b))
+        yutils.display(OUTFILE, "idx += sizeof(%s);\n" % b)
         for x in range(num_paren_open):
             yutils.display(OUTFILE, "}\n")
         num_paren_open = 0
