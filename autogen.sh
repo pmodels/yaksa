@@ -49,11 +49,20 @@ done
 for x in seq cuda ; do
     echo_n "generating backend pup functions for ${x}... "
     ./src/backend/${x}/genpup.py ${genpup_args}
-    echo "done"
+    if test "$?" = "0" ; then
+	echo "done"
+    else
+	echo "failed"
+	exit 1
+    fi
 done
 
 # tests
 ./maint/gentests.py
+if test "$?" != "0" ; then
+    echo "test generation failed"
+    exit 1
+fi
 
 
 ########################################################################
@@ -64,7 +73,12 @@ done
 echo
 echo "=== generating configure files in main directory ==="
 autoreconf -vif
-echo "=== done === "
+if test "$?" = "0" ; then
+    echo "=== done === "
+else
+    echo "=== failed === "
+    exit 1
+fi
 echo
 
 
