@@ -53,7 +53,7 @@ int yaksi_type_create_hvector(int count, int blocklength, intptr_t stride, yaksi
     outtype->extent = outtype->ub - outtype->lb;
 
     /* detect if the outtype is contiguous */
-    if (intype->is_contig && ((outtype->ub - outtype->lb) == outtype->size)) {
+    if (intype->is_contig && ((outtype->ub - outtype->lb) == outtype->size) && stride > 0) {
         outtype->is_contig = true;
     } else {
         outtype->is_contig = false;
