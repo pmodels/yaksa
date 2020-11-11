@@ -160,8 +160,10 @@ static int construct_resized(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
             e = ((int64_t) 2) * extent;
         } else if (extent_attr == DTPI_ATTR_RESIZED_EXTENT__VERY_HIGH) {
             e = ((int64_t) 10) * extent;
-        } else if (extent_attr == DTPI_ATTR_RESIZED_EXTENT__NEGATIVE) {
+        } else if (extent_attr == DTPI_ATTR_RESIZED_EXTENT__NEGATIVE_LARGE) {
             e = -((int64_t) 2) * extent;
+        } else if (extent_attr == DTPI_ATTR_RESIZED_EXTENT__NEGATIVE_SMALL) {
+            e = -extent;
         } else {
             DTPI_ERR_ASSERT(0, rc);
         }
@@ -248,8 +250,10 @@ static int construct_vector(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
             stride = (int64_t) attr->u.vector.blklen + 1;
         else if (stride_attr == DTPI_ATTR_VECTOR_STRIDE__LARGE)
             stride = (int64_t) attr->u.vector.blklen * 4;
-        else if (stride_attr == DTPI_ATTR_VECTOR_STRIDE__NEGATIVE)
+        else if (stride_attr == DTPI_ATTR_VECTOR_STRIDE__NEGATIVE_LARGE)
             stride = ((int64_t) (-2)) * attr->u.vector.blklen;
+        else if (stride_attr == DTPI_ATTR_VECTOR_STRIDE__NEGATIVE_SMALL)
+            stride = -attr->u.vector.blklen;
         else {
             DTPI_ERR_ASSERT(0, rc);
         }
@@ -360,8 +364,10 @@ static int construct_hvector(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
             stride = (int64_t) attr->u.hvector.blklen * attr->child_type_extent + 8;
         } else if (stride_attr == DTPI_ATTR_HVECTOR_STRIDE__LARGE) {
             stride = (int64_t) attr->u.hvector.blklen * attr->child_type_extent * 4 + 8;
-        } else if (stride_attr == DTPI_ATTR_HVECTOR_STRIDE__NEGATIVE) {
+        } else if (stride_attr == DTPI_ATTR_HVECTOR_STRIDE__NEGATIVE_LARGE) {
             stride = ((int64_t) (-2)) * attr->u.hvector.blklen * attr->child_type_extent * 4 - 8;
+        } else if (stride_attr == DTPI_ATTR_HVECTOR_STRIDE__NEGATIVE_SMALL) {
+            stride = -attr->u.hvector.blklen * attr->child_type_extent;
         } else {
             DTPI_ERR_ASSERT(0, rc);
         }
