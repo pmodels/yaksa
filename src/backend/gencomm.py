@@ -45,6 +45,7 @@ def switcher_builtin_element(backend, OUTFILE, blklens, typelist, pupstr, key, v
             yutils.display(OUTFILE, "if (max_nesting_level >= %d) {\n" % nesting_level)
             yutils.display(OUTFILE, "%s->pack = yaksuri_%si_pack_%s_blklen_%s_%s;\n" % (backend, backend, pupstr, blklen, val))
             yutils.display(OUTFILE, "%s->unpack = yaksuri_%si_unpack_%s_blklen_%s_%s;\n" % (backend, backend, pupstr, blklen, val))
+            yutils.display(OUTFILE, "%s->name = \"yaksuri_%si_op_%s_blklen_%s_%s\";\n" % (backend, backend, pupstr, blklen, val))
             yutils.display(OUTFILE, "}\n")
             yutils.display(OUTFILE, "break;\n")
         yutils.display(OUTFILE, "}\n")
@@ -52,6 +53,7 @@ def switcher_builtin_element(backend, OUTFILE, blklens, typelist, pupstr, key, v
         yutils.display(OUTFILE, "if (max_nesting_level >= %d) {\n" % nesting_level)
         yutils.display(OUTFILE, "%s->pack = yaksuri_%si_pack_%s_%s;\n" % (backend, backend, pupstr, val))
         yutils.display(OUTFILE, "%s->unpack = yaksuri_%si_unpack_%s_%s;\n" % (backend, backend, pupstr, val))
+        yutils.display(OUTFILE, "%s->name = \"yaksuri_%si_op_%s_%s\";\n" % (backend, backend, pupstr, val))
         yutils.display(OUTFILE, "}\n")
 
     if (t != ""):

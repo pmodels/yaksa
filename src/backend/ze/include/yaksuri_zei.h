@@ -101,6 +101,7 @@ typedef struct yaksuri_zei_type_s {
     yaksuri_zei_md_s **md;
     pthread_mutex_t mdmutex;
     uintptr_t num_elements;
+    const char *name;
 } yaksuri_zei_type_s;
 
 typedef struct {
