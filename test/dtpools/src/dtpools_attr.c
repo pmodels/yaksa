@@ -500,6 +500,14 @@ static int construct_blkindx(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
                 if (!VALUE_FITS_IN_INT(total_displ))
                     goto retry;
             }
+        } else if (displs_attr == DTPI_ATTR_BLKINDX_DISPLS__REVERSE) {
+            for (int i = 0; i < attr->u.blkindx.numblks; i++) {
+                int idx = attr->u.blkindx.numblks - i - 1;
+                attr->u.blkindx.array_of_displs[idx] = (int) total_displ;
+                total_displ += attr->u.blkindx.blklen;
+                if (!VALUE_FITS_IN_INT(total_displ))
+                    goto retry;
+            }
         } else if (displs_attr == DTPI_ATTR_BLKINDX_DISPLS__UNEVEN) {
             for (int i = 0; i < attr->u.blkindx.numblks; i++) {
                 attr->u.blkindx.array_of_displs[i] = (int) total_displ;
@@ -636,6 +644,14 @@ static int construct_blkhindx(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
                 int idx = attr->u.blkhindx.numblks - i - 1;
                 attr->u.blkhindx.array_of_displs[idx] = (intptr_t) total_displ;
                 total_displ += (attr->u.blkhindx.blklen + 1) * attr->child_type_extent;
+                if (!VALUE_FITS_IN_INTPTR_T(total_displ))
+                    goto retry;
+            }
+        } else if (displs_attr == DTPI_ATTR_BLKHINDX_DISPLS__REVERSE) {
+            for (int i = 0; i < attr->u.blkhindx.numblks; i++) {
+                int idx = attr->u.blkhindx.numblks - i - 1;
+                attr->u.blkhindx.array_of_displs[idx] = (intptr_t) total_displ;
+                total_displ += attr->u.blkhindx.blklen * attr->child_type_extent;
                 if (!VALUE_FITS_IN_INTPTR_T(total_displ))
                     goto retry;
             }
@@ -805,6 +821,14 @@ static int construct_indexed(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * 
                 int idx = attr->u.indexed.numblks - i - 1;
                 attr->u.indexed.array_of_displs[idx] = (int) total_displ;
                 total_displ += attr->u.indexed.array_of_blklens[idx] + 1;
+                if (!VALUE_FITS_IN_INT(total_displ))
+                    goto retry;
+            }
+        } else if (displs_attr == DTPI_ATTR_INDEXED_DISPLS__REVERSE) {
+            for (int i = 0; i < attr->u.indexed.numblks; i++) {
+                int idx = attr->u.indexed.numblks - i - 1;
+                attr->u.indexed.array_of_displs[idx] = (int) total_displ;
+                total_displ += attr->u.indexed.array_of_blklens[idx];
                 if (!VALUE_FITS_IN_INT(total_displ))
                     goto retry;
             }
@@ -980,6 +1004,14 @@ static int construct_hindexed(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s *
                 attr->u.hindexed.array_of_displs[idx] = (intptr_t) total_displ;
                 total_displ +=
                     attr->child_type_extent * (attr->u.hindexed.array_of_blklens[idx] + 1);
+                if (!VALUE_FITS_IN_INTPTR_T(total_displ))
+                    goto retry;
+            }
+        } else if (displs_attr == DTPI_ATTR_HINDEXED_DISPLS__REVERSE) {
+            for (int i = 0; i < attr->u.hindexed.numblks; i++) {
+                int idx = attr->u.hindexed.numblks - i - 1;
+                attr->u.hindexed.array_of_displs[idx] = (intptr_t) total_displ;
+                total_displ += attr->child_type_extent * attr->u.hindexed.array_of_blklens[idx];
                 if (!VALUE_FITS_IN_INTPTR_T(total_displ))
                     goto retry;
             }
@@ -1274,6 +1306,14 @@ static int construct_struct(DTP_pool_s dtp, int attr_tree_depth, DTPI_Attr_s * a
                 attr->u.structure.array_of_displs[idx] = (intptr_t) total_displ;
                 total_displ +=
                     attr->child_type_extent * (attr->u.structure.array_of_blklens[idx] + 1);
+                if (!VALUE_FITS_IN_INTPTR_T(total_displ))
+                    goto retry;
+            }
+        } else if (displs_attr == DTPI_ATTR_STRUCTURE_DISPLS__REVERSE) {
+            for (int i = 0; i < attr->u.structure.numblks; i++) {
+                int idx = attr->u.structure.numblks - i - 1;
+                attr->u.structure.array_of_displs[idx] = (intptr_t) total_displ;
+                total_displ += attr->child_type_extent * attr->u.structure.array_of_blklens[idx];
                 if (!VALUE_FITS_IN_INTPTR_T(total_displ))
                     goto retry;
             }
