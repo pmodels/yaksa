@@ -23,6 +23,8 @@ extern "C" {
 
 #include <yaksuri_cudai_base.h>
 
+#define YAKSURI_KERNEL_NULL  NULL
+
 #define YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail)            \
     do {                                                                \
         if (cerr != cudaSuccess) {                                      \
