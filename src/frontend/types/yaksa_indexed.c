@@ -92,6 +92,24 @@ int yaksi_type_create_hindexed(int count, const int *array_of_blocklengths,
     /* detect if the outtype is contiguous */
     if (intype->is_contig && ((outtype->ub - outtype->lb) == outtype->size)) {
         outtype->is_contig = true;
+
+        int left = 0;
+        while (array_of_blocklengths[left] == 0)
+            left++;
+        int right = left + 1;
+        while (right < count && array_of_blocklengths[right] == 0)
+            right++;
+        while (right < count) {
+            if (array_of_displs[right] <= array_of_displs[left]) {
+                outtype->is_contig = false;
+                break;
+            } else {
+                left = right;
+                right++;
+                while (right < count && array_of_blocklengths[right] == 0)
+                    right++;
+            }
+        }
     } else {
         outtype->is_contig = false;
     }

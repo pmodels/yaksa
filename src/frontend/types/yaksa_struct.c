@@ -96,10 +96,29 @@ int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
     /* detect if the outtype is contiguous */
     if ((outtype->ub - outtype->lb) == outtype->size) {
         outtype->is_contig = true;
+
         for (int i = 0; i < count; i++) {
             if (array_of_intypes[i]->is_contig == false) {
                 outtype->is_contig = false;
                 break;
+            }
+        }
+
+        int left = 0;
+        while (array_of_blocklengths[left] == 0)
+            left++;
+        int right = left + 1;
+        while (right < count && array_of_blocklengths[right] == 0)
+            right++;
+        while (right < count) {
+            if (array_of_displs[right] <= array_of_displs[left]) {
+                outtype->is_contig = false;
+                break;
+            } else {
+                left = right;
+                right++;
+                while (right < count && array_of_blocklengths[right] == 0)
+                    right++;
             }
         }
     } else {
