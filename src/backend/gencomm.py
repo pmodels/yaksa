@@ -112,8 +112,8 @@ def populate_pupfns(pup_max_nesting, backend, blklens, builtin_types, builtin_ma
     yutils.display(OUTFILE, "yaksuri_%si_type_s *%s = (yaksuri_%si_type_s *) type->backend.%s.priv;\n" \
                    % (backend, backend, backend, backend))
     yutils.display(OUTFILE, "\n")
-    yutils.display(OUTFILE, "%s->pack = NULL;\n" % backend)
-    yutils.display(OUTFILE, "%s->unpack = NULL;\n" % backend)
+    yutils.display(OUTFILE, "%s->pack = YAKSURI_KERNEL_NULL;\n" % backend)
+    yutils.display(OUTFILE, "%s->unpack = YAKSURI_KERNEL_NULL;\n" % backend)
     yutils.display(OUTFILE, "\n")
     yutils.display(OUTFILE, "switch (type->kind) {\n")
     for dtype1 in derived_types:

@@ -8,6 +8,8 @@
 
 #include "yaksi.h"
 
+#define YAKSURI_KERNEL_NULL   NULL
+
 typedef struct yaksuri_seqi_type_s {
     int (*pack) (const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *);
     int (*unpack) (const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *);
