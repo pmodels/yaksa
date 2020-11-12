@@ -73,6 +73,12 @@ int yaksi_type_create_hindexed_block(int count, int blocklength, const intptr_t 
     /* detect if the outtype is contiguous */
     if (intype->is_contig && ((outtype->ub - outtype->lb) == outtype->size)) {
         outtype->is_contig = true;
+        for (int i = 1; i < count; i++) {
+            if (array_of_displs[i] <= array_of_displs[i - 1]) {
+                outtype->is_contig = false;
+                break;
+            }
+        }
     } else {
         outtype->is_contig = false;
     }
