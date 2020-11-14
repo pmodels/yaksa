@@ -8,6 +8,7 @@
 
 #include "yaksuri_seq_post.h"
 #include "yaksuri_cuda_post.h"
+#include "yaksuri_ze_post.h"
 
 int yaksur_init_hook(void);
 int yaksur_finalize_hook(void);
