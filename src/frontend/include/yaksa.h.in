@@ -216,6 +216,8 @@ int yaksa_info_keyval_append(yaksa_info_t info, const char *key, const void *val
 
 /*!
  * \brief initializes the yaksa library
+ *
+ * \param[in]  info              Info hint to apply
  */
 int yaksa_init(yaksa_info_t info);
 
@@ -232,7 +234,7 @@ int yaksa_finalize(void);
  * \param[in]  stride       Increment from the start of one block to another
  *                          (represented in terms of the count of the oldtype)
  * \param[in]  oldtype      Base datatype forming each element in the vector
- * \param[in]  info         Hint object
+ * \param[in]  info         Info hint to apply
  * \param[out] newtype      Final generated type
  */
 int yaksa_type_create_vector(int count, int blocklength, int stride, yaksa_type_t oldtype,
@@ -246,7 +248,7 @@ int yaksa_type_create_vector(int count, int blocklength, int stride, yaksa_type_
  * \param[in]  stride       Increment from the start of one block to another
  *                          (represented in bytes)
  * \param[in]  oldtype      Base datatype forming each element in the vector
- * \param[in]  info         Hint object
+ * \param[in]  info         Info hint to apply
  * \param[out] newtype      Final generated type
  */
 int yaksa_type_create_hvector(int count, int blocklength, intptr_t stride, yaksa_type_t oldtype,
@@ -257,7 +259,7 @@ int yaksa_type_create_hvector(int count, int blocklength, intptr_t stride, yaksa
  *
  * \param[in]  count        Number of elements of the oldtype
  * \param[in]  oldtype      Base datatype forming each element in the contig
- * \param[in]  info         Hint object
+ * \param[in]  info         Info hint to apply
  * \param[out] newtype      Final generated type
  */
 int yaksa_type_create_contig(int count, yaksa_type_t oldtype, yaksa_info_t info,
@@ -267,7 +269,7 @@ int yaksa_type_create_contig(int count, yaksa_type_t oldtype, yaksa_info_t info,
  * \brief creates a copy of the oldtype
  *
  * \param[in]  oldtype      Base datatype being dup'ed
- * \param[in]  info         Hint object
+ * \param[in]  info         Info hint to apply
  * \param[out] newtype      Final generated type
  */
 int yaksa_type_create_dup(yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t * newtype);
@@ -280,7 +282,7 @@ int yaksa_type_create_dup(yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t 
  * \param[in]  array_of_displacements Starting offset to each block
  *                                    (represented in terms of the count of the oldtype)
  * \param[in]  oldtype                Base datatype forming each element in the new type
- * \param[in]  info                   Hint object
+ * \param[in]  info                   Info hint to apply
  * \param[out] newtype                Final generated type
  */
 int yaksa_type_create_indexed_block(int count, int blocklength, const int *array_of_displacements,
@@ -295,7 +297,7 @@ int yaksa_type_create_indexed_block(int count, int blocklength, const int *array
  * \param[in]  array_of_displacements Starting offset to each block
  *                                    (represented in bytes)
  * \param[in]  oldtype                Base datatype forming each element in the new type
- * \param[in]  info                   Hint object
+ * \param[in]  info                   Info hint to apply
  * \param[out] newtype                Final generated type
  */
 int yaksa_type_create_hindexed_block(int count, int blocklength,
@@ -310,7 +312,7 @@ int yaksa_type_create_hindexed_block(int count, int blocklength,
  * \param[in]  array_of_displacements Starting offset to each block
  *                                    (represented in terms of the count of the oldtype)
  * \param[in]  oldtype                Base datatype forming each element in the new type
- * \param[in]  info                   Hint object
+ * \param[in]  info                   Info hint to apply
  * \param[out] newtype                Final generated type
  */
 int yaksa_type_create_indexed(int count, const int *array_of_blocklengths,
@@ -325,7 +327,7 @@ int yaksa_type_create_indexed(int count, const int *array_of_blocklengths,
  * \param[in]  array_of_displacements Starting offset to each block
  *                                    (represented in bytes)
  * \param[in]  oldtype                Base datatype forming each element in the new type
- * \param[in]  info                   Hint object
+ * \param[in]  info                   Info hint to apply
  * \param[out] newtype                Final generated type
  */
 int yaksa_type_create_hindexed(int count, const int *array_of_blocklengths,
@@ -338,7 +340,7 @@ int yaksa_type_create_hindexed(int count, const int *array_of_blocklengths,
  * \param[in]  oldtype                Base datatype forming each element in the new type
  * \param[in]  lb                     New lower bound to use
  * \param[in]  extent                 New extent to use
- * \param[in]  info                   Hint object
+ * \param[in]  info                   Info hint to apply
  * \param[out] newtype                Final generated type
  */
 int yaksa_type_create_resized(yaksa_type_t oldtype, intptr_t lb, intptr_t extent,
@@ -352,7 +354,7 @@ int yaksa_type_create_resized(yaksa_type_t oldtype, intptr_t lb, intptr_t extent
  * \param[in]  array_of_displacements Starting offset to each block
  *                                    (represented in bytes)
  * \param[in]  array_of_types         Array of base datatype forming each element in the new type
- * \param[in]  info                   Hint object
+ * \param[in]  info                   Info hint to apply
  * \param[out] newtype                Final generated type
  */
 int yaksa_type_create_struct(int count, const int *array_of_blocklengths,
@@ -369,7 +371,7 @@ int yaksa_type_create_struct(int count, const int *array_of_blocklengths,
  * \param[in]  array_of_starts        Start location ("corner representing the start") of the subarray
  * \param[in]  order                  Data layout order (C or Fortran)
  * \param[in]  oldtype                Base datatype forming each element in the new type
- * \param[in]  info                   Hint object
+ * \param[in]  info                   Info hint to apply
  * \param[out] newtype                Final generated type
  */
 int yaksa_type_create_subarray(int ndims, const int *array_of_sizes, const int *array_of_subsizes,
@@ -449,7 +451,7 @@ int yaksa_request_wait(yaksa_request_t request);
  * \param[out] outbuf            Output buffer into which data is being packed
  * \param[in]  max_pack_bytes    Maximum number of bytes that can be packed in the output buffer
  * \param[out] actual_pack_bytes Actual number of bytes that were packed into the output buffer
- * \param[in]  info              Hint object
+ * \param[in]  info              Info hint to apply
  * \param[out] request           Request handle associated with the operation
  *                               (YAKSA_REQUEST__NULL if the request already completed)
  */
@@ -466,9 +468,9 @@ int yaksa_ipack(const void *inbuf, uintptr_t incount, yaksa_type_t type, uintptr
  * \param[in]  outcount          Number of elements of the datatype representing the layout
  * \param[in]  type              Datatype representing the layout
  * \param[in]  outoffset         Number of bytes to skip from the layout represented by the
- *                               (incount, type) tuple
+ *                               (outcount, type) tuple
  * \param[out] actual_unpack_bytes Actual number of bytes that were unpacked into the output buffer
- * \param[in]  info              Hint object
+ * \param[in]  info              Info hint to apply
  * \param[out] request           Request handle associated with the operation
  *                               (YAKSA_REQUEST__NULL if the request already completed)
  */
