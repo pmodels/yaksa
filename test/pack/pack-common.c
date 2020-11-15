@@ -13,6 +13,19 @@
 #include "dtpools.h"
 #include "pack-common.h"
 
+const char *memtype_str[] = { "unreg-host", "reg-host", "managed", "device" };
+
+int pack_get_ndevices(void)
+{
+#ifdef HAVE_CUDA
+    return pack_cuda_get_ndevices();
+#elif defined(HAVE_ZE)
+    return pack_ze_get_ndevices();
+#else
+    return 0;
+#endif
+}
+
 void pack_init_devices(void)
 {
 #ifdef HAVE_CUDA
@@ -31,7 +44,7 @@ void pack_finalize_devices()
 #endif
 }
 
-void pack_alloc_mem(size_t size, mem_type_e type, void **hostbuf, void **devicebuf)
+void pack_alloc_mem(int device_id, size_t size, mem_type_e type, void **hostbuf, void **devicebuf)
 {
     if (type == MEM_TYPE__UNREGISTERED_HOST) {
         *devicebuf = malloc(size);
@@ -39,9 +52,9 @@ void pack_alloc_mem(size_t size, mem_type_e type, void **hostbuf, void **deviceb
             *hostbuf = *devicebuf;
     } else {
 #ifdef HAVE_CUDA
-        pack_cuda_alloc_mem(size, type, hostbuf, devicebuf);
+        pack_cuda_alloc_mem(device_id, size, type, hostbuf, devicebuf);
 #elif defined(HAVE_ZE)
-        pack_ze_alloc_mem(size, type, hostbuf, devicebuf);
+        pack_ze_alloc_mem(device_id, size, type, hostbuf, devicebuf);
 #else
         fprintf(stderr, "ERROR: no GPU device is supported\n");
         exit(1);

@@ -123,66 +123,9 @@ def gen_flatten_tests(testlist, extra_args = ""):
 if __name__ == '__main__':
     gen_simple_tests("test/simple/testlist.gen")
 
-    gen_pack_iov_tests("pack", "test/pack/testlist.gen", \
-                       " -sbuf-memtype unreg-host" + \
-                       " -tbuf-memtype unreg-host" + \
-                       " -dbuf-memtype unreg-host")
+    gen_pack_iov_tests("pack", "test/pack/testlist.gen")
     gen_pack_iov_tests("pack", "test/pack/testlist.threads.gen", \
-                       " -sbuf-memtype unreg-host" + \
-                       " -tbuf-memtype unreg-host" + \
-                       " -dbuf-memtype unreg-host" + \
                        " -num-threads 4")
-    backends = ["cuda", "ze"]
-    for backend in backends:
-        gen_pack_iov_tests("pack", "test/pack/testlist." + backend + ".d-d-d.gen", \
-                           " -sbuf-memtype device" + \
-                           " -tbuf-memtype device" + \
-                           " -dbuf-memtype device")
-        gen_pack_iov_tests("pack", "test/pack/testlist." + backend + ".d-rh-d.gen", \
-                           " -sbuf-memtype device" + \
-                           " -tbuf-memtype reg-host" + \
-                           " -dbuf-memtype device")
-        gen_pack_iov_tests("pack", "test/pack/testlist." + backend + ".d-urh-d.gen", \
-                           " -sbuf-memtype device" + \
-                           " -tbuf-memtype unreg-host" + \
-                           " -dbuf-memtype device")
-        gen_pack_iov_tests("pack", "test/pack/testlist." + backend + ".d-m-d.gen", \
-                           " -sbuf-memtype device" + \
-                           " -tbuf-memtype managed" + \
-                           " -dbuf-memtype device")
-        gen_pack_iov_tests("pack", "test/pack/testlist." + backend + ".rh-d-rh.gen", \
-                           " -sbuf-memtype reg-host" + \
-                           " -tbuf-memtype device" + \
-                           " -dbuf-memtype reg-host")
-        gen_pack_iov_tests("pack", "test/pack/testlist." + backend + ".urh-d-urh.gen", \
-                           " -sbuf-memtype unreg-host" + \
-                           " -tbuf-memtype device" + \
-                           " -dbuf-memtype unreg-host")
-        gen_pack_iov_tests("pack", "test/pack/testlist." + backend + ".md.d-d-d.gen", \
-                           " -sbuf-memtype device" + \
-                           " -tbuf-memtype device" + \
-                           " -dbuf-memtype device" + \
-                           " -device-start-id 1" + \
-                           " -device-stride 0")
-        gen_pack_iov_tests("pack", "test/pack/testlist." + backend + ".md.urh-d-urh.gen", \
-                           " -sbuf-memtype unreg-host" + \
-                           " -tbuf-memtype device" + \
-                           " -dbuf-memtype unreg-host" + \
-                           " -device-start-id 1" + \
-                           " -device-stride 0")
-        gen_pack_iov_tests("pack", "test/pack/testlist." + backend + ".md.urh-d-urh.threads.gen", \
-                           " -sbuf-memtype unreg-host" + \
-                           " -tbuf-memtype device" + \
-                           " -dbuf-memtype unreg-host" + \
-                           " -num-threads 4" + \
-                           " -device-start-id 1" + \
-                           " -device-stride 0")
-        gen_pack_iov_tests("pack", "test/pack/testlist." + backend + ".md-stride.d-d-d.gen", \
-                           " -sbuf-memtype device" + \
-                           " -tbuf-memtype device" + \
-                           " -dbuf-memtype device" + \
-                           " -device-start-id 1" + \
-                           " -device-stride 1")
 
     gen_pack_iov_tests("iov", "test/iov/testlist.gen")
     gen_pack_iov_tests("iov", "test/iov/testlist.threads.gen", " -num-threads 4")

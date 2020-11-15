@@ -49,9 +49,6 @@ static void swap_segments(uintptr_t * starts, uintptr_t * lengths, int x, int y)
     lengths[y] = tmp;
 }
 
-int device_id = 0;
-int device_stride = 0;
-
 char typestr[MAX_DTP_BASESTRLEN + 1] = { 0 };
 
 int seed = -1;
@@ -60,10 +57,13 @@ int iters = -1;
 int max_segments = -1;
 int pack_order = PACK_ORDER__UNSET;
 int overlap = -1;
-mem_type_e sbuf_memtype = MEM_TYPE__UNREGISTERED_HOST;
-mem_type_e dbuf_memtype = MEM_TYPE__UNREGISTERED_HOST;
-mem_type_e tbuf_memtype = MEM_TYPE__UNREGISTERED_HOST;
 DTP_pool_s *dtp;
+
+#define MAX_DEVID_LIST   (1024)
+int **device_ids;
+
+#define MAX_MEMTYPE_LIST (1024)
+mem_type_e **memtypes;
 
 void *runtest(void *arg);
 void *runtest(void *arg)
@@ -71,6 +71,8 @@ void *runtest(void *arg)
     DTP_obj_s sobj, dobj;
     int rc;
     uintptr_t tid = (uintptr_t) arg;
+    int device_id_idx = 0;
+    int memtype_idx = 0;
 
     uintptr_t *segment_starts = (uintptr_t *) malloc(max_segments * sizeof(uintptr_t));
     uintptr_t *segment_lengths = (uintptr_t *) malloc(max_segments * sizeof(uintptr_t));
@@ -78,12 +80,31 @@ void *runtest(void *arg)
     for (int i = 0; i < iters; i++) {
         dprintf("==== iter %d ====\n", i);
 
+        mem_type_e sbuf_memtype = memtypes[tid][memtype_idx];
+        memtype_idx = (memtype_idx + 1) % MAX_MEMTYPE_LIST;
+        mem_type_e dbuf_memtype = memtypes[tid][memtype_idx++];
+        memtype_idx = (memtype_idx + 1) % MAX_MEMTYPE_LIST;
+        mem_type_e tbuf_memtype = memtypes[tid][memtype_idx++];
+        memtype_idx = (memtype_idx + 1) % MAX_MEMTYPE_LIST;
+
+        int sbuf_devid = device_ids[tid][device_id_idx];
+        device_id_idx = (device_id_idx + 1) % MAX_DEVID_LIST;
+        int dbuf_devid = device_ids[tid][device_id_idx];
+        device_id_idx = (device_id_idx + 1) % MAX_DEVID_LIST;
+        int tbuf_devid = device_ids[tid][device_id_idx];
+        device_id_idx = (device_id_idx + 1) % MAX_DEVID_LIST;
+
+        dprintf("sbuf: %s (%d), dbuf: %s (%d), tbuf: %s (%d)\n", memtype_str[sbuf_memtype],
+                sbuf_devid, memtype_str[dbuf_memtype], dbuf_devid, memtype_str[tbuf_memtype],
+                tbuf_devid);
+
         /* create the source object */
         rc = DTP_obj_create(dtp[tid], &sobj, maxbufsize);
         assert(rc == DTP_SUCCESS);
 
         char *sbuf_h = NULL, *sbuf_d = NULL;
-        pack_alloc_mem(sobj.DTP_bufsize, sbuf_memtype, (void **) &sbuf_h, (void **) &sbuf_d);
+        pack_alloc_mem(sbuf_devid, sobj.DTP_bufsize, sbuf_memtype, (void **) &sbuf_h,
+                       (void **) &sbuf_d);
         assert(sbuf_h);
         assert(sbuf_d);
 
@@ -109,7 +130,8 @@ void *runtest(void *arg)
         assert(rc == DTP_SUCCESS);
 
         char *dbuf_h, *dbuf_d;
-        pack_alloc_mem(dobj.DTP_bufsize, dbuf_memtype, (void **) &dbuf_h, (void **) &dbuf_d);
+        pack_alloc_mem(dbuf_devid, dobj.DTP_bufsize, dbuf_memtype, (void **) &dbuf_h,
+                       (void **) &dbuf_d);
         assert(dbuf_h);
         assert(dbuf_d);
 
@@ -203,7 +225,7 @@ void *runtest(void *arg)
 
         void *tbuf_h, *tbuf_d;
         uintptr_t tbufsize = ssize * sobj.DTP_type_count;
-        pack_alloc_mem(tbufsize, tbuf_memtype, &tbuf_h, &tbuf_d);
+        pack_alloc_mem(tbuf_devid, tbufsize, tbuf_memtype, &tbuf_h, &tbuf_d);
 
         yaksa_info_t pack_info, unpack_info;
         pack_get_ptr_attr(sbuf_d + sobj.DTP_buf_offset, tbuf_d, &pack_info);
@@ -317,59 +339,6 @@ int main(int argc, char **argv)
                 fprintf(stderr, "unknown overlap type %s\n", *argv);
                 exit(1);
             }
-        } else if (!strcmp(*argv, "-sbuf-memtype")) {
-            --argc;
-            ++argv;
-            if (!strcmp(*argv, "unreg-host"))
-                sbuf_memtype = MEM_TYPE__UNREGISTERED_HOST;
-            else if (!strcmp(*argv, "reg-host"))
-                sbuf_memtype = MEM_TYPE__REGISTERED_HOST;
-            else if (!strcmp(*argv, "managed"))
-                sbuf_memtype = MEM_TYPE__MANAGED;
-            else if (!strcmp(*argv, "device"))
-                sbuf_memtype = MEM_TYPE__DEVICE;
-            else {
-                fprintf(stderr, "unknown buffer type %s\n", *argv);
-                exit(1);
-            }
-        } else if (!strcmp(*argv, "-dbuf-memtype")) {
-            --argc;
-            ++argv;
-            if (!strcmp(*argv, "unreg-host"))
-                dbuf_memtype = MEM_TYPE__UNREGISTERED_HOST;
-            else if (!strcmp(*argv, "reg-host"))
-                dbuf_memtype = MEM_TYPE__REGISTERED_HOST;
-            else if (!strcmp(*argv, "managed"))
-                dbuf_memtype = MEM_TYPE__MANAGED;
-            else if (!strcmp(*argv, "device"))
-                dbuf_memtype = MEM_TYPE__DEVICE;
-            else {
-                fprintf(stderr, "unknown buffer type %s\n", *argv);
-                exit(1);
-            }
-        } else if (!strcmp(*argv, "-tbuf-memtype")) {
-            --argc;
-            ++argv;
-            if (!strcmp(*argv, "unreg-host"))
-                tbuf_memtype = MEM_TYPE__UNREGISTERED_HOST;
-            else if (!strcmp(*argv, "reg-host"))
-                tbuf_memtype = MEM_TYPE__REGISTERED_HOST;
-            else if (!strcmp(*argv, "managed"))
-                tbuf_memtype = MEM_TYPE__MANAGED;
-            else if (!strcmp(*argv, "device"))
-                tbuf_memtype = MEM_TYPE__DEVICE;
-            else {
-                fprintf(stderr, "unknown buffer type %s\n", *argv);
-                exit(1);
-            }
-        } else if (!strcmp(*argv, "-device-start-id")) {
-            --argc;
-            ++argv;
-            device_id = atoi(*argv);
-        } else if (!strcmp(*argv, "-device-stride")) {
-            --argc;
-            ++argv;
-            device_stride = atoi(*argv);
         } else if (!strcmp(*argv, "-verbose")) {
             verbose = 1;
         } else if (!strcmp(*argv, "-num-threads")) {
@@ -391,11 +360,6 @@ int main(int argc, char **argv)
         fprintf(stderr, "   -segments    number of segments to chop the packing into\n");
         fprintf(stderr, "   -ordering  packing order of segments (normal, reverse, random)\n");
         fprintf(stderr, "   -overlap     should packing overlap (none, regular, irregular)\n");
-        fprintf(stderr, "   -sbuf-memtype memory type (unreg-host, reg-host, device)\n");
-        fprintf(stderr, "   -dbuf-memtype memory type (unreg-host, reg-host, device)\n");
-        fprintf(stderr, "   -tbuf-memtype memory type (unreg-host, reg-host, device)\n");
-        fprintf(stderr, "   -device-start-id  ID of the device for the first allocation\n");
-        fprintf(stderr, "   -device-stride    difference between consecutive device allocations\n");
         fprintf(stderr, "   -verbose     verbose output\n");
         fprintf(stderr, "   -num-threads number of threads to spawn\n");
         exit(1);
@@ -408,6 +372,29 @@ int main(int argc, char **argv)
     for (uintptr_t i = 0; i < num_threads; i++) {
         int rc = DTP_pool_create(typestr, basecount, seed + i, &dtp[i]);
         assert(rc == DTP_SUCCESS);
+    }
+
+    int ndevices = pack_get_ndevices();
+    device_ids = (int **) malloc(num_threads * sizeof(int *));
+    memtypes = (mem_type_e **) malloc(num_threads * sizeof(mem_type_e *));
+    srand(seed + num_threads);
+    for (uintptr_t i = 0; i < num_threads; i++) {
+        device_ids[i] = (int *) malloc(MAX_DEVID_LIST * sizeof(int));
+        memtypes[i] = (mem_type_e *) malloc(MAX_MEMTYPE_LIST * sizeof(mem_type_e));
+        for (int j = 0; j < MAX_DEVID_LIST; j++) {
+            if (ndevices > 0) {
+                device_ids[i][j] = rand() % ndevices;
+            } else {
+                device_ids[i][j] = -1;
+            }
+        }
+        for (int j = 0; j < MAX_MEMTYPE_LIST; j++) {
+            if (ndevices > 0) {
+                memtypes[i][j] = rand() % MEM_TYPE__NUM_MEMTYPES;
+            } else {
+                memtypes[i][j] = MEM_TYPE__UNREGISTERED_HOST;
+            }
+        }
     }
 
     pthread_t *threads = (pthread_t *) malloc(num_threads * sizeof(pthread_t));

@@ -17,20 +17,25 @@
 
 #include <cuda_runtime_api.h>
 
-static int ndevices = -1;
+int pack_cuda_get_ndevices(void)
+{
+    int ndevices;
+    cudaGetDeviceCount(&ndevices);
+    assert(ndevices != -1);
+
+    return ndevices;
+}
 
 void pack_cuda_init_devices(void)
 {
-    cudaGetDeviceCount(&ndevices);
-    assert(ndevices != -1);
-    cudaSetDevice(device_id);
 }
 
 void pack_cuda_finalize_devices()
 {
 }
 
-void pack_cuda_alloc_mem(size_t size, mem_type_e type, void **hostbuf, void **devicebuf)
+void pack_cuda_alloc_mem(int device_id, size_t size, mem_type_e type, void **hostbuf,
+                         void **devicebuf)
 {
     if (type == MEM_TYPE__REGISTERED_HOST) {
         cudaMallocHost(devicebuf, size);
@@ -45,8 +50,6 @@ void pack_cuda_alloc_mem(size_t size, mem_type_e type, void **hostbuf, void **de
         cudaMalloc(devicebuf, size);
         if (hostbuf)
             cudaMallocHost(hostbuf, size);
-        device_id += device_stride;
-        device_id %= ndevices;
     } else {
         fprintf(stderr, "ERROR: unsupported memory type\n");
         exit(1);
