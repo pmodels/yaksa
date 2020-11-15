@@ -69,6 +69,6 @@ AM_CONDITIONAL([BUILD_ZE_NATIVE],[test x"$enable_ze_native" != x])
 ##### analyze the user arguments and setup internal infrastructure
 ##########################################################################
 
-if test ${have_ze} = "yes" ; then
+if test "${have_ze}" = "yes" ; then
     supported_backends="${supported_backends},ze"
 fi

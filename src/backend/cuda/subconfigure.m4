@@ -110,7 +110,7 @@ fi
 ##### analyze the user arguments and setup internal infrastructure
 ##########################################################################
 
-if test ${have_cuda} = "yes" ; then
+if test "${have_cuda}" = "yes" ; then
     for maj_version in 11 10 9 8 7 6 5 ; do
         version=$((maj_version * 1000))
         AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
