@@ -120,8 +120,43 @@ def generate_kernels(b, darray, blklen):
     global num_paren_open
     global s
 
-    # we don't need pup kernels for basic types
+    # we need reduction (pup) kernels for basic types
     if (len(darray) == 0):
+        s = "int yaksuri_seqi_pup_%s" % b.replace(" ", "_")
+        yutils.display(OUTFILE, "%s(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, yaksa_op_t op)\n" % s),
+        yutils.display(OUTFILE, "{\n")
+
+        ##### variable declarations
+        # generic variables
+        yutils.display(OUTFILE, "int rc = YAKSA_SUCCESS;\n");
+        yutils.display(OUTFILE, "const %s *restrict sbuf = (const %s *) inbuf;\n" % (b, b));
+        yutils.display(OUTFILE, "%s *restrict dbuf = (%s *) outbuf;\n" % (b, b));
+        yutils.display(OUTFILE, "\n");
+
+        yutils.display(OUTFILE, "switch (op) {\n")
+        for p in gencomm.type_ops[gencomm.type_map.get(b)]:
+            if (p == "YAKSA_OP__REPLACE"):
+                continue
+            yutils.display(OUTFILE, "case %s:\n" % p)
+            yutils.display(OUTFILE, "for (int i = 0; i < count; i++) {\n")
+            if (p == "YAKSA_OP__SUM"):
+                yutils.display(OUTFILE, "dbuf[i] += sbuf[i];\n")
+            elif (p == "YAKSA_OP__PROD"):
+                yutils.display(OUTFILE, "dbuf[i] *= sbuf[i];\n")
+            else:
+                yutils.display(OUTFILE, "dbuf[i] -= sbuf[i];\n")
+
+            yutils.display(OUTFILE, "}\n")
+            yutils.display(OUTFILE, "break;\n")
+
+        yutils.display(OUTFILE, "default:\n")
+        yutils.display(OUTFILE, "    break;\n")
+        yutils.display(OUTFILE, "}\n")
+
+        yutils.display(OUTFILE, "\n");
+        yutils.display(OUTFILE, "return rc;\n")
+        yutils.display(OUTFILE, "}\n\n")
+
         return
 
     # individual blocklength optimization is only for
@@ -139,7 +174,7 @@ def generate_kernels(b, darray, blklen):
             s = s + b.replace(" ", "_")
         else:
             s = s + "blklen_%s_" % blklen + b.replace(" ", "_")
-        yutils.display(OUTFILE, "%s(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type)\n" % s),
+        yutils.display(OUTFILE, "%s(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, yaksa_op_t op)\n" % s),
         yutils.display(OUTFILE, "{\n")
 
 
@@ -170,13 +205,35 @@ def generate_kernels(b, darray, blklen):
             else:
                 getattr(sys.modules[__name__], darray[x])(x + 1, b, blklen, 1)
 
-        if (func == "pack"):
-            yutils.display(OUTFILE, "*((%s *) (void *) (dbuf + idx)) = *((const %s *) (const void *) (sbuf + %s));\n"
-                           % (b, b, s))
-        else:
-            yutils.display(OUTFILE, "*((%s *) (void *) (dbuf + %s)) = *((const %s *) (const void *) (sbuf + idx));\n"
-                           % (b, s, b))
-        yutils.display(OUTFILE, "idx += sizeof(%s);\n" % b)
+        yutils.display(OUTFILE, "switch (op) {\n")
+        ###TODO: Add other operators; now supporting only SUM
+        for p in gencomm.type_ops[gencomm.type_map.get(b)]:
+            yutils.display(OUTFILE, "case %s:\n" % p)
+            if (func == "pack"):
+                if (p == "YAKSA_OP__REPLACE"):
+                    yutils.display(OUTFILE, "*((%s *) (void *) (dbuf + idx)) = *((const %s *) (const void *) (sbuf + %s));\n"
+                                % (b, b, s))
+                elif (p == "YAKSA_OP__SUM"):
+                    yutils.display(OUTFILE, "*((%s *) (void *) (dbuf + idx)) += *((const %s *) (const void *) (sbuf + %s));\n"  % (b, b, s))
+                else:
+                    yutils.display(OUTFILE, "*((%s *) (void *) (dbuf + idx)) = *((const %s *) (const void *) (sbuf + %s));\n" % (b, b, s))
+            else:
+                if (p == "YAKSA_OP__REPLACE"):
+                    yutils.display(OUTFILE, "*((%s *) (void *) (dbuf + %s)) = *((const %s *) (const void *) (sbuf + idx));\n"
+                               % (b, s, b))
+                elif (p == "YAKSA_OP__SUM"):
+                    yutils.display(OUTFILE, "*((%s *) (void *) (dbuf + %s)) += *((const %s *) (const void *) (sbuf + idx));\n"
+                               % (b, s, b))
+                else:
+                    yutils.display(OUTFILE, "*((%s *) (void *) (dbuf + %s)) = *((const %s *) (const void *) (sbuf + idx));\n"
+                               % (b, s, b))
+            yutils.display(OUTFILE, "idx += sizeof(%s);\n" % b)
+            yutils.display(OUTFILE, "break;\n")
+
+        yutils.display(OUTFILE, "default:\n")
+        yutils.display(OUTFILE, "    break;\n")
+        yutils.display(OUTFILE, "}\n")
+
         for x in range(num_paren_open):
             yutils.display(OUTFILE, "}\n")
         num_paren_open = 0
@@ -198,6 +255,26 @@ if __name__ == '__main__':
         print
         print("===> ERROR: pup-max-nesting must be positive")
         sys.exit(1)
+
+    n = 0;
+    for b in builtin_types:
+        gencomm.type_map[b] = n;
+        n = n + 1;
+
+    ##### generate the reduction kernels for contiguous types
+    for b in builtin_types:
+        filename = "src/backend/seq/pup/yaksuri_seqi_pup_%s.c" % (b.replace(" ","_"))
+        yutils.copyright_c(filename)
+        OUTFILE = open(filename, "a")
+        yutils.display(OUTFILE, "#include <string.h>\n")
+        yutils.display(OUTFILE, "#include <stdint.h>\n")
+        yutils.display(OUTFILE, "#include <wchar.h>\n")
+        yutils.display(OUTFILE, "#include \"yaksuri_seqi_pup.h\"\n")
+        yutils.display(OUTFILE, "\n")
+        emptylist = [ ]
+        generate_kernels(b, emptylist, 0)
+
+        OUTFILE.close()
 
     ##### generate the core pack/unpack kernels (single level)
     for b in builtin_types:
@@ -256,6 +333,11 @@ if __name__ == '__main__':
     yutils.display(OUTFILE, "#include \"yaksi.h\"\n")
     yutils.display(OUTFILE, "\n")
 
+    for b in builtin_types:
+        s = "int yaksuri_seqi_pup_%s" % b.replace(" ", "_")
+        yutils.display(OUTFILE, "%s" % s),
+        yutils.display(OUTFILE, "(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, yaksa_op_t op);\n")
+
     darraylist = [ ]
     yutils.generate_darrays(gencomm.derived_types, darraylist, args.pup_max_nesting)
     for b in builtin_types:
@@ -282,7 +364,7 @@ if __name__ == '__main__':
                     else:
                         s = s + "blklen_%s_" % blklen + b.replace(" ", "_")
                     yutils.display(OUTFILE, "%s" % s),
-                    yutils.display(OUTFILE, "(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type);\n")
+                    yutils.display(OUTFILE, "(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type, yaksa_op_t op);\n")
 
     yutils.display(OUTFILE, "#endif  /* YAKSURI_SEQI_PUP_H_INCLUDED */\n")
     OUTFILE.close()
@@ -293,6 +375,9 @@ if __name__ == '__main__':
     OUTFILE = open(filename, "a")
     yutils.display(OUTFILE, "libyaksa_la_SOURCES += \\\n")
     for b in builtin_types:
+        #reduction kernels for built-in types
+        yutils.display(OUTFILE, "\tsrc/backend/seq/pup/yaksuri_seqi_pup_%s.c \\\n" % \
+                            (b.replace(" ","_")))
         for d1 in gencomm.derived_types:
             yutils.display(OUTFILE, "\tsrc/backend/seq/pup/yaksuri_seqi_pup_%s_%s.c \\\n" % \
                            (d1, b.replace(" ","_")))
