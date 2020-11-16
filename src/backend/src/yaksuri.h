@@ -67,6 +67,7 @@ typedef struct yaksuri_subreq {
             void *outbuf;
             uintptr_t count;
             yaksi_type_s *type;
+            yaksa_op_t op;
 
             uintptr_t issued_count;
             yaksuri_subreq_chunk_s *chunks;
@@ -100,7 +101,7 @@ typedef struct {
 } yaksuri_info_s;
 
 int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                             yaksi_info_s * info, yaksi_request_s * request);
+                             yaksi_info_s * info, yaksa_op_t op, yaksi_request_s * request);
 int yaksuri_progress_poke(void);
 
 #endif /* YAKSURI_H_INCLUDED */

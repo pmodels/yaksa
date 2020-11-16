@@ -11,8 +11,8 @@
 #define YAKSURI_KERNEL_NULL   NULL
 
 typedef struct yaksuri_seqi_type_s {
-    int (*pack) (const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *);
-    int (*unpack) (const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *);
+    int (*pack) (const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type);
+    int (*unpack) (const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type);
 } yaksuri_seqi_type_s;
 
 #define YAKSURI_SEQI_INFO__DEFAULT_IOV_PUP_THRESHOLD   (16384)

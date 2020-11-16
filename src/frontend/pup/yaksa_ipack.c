@@ -38,7 +38,7 @@ int yaksa_ipack(const void *inbuf, uintptr_t incount, yaksa_type_t type, uintptr
     yaksi_info_s *yaksi_info;
     yaksi_info = (yaksi_info_s *) info;
     rc = yaksi_ipack(inbuf, incount, yaksi_type, inoffset, outbuf, max_pack_bytes,
-                     actual_pack_bytes, yaksi_info, yaksi_request);
+                     actual_pack_bytes, yaksi_info, YAKSA_OP__REPLACE, yaksi_request);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     if (yaksu_atomic_load(&yaksi_request->cc)) {

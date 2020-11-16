@@ -25,6 +25,30 @@
 
 /** @file yaksa.h */
 
+/*! \addtogroup yaksa-ops Yaksa Reduction Operations
+  * @{
+  */
+
+typedef uint64_t yaksa_op_t;
+
+ /**
+  * \brief yaksa builtin reduction ops
+  */
+#define YAKSA_OP__MAX                                 ((yaksa_op_t) 0)
+#define YAKSA_OP__MIN                                 ((yaksa_op_t) 1)
+#define YAKSA_OP__SUM                                 ((yaksa_op_t) 2)
+#define YAKSA_OP__PROD                                ((yaksa_op_t) 3)
+#define YAKSA_OP__LAND                                ((yaksa_op_t) 4)
+#define YAKSA_OP__BAND                                ((yaksa_op_t) 5)
+#define YAKSA_OP__LOR                                 ((yaksa_op_t) 6)
+#define YAKSA_OP__BOR                                 ((yaksa_op_t) 7)
+#define YAKSA_OP__LXOR                                ((yaksa_op_t) 8)
+#define YAKSA_OP__BXOR                                ((yaksa_op_t) 9)
+#define YAKSA_OP__REPLACE                             ((yaksa_op_t) 10)
+
+ /*! @} */
+
+
 /*! \addtogroup yaksa-types Yaksa Builtin Datatypes
  * @{
  */
@@ -477,6 +501,30 @@ int yaksa_ipack(const void *inbuf, uintptr_t incount, yaksa_type_t type, uintptr
 int yaksa_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t outcount,
                   yaksa_type_t type, uintptr_t outoffset, uintptr_t * actual_unpack_bytes,
                   yaksa_info_t info, yaksa_request_t * request);
+
+/*!
+ * \brief accumulates data from the inbuf to the outbuf
+ *
+ * \param[in]  inbuf             Input buffer from which data is being packed
+ * \param[in]  incount           Number of elements of the datatype representing the layout
+ * \param[in]  intype            Datatype representing the inbuf layout
+ * \param[in]  inoffset          Number of bytes to skip from the layout represented by the
+ *                               (incount, intype) tuple
+ * \param[in]  outbuf            Output buffer info which data is being packed
+ * \param[in]  outcount          Number of elements of the datatype representing the layout
+ * \param[in]  outtype           Datatype representing the outbuf layout
+ * \param[in]  outoffset         Number of bytes to skip from the layout represented by the
+ *                               (outcount, outtype) tuple
+ * \param[in]  max_acc_bytes     Maximum number of bytes that can be accumulated
+ * \param[out] actual_acc_bytes  Actual number of bytes that were accumulated
+ * \param[in]  info              Info hint to apply
+ * \param[out] request           Request handle associated with the operation
+ *                               (YAKSA_REQUEST__NULL if the request already completed)
+ */
+int yaksa_iacc(const void *inbuf, uintptr_t incount, yaksa_type_t intype, uintptr_t inoffset,
+               void *outbuf, uintptr_t outcount, yaksa_type_t outtype, uintptr_t outoffset,
+               uintptr_t max_acc_bytes, yaksa_info_t info, yaksa_op_t op,
+               yaksa_request_t * request);
 
 /*!
  * \brief gets the number of contiguous segments in the (count, type) tuple

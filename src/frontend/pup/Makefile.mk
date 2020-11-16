@@ -6,6 +6,7 @@
 AM_CPPFLAGS += -I$(top_srcdir)/src/frontend/pup
 
 libyaksa_la_SOURCES += \
+	src/frontend/pup/yaksa_iacc.c \
 	src/frontend/pup/yaksa_ipack.c \
 	src/frontend/pup/yaksa_iunpack.c \
 	src/frontend/pup/yaksa_request.c \

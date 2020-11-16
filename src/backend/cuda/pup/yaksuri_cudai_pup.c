@@ -47,12 +47,12 @@ static int get_thread_block_dims(uintptr_t count, yaksi_type_s * type, unsigned 
     return rc;
 }
 
-int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, bool * is_supported)
+int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, yaksa_op_t op, bool * is_supported)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
 
-    if (type->is_contig || cuda_type->pack)
+    if ((type->is_contig && op == YAKSA_OP__REPLACE) || cuda_type->pack)
         *is_supported = true;
     else
         *is_supported = false;
@@ -83,7 +83,7 @@ uintptr_t yaksuri_cudai_get_iov_unpack_threshold(yaksi_info_s * info)
 }
 
 int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                        yaksi_info_s * info, int target)
+                        yaksi_info_s * info, yaksa_op_t op, int target)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
@@ -147,7 +147,7 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
 }
 
 int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                          yaksi_info_s * info, int target)
+                          yaksi_info_s * info, yaksa_op_t op, int target)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
