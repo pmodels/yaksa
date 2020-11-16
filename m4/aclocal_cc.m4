@@ -548,6 +548,7 @@ if test "$enable_strict_done" != "yes" ; then
         -Wpacked
         -Wshorten-64-to-32
         -diag-disable=all
+        -Wpedantic
     "
 
     enable_c89=no
