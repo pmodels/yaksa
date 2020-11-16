@@ -47,7 +47,8 @@ static void free_fn(void *buf, void *state)
             continue;
 
         if (state == &yaksuri_global.gpudriver[id].host) {
-            return yaksuri_global.gpudriver[id].hooks->host_free(buf);
+            yaksuri_global.gpudriver[id].hooks->host_free(buf);
+            return;
         } else {
             uintptr_t start = (uintptr_t) yaksuri_global.gpudriver[id].device;
             uintptr_t end =
@@ -55,7 +56,8 @@ static void free_fn(void *buf, void *state)
                                                                   gpudriver[id].ndevices - 1];
 
             if ((uintptr_t) state >= start && (uintptr_t) state <= end) {
-                return yaksuri_global.gpudriver[id].hooks->gpu_free(buf);
+                yaksuri_global.gpudriver[id].hooks->gpu_free(buf);
+                return;
             }
         }
     }
