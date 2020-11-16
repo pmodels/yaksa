@@ -17,10 +17,30 @@
 
 #include "level_zero/ze_api.h"
 
-static int ndevices = -1;
 static ze_driver_handle_t global_ze_driver_handle;
 static ze_device_handle_t *global_devices = NULL;
 static ze_context_handle_t ze_context;
+
+int pack_ze_get_ndevices(void)
+{
+    uint32_t driver_count = 0;
+    ze_result_t ret = zeDriverGet(&driver_count, NULL);
+    assert(ret == ZE_RESULT_SUCCESS);
+    assert(driver_count > 0);
+
+    ze_driver_handle_t *all_drivers = malloc(driver_count * sizeof(ze_driver_handle_t));
+    assert(all_drivers != NULL);
+    ret = zeDriverGet(&driver_count, all_drivers);
+    assert(ret == ZE_RESULT_SUCCESS);
+
+    uint32_t device_count = 0;
+    ret = zeDeviceGet(all_drivers[0], &device_count, NULL);
+    assert(ret == ZE_RESULT_SUCCESS);
+
+    free(all_drivers);
+
+    return (int) device_count;
+}
 
 void pack_ze_init_devices(void)
 {
@@ -50,8 +70,6 @@ void pack_ze_init_devices(void)
     ret = zeDeviceGet(all_drivers[0], &device_count, all_devices);
     assert(ret == ZE_RESULT_SUCCESS);
     global_devices = all_devices;
-    ndevices = device_count;
-    assert(ndevices != -1);
 
     ze_context_desc_t contextDesc = { };
     ret = zeContextCreate(global_ze_driver_handle, &contextDesc, &ze_context);
@@ -70,10 +88,11 @@ void pack_ze_finalize_devices()
     free(global_devices);
 }
 
-void pack_ze_alloc_mem(size_t size, mem_type_e type, void **hostbuf, void **devicebuf)
+void pack_ze_alloc_mem(int device_id, size_t size, mem_type_e type, void **hostbuf,
+                       void **devicebuf)
 {
+    ze_result_t ret;
     if (type == MEM_TYPE__REGISTERED_HOST) {
-        int ret;
         size_t mem_alignment = 1;
         ze_host_mem_alloc_desc_t host_desc = {
             .stype = ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC,
@@ -86,7 +105,6 @@ void pack_ze_alloc_mem(size_t size, mem_type_e type, void **hostbuf, void **devi
             *hostbuf = *devicebuf;
     } else if (type == MEM_TYPE__DEVICE) {
         /* allocate devicebuf */
-        int ret;
         size_t mem_alignment = 1;
         ze_device_mem_alloc_desc_t device_desc = {
             .stype = ZE_STRUCTURE_TYPE_DEVICE_MEM_ALLOC_DESC,
@@ -100,7 +118,6 @@ void pack_ze_alloc_mem(size_t size, mem_type_e type, void **hostbuf, void **devi
 
         /* allocate hostbuf */
         if (hostbuf) {
-            int ret;
             size_t mem_alignment = 1;
             ze_host_mem_alloc_desc_t host_desc = {
                 .stype = ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC,
@@ -109,9 +126,28 @@ void pack_ze_alloc_mem(size_t size, mem_type_e type, void **hostbuf, void **devi
             };
             ret = zeMemAllocHost(ze_context, &host_desc, size, mem_alignment, hostbuf);
             assert(ret == ZE_RESULT_SUCCESS);
-            device_id += device_stride;
-            device_id %= ndevices;
         }
+    } else if (type == MEM_TYPE__MANAGED) {
+        /* allocate devicebuf */
+        size_t mem_alignment = 1;
+        ze_device_mem_alloc_desc_t device_desc = {
+            .stype = ZE_STRUCTURE_TYPE_DEVICE_MEM_ALLOC_DESC,
+            .pNext = NULL,
+            .flags = 0,
+            .ordinal = 0,
+        };
+        ze_host_mem_alloc_desc_t host_desc = {
+            .stype = ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC,
+            .pNext = NULL,
+            .flags = 0,
+        };
+        ret = zeMemAllocShared(ze_context, &device_desc, &host_desc,
+                               size, mem_alignment,
+                               device_id == -1 ? NULL : global_devices[device_id], devicebuf);
+        assert(ret == ZE_RESULT_SUCCESS);
+
+        if (hostbuf)
+            *hostbuf = *devicebuf;
     } else {
         fprintf(stderr, "ERROR: unsupported memory type\n");
         exit(1);
@@ -122,11 +158,16 @@ void pack_ze_free_mem(mem_type_e type, void *hostbuf, void *devicebuf)
 {
     if (type == MEM_TYPE__REGISTERED_HOST) {
         zeMemFree(ze_context, devicebuf);
+    } else if (type == MEM_TYPE__MANAGED) {
+        zeMemFree(ze_context, devicebuf);
     } else if (type == MEM_TYPE__DEVICE) {
         zeMemFree(ze_context, devicebuf);
         if (hostbuf) {
             zeMemFree(ze_context, hostbuf);
         }
+    } else {
+        fprintf(stderr, "ERROR: unsupported memory type\n");
+        exit(1);
     }
 }
 
@@ -165,7 +206,6 @@ void pack_ze_copy_content(const void *sbuf, void *dbuf, size_t size, mem_type_e 
 {
     if (type == MEM_TYPE__DEVICE) {
         int ret;
-        ze_driver_handle_t driverHandle = global_ze_driver_handle;
         ze_device_handle_t device = NULL;
 
         struct {
