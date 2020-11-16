@@ -123,8 +123,12 @@ def gen_flatten_tests(testlist, extra_args = ""):
 if __name__ == '__main__':
     gen_simple_tests("test/simple/testlist.gen")
 
-    gen_pack_iov_tests("pack", "test/pack/testlist.gen")
-    gen_pack_iov_tests("pack", "test/pack/testlist.threads.gen", \
+    gen_pack_iov_tests("pack", "test/pack/testlist.pack.gen")
+    gen_pack_iov_tests("pack", "test/pack/testlist.pack.threads.gen", \
+                       " -num-threads 4")
+
+    gen_pack_iov_tests("acc", "test/pack/testlist.acc.gen")
+    gen_pack_iov_tests("acc", "test/pack/testlist.acc.threads.gen", \
                        " -num-threads 4")
 
     gen_pack_iov_tests("iov", "test/iov/testlist.gen")
