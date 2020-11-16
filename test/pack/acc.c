@@ -236,6 +236,19 @@ void *runtest(void *arg)
             }
         }
 
+        uintptr_t siov_len, diov_len;
+        rc = yaksa_iov_len(2, sobj.DTP_datatype, &siov_len);
+        assert(rc == YAKSA_SUCCESS);
+
+        rc = yaksa_iov_len(2, dobj.DTP_datatype, &diov_len);
+        assert(rc == YAKSA_SUCCESS);
+
+        bool is_contig;
+        if (siov_len == 1 || diov_len == 1)
+            is_contig = true;
+        else
+            is_contig = false;
+
         /* the actual acc loop */
         pack_copy_content(sbuf_h, sbuf_d, sobj.DTP_bufsize, sbuf_memtype);
         pack_copy_content(dbuf_h, dbuf_d, dobj.DTP_bufsize, dbuf_memtype);
@@ -245,6 +258,9 @@ void *runtest(void *arg)
 
         for (int j = 0; j < segments; j++) {
             yaksa_request_t request;
+
+            if (!is_contig)
+                continue;
 
             rc = yaksa_iacc(sbuf_d + sobj.DTP_buf_offset, sobj.DTP_type_count, sobj.DTP_datatype,
                             segment_starts[j], dbuf_d + dobj.DTP_buf_offset, dobj.DTP_type_count,
@@ -267,30 +283,32 @@ void *runtest(void *arg)
 
         pack_copy_content(dbuf_d, dbuf_h, dobj.DTP_bufsize, dbuf_memtype);
 
-        if (op == YAKSA_OP__MAX || op == YAKSA_OP__REPLACE) {
-            rc = DTP_obj_buf_check(dobj, dbuf_h, 0, 1, basecount);
-            assert(rc == DTP_SUCCESS);
-        } else if (op == YAKSA_OP__MIN) {
-            rc = DTP_obj_buf_check(dobj, dbuf_h, -1, -1, basecount);
-            assert(rc == DTP_SUCCESS);
-        } else if (op == YAKSA_OP__SUM) {
-            rc = DTP_obj_buf_check(dobj, dbuf_h, -1, 0, basecount);
-            assert(rc == DTP_SUCCESS);
-        } else if (op == YAKSA_OP__PROD) {
-            rc = DTP_obj_buf_check(dobj, dbuf_h, 0, -1, basecount);
-            assert(rc == DTP_SUCCESS);
-        } else if (op == YAKSA_OP__LAND || op == YAKSA_OP__BAND || op == YAKSA_OP__LOR) {
-            rc = DTP_obj_buf_check(dobj, dbuf_h, 1, 0, basecount);
-            assert(rc == DTP_SUCCESS);
-        } else if (op == YAKSA_OP__BOR) {
-            rc = DTP_obj_buf_check(dobj, dbuf_h, -1, 0, basecount);
-            assert(rc == DTP_SUCCESS);
-        } else if (op == YAKSA_OP__LXOR) {
-            rc = DTP_obj_buf_check(dobj, dbuf_h, 0, 0, basecount);
-            assert(rc == DTP_SUCCESS);
-        } else if (op == YAKSA_OP__BXOR) {
-            rc = DTP_obj_buf_check(dobj, dbuf_h, -2, 0, basecount);
-            assert(rc == DTP_SUCCESS);
+        if (is_contig) {
+            if (op == YAKSA_OP__MAX || op == YAKSA_OP__REPLACE) {
+                rc = DTP_obj_buf_check(dobj, dbuf_h, 0, 1, basecount);
+                assert(rc == DTP_SUCCESS);
+            } else if (op == YAKSA_OP__MIN) {
+                rc = DTP_obj_buf_check(dobj, dbuf_h, -1, -1, basecount);
+                assert(rc == DTP_SUCCESS);
+            } else if (op == YAKSA_OP__SUM) {
+                rc = DTP_obj_buf_check(dobj, dbuf_h, -1, 0, basecount);
+                assert(rc == DTP_SUCCESS);
+            } else if (op == YAKSA_OP__PROD) {
+                rc = DTP_obj_buf_check(dobj, dbuf_h, 0, -1, basecount);
+                assert(rc == DTP_SUCCESS);
+            } else if (op == YAKSA_OP__LAND || op == YAKSA_OP__BAND || op == YAKSA_OP__LOR) {
+                rc = DTP_obj_buf_check(dobj, dbuf_h, 1, 0, basecount);
+                assert(rc == DTP_SUCCESS);
+            } else if (op == YAKSA_OP__BOR) {
+                rc = DTP_obj_buf_check(dobj, dbuf_h, -1, 0, basecount);
+                assert(rc == DTP_SUCCESS);
+            } else if (op == YAKSA_OP__LXOR) {
+                rc = DTP_obj_buf_check(dobj, dbuf_h, 0, 0, basecount);
+                assert(rc == DTP_SUCCESS);
+            } else if (op == YAKSA_OP__BXOR) {
+                rc = DTP_obj_buf_check(dobj, dbuf_h, -2, 0, basecount);
+                assert(rc == DTP_SUCCESS);
+            }
         }
 
 
