@@ -896,7 +896,9 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
             goto enqueue_subreq;
         }
 
-        if (request->backend.outattr.type == YAKSUR_PTR_TYPE__MANAGED) {
+        if (request->backend.outattr.type == YAKSUR_PTR_TYPE__MANAGED &&
+            (request->backend.outattr.device == -1 ||
+             request->backend.inattr.device == request->backend.outattr.device)) {
 
             subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
             rc = pupfn(id, inbuf, outbuf, count, type, info, request->backend.inattr.device);
@@ -936,7 +938,9 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
         }
     } else if (request->backend.inattr.type == YAKSUR_PTR_TYPE__MANAGED) {
 
-        if (request->backend.outattr.type == YAKSUR_PTR_TYPE__GPU) {
+        if (request->backend.outattr.type == YAKSUR_PTR_TYPE__GPU &&
+            (request->backend.inattr.device == -1 ||
+             request->backend.inattr.device == request->backend.outattr.device)) {
 
             subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
             rc = pupfn(id, inbuf, outbuf, count, type, info, request->backend.outattr.device);
