@@ -43,15 +43,15 @@ def switcher_builtin_element(backend, OUTFILE, blklens, typelist, pupstr, key, v
             else:
                 yutils.display(OUTFILE, "default:\n")
             yutils.display(OUTFILE, "if (max_nesting_level >= %d) {\n" % nesting_level)
-            yutils.display(OUTFILE, "%s->pack = yaksuri_%si_%s_blklen_%s_%s;\n" % (backend, backend, pupstr, blklen, val))
-            yutils.display(OUTFILE, "%s->unpack = yaksuri_%si_un%s_blklen_%s_%s;\n" % (backend, backend, pupstr, blklen, val))
+            yutils.display(OUTFILE, "%s->pack = yaksuri_%si_pack_%s_blklen_%s_%s;\n" % (backend, backend, pupstr, blklen, val))
+            yutils.display(OUTFILE, "%s->unpack = yaksuri_%si_unpack_%s_blklen_%s_%s;\n" % (backend, backend, pupstr, blklen, val))
             yutils.display(OUTFILE, "}\n")
             yutils.display(OUTFILE, "break;\n")
         yutils.display(OUTFILE, "}\n")
     else:
         yutils.display(OUTFILE, "if (max_nesting_level >= %d) {\n" % nesting_level)
-        yutils.display(OUTFILE, "%s->pack = yaksuri_%si_%s_%s;\n" % (backend, backend, pupstr, val))
-        yutils.display(OUTFILE, "%s->unpack = yaksuri_%si_un%s_%s;\n" % (backend, backend, pupstr, val))
+        yutils.display(OUTFILE, "%s->pack = yaksuri_%si_pack_%s_%s;\n" % (backend, backend, pupstr, val))
+        yutils.display(OUTFILE, "%s->unpack = yaksuri_%si_unpack_%s_%s;\n" % (backend, backend, pupstr, val))
         yutils.display(OUTFILE, "}\n")
 
     if (t != ""):
@@ -170,7 +170,7 @@ def populate_pupfns(pup_max_nesting, backend, blklens, builtin_types, builtin_ma
             yutils.display(OUTFILE, "}\n")
             yutils.display(OUTFILE, "\n")
 
-            pupstr = "pack_%s_%s" % (dtype1, dtype2)
+            pupstr = "%s_%s" % (dtype1, dtype2)
             typelist = [ dtype1, dtype2 ]
             switcher(backend, OUTFILE, blklens, builtin_types, builtin_maps, typelist, pupstr, pup_max_nesting - 1)
             yutils.display(OUTFILE, "\n")
@@ -205,7 +205,7 @@ def populate_pupfns(pup_max_nesting, backend, blklens, builtin_types, builtin_ma
         yutils.display(OUTFILE, "}\n")
         yutils.display(OUTFILE, "\n")
 
-        pupstr = "pack_%s" % dtype1
+        pupstr = "%s" % dtype1
         typelist = [ dtype1 ]
         switcher_builtin(backend, OUTFILE, blklens, builtin_types, builtin_maps, typelist, pupstr)
         yutils.display(OUTFILE, "\n")
