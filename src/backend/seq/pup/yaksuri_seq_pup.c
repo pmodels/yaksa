@@ -56,7 +56,7 @@ int yaksuri_seq_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_ty
         }
     } else {
         assert(seq_type->pack);
-        rc = seq_type->pack(inbuf, outbuf, count, type);
+        rc = seq_type->pack(inbuf, outbuf, count, type, op);
         YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
@@ -99,7 +99,7 @@ int yaksuri_seq_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
         }
     } else {
         assert(seq_type->unpack);
-        rc = seq_type->unpack(inbuf, outbuf, count, type);
+        rc = seq_type->unpack(inbuf, outbuf, count, type, op);
         YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
