@@ -51,10 +51,10 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
     }
 
     if (id == YAKSURI_GPUDRIVER_ID__LAST)
-        reqpriv->gpudriver_id = YAKSURI_GPUDRIVER_ID__UNSET;
+        reqpriv->gpudriver_id = YAKSURI_GPUDRIVER_ID__LAST;
 
     /* if this can be handled by the CPU, wrap it up */
-    if (reqpriv->gpudriver_id == YAKSURI_GPUDRIVER_ID__UNSET) {
+    if (reqpriv->gpudriver_id == YAKSURI_GPUDRIVER_ID__LAST) {
         bool is_supported;
         rc = yaksuri_seq_pup_is_supported(type, &is_supported);
         YAKSU_ERR_CHECK(rc, fn_fail);
@@ -70,15 +70,10 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
                 YAKSU_ERR_CHECK(rc, fn_fail);
             }
         }
-        goto fn_exit;
+    } else {
+        rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, info, request);
+        YAKSU_ERR_CHECK(rc, fn_fail);
     }
-
-    /* if this cannot be handled by the CPU, queue it up for the GPU
-     * to handle */
-    assert(reqpriv->gpudriver_id != YAKSURI_GPUDRIVER_ID__UNSET);
-
-    rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, info, request);
-    YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
     return rc;
