@@ -66,8 +66,11 @@ static int unpack_sub_hvector(const void *inbuf, uintptr_t insize, void *outbuf,
         rem_unpack_bytes -= tmp_actual_unpack_bytes;
         *actual_unpack_bytes += tmp_actual_unpack_bytes;
 
-        if (rem_unpack_bytes == 0 || tmp_actual_unpack_bytes == 0) {
-            /* if we are out of unpack buffer space, return */
+        if (rem_unpack_bytes == 0 ||
+            tmp_actual_unpack_bytes <
+            type->u.hvector.child->size * type->u.hvector.blocklength - remoffset) {
+            /* if we are out of unpack buffer space or if we could not
+             * unpack fully, return */
             goto fn_exit;
         }
 
@@ -155,8 +158,11 @@ static int unpack_sub_blkhindx(const void *inbuf, uintptr_t insize, void *outbuf
         rem_unpack_bytes -= tmp_actual_unpack_bytes;
         *actual_unpack_bytes += tmp_actual_unpack_bytes;
 
-        if (rem_unpack_bytes == 0 || tmp_actual_unpack_bytes == 0) {
-            /* if we are out of unpack buffer space, return */
+        if (rem_unpack_bytes == 0 ||
+            tmp_actual_unpack_bytes <
+            type->u.blkhindx.child->size * type->u.blkhindx.blocklength - remoffset) {
+            /* if we are out of unpack buffer space or if we could not
+             * unpack fully, return */
             goto fn_exit;
         }
 
@@ -253,8 +259,11 @@ static int unpack_sub_hindexed(const void *inbuf, uintptr_t insize, void *outbuf
         rem_unpack_bytes -= tmp_actual_unpack_bytes;
         *actual_unpack_bytes += tmp_actual_unpack_bytes;
 
-        if (rem_unpack_bytes == 0 || tmp_actual_unpack_bytes == 0) {
-            /* if we are out of unpack buffer space, return */
+        if (rem_unpack_bytes == 0 ||
+            tmp_actual_unpack_bytes < type->u.hindexed.child->size *
+            type->u.hindexed.array_of_blocklengths[blockid] - remoffset) {
+            /* if we are out of unpack buffer space or if we could not
+             * unpack fully, return */
             goto fn_exit;
         }
 
@@ -373,8 +382,11 @@ static int unpack_sub_struct(const void *inbuf, uintptr_t insize, void *outbuf, 
         rem_unpack_bytes -= tmp_actual_unpack_bytes;
         *actual_unpack_bytes += tmp_actual_unpack_bytes;
 
-        if (rem_unpack_bytes == 0 || tmp_actual_unpack_bytes == 0) {
-            /* if we are out of unpack buffer space, return */
+        if (rem_unpack_bytes == 0 ||
+            tmp_actual_unpack_bytes < type->u.str.array_of_types[blockid]->size *
+            type->u.str.array_of_blocklengths[blockid] - remoffset) {
+            /* if we are out of unpack buffer space or if we could not
+             * unpack fully, return */
             goto fn_exit;
         }
 
