@@ -14,6 +14,10 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_request_s *reqpriv = (yaksuri_request_s *) request->backend.priv;
+
+    if (reqpriv->gpudriver_id != YAKSURI_GPUDRIVER_ID__UNSET)
+        goto query_done;
+
     yaksuri_info_s *infopriv;
     int (*hookfn) (const void *inbuf, void *outbuf, yaksi_info_s * info,
                    yaksur_ptr_attr_s * inattr, yaksur_ptr_attr_s * outattr);
@@ -22,7 +26,8 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
         infopriv = (yaksuri_info_s *) info->backend.priv;
     }
 
-    yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+    yaksuri_gpudriver_id_e id;
+    id = reqpriv->gpudriver_id;
     if (id == YAKSURI_GPUDRIVER_ID__UNSET) {
         for (id = YAKSURI_GPUDRIVER_ID__UNSET; id < YAKSURI_GPUDRIVER_ID__LAST; id++) {
             if (id == YAKSURI_GPUDRIVER_ID__UNSET || yaksuri_global.gpudriver[id].hooks == NULL)
@@ -53,6 +58,7 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
     if (id == YAKSURI_GPUDRIVER_ID__LAST)
         reqpriv->gpudriver_id = YAKSURI_GPUDRIVER_ID__LAST;
 
+  query_done:
     /* if this can be handled by the CPU, wrap it up */
     if (reqpriv->gpudriver_id == YAKSURI_GPUDRIVER_ID__LAST) {
         bool is_supported;
