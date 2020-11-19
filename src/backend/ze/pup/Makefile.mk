@@ -30,6 +30,6 @@ else
 	echo "ocloc compile -file $< -device skl -spv_only -out_dir `dirname $@` -output_no_suffix -options \"-I $(top_srcdir)/src/backend/ze/include -cl-std=CL2.0\""; \
 	ocloc compile -file $< -device skl -spv_only -out_dir `dirname $@` -output_no_suffix -options "-I $(top_srcdir)/src/backend/ze/include -cl-std=CL2.0" && \
 	/bin/rm -f $(@:.c=.gen); \
-	$(top_srcdir)/src/backend/ze/pup/inline.py $< $@ $(top_srcdir) 0
+	$(top_srcdir)/src/backend/ze/pup/inline.py $(@:.c=.spv) $@ $(top_srcdir) 0
 
 endif
