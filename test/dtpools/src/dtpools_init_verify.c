@@ -49,10 +49,11 @@ static int errcount = 0;
         }                                                               \
     } while (0)
 
-static int init_verify_basic_datatype(yaksa_type_t type_, char *buf, int val, int val_stride,
+static int init_verify_basic_datatype(yaksa_type_t type_, char *buf, int *val_, int val_stride,
                                       int verify)
 {
     yaksa_type_t type = type_;
+    int val = *val_;
     int rc = DTP_SUCCESS;
 
     switch (type) {
@@ -278,6 +279,8 @@ static int init_verify_basic_datatype(yaksa_type_t type_, char *buf, int val, in
             DTPI_ERR_ASSERT(0, rc);
     }
 
+    *val_ = val;
+
   fn_exit:
     return rc;
 
@@ -300,20 +303,18 @@ static int init_verify_base_type(DTP_pool_s dtp, DTP_obj_s obj, void *buf_,
             intptr_t offset = dtpi->base_type_attrs.array_of_displs[i];
             for (int j = 0; j < dtpi->base_type_attrs.array_of_blklens[i]; j++) {
                 rc = init_verify_basic_datatype(dtpi->base_type_attrs.array_of_types[i],
-                                                buf + offset, val, val_stride, verify);
+                                                buf + offset, &val, val_stride, verify);
                 DTPI_ERR_CHK_RC(rc);
 
                 uintptr_t size;
                 rc = yaksa_type_get_size(dtpi->base_type_attrs.array_of_types[i], &size);
                 DTPI_ERR_CHK_RC(rc);
                 offset += size;
-                val += val_stride;
             }
         }
     } else {
-        rc = init_verify_basic_datatype(dtp.DTP_base_type, buf, val, val_stride, verify);
+        rc = init_verify_basic_datatype(dtp.DTP_base_type, buf, &val, val_stride, verify);
         DTPI_ERR_CHK_RC(rc);
-        val += val_stride;
     }
 
   fn_exit:
