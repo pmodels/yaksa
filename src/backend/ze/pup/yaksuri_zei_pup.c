@@ -42,6 +42,7 @@ static int create_command_list(int dev_id, ze_command_list_handle_t * p_h_comman
     pthread_mutex_lock(&device_state->cl_mutex);
     if (device_state->cl_pool_cnt > 0) {
         *p_h_command_list = device_state->cl_pool[--device_state->cl_pool_cnt];
+        zerr = zeCommandListReset(*p_h_command_list);
         pthread_mutex_unlock(&device_state->cl_mutex);
         goto fn_exit;
     }
@@ -83,18 +84,21 @@ static int create_command_list(int dev_id, ze_command_list_handle_t * p_h_comman
     YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
 
   fn_exit:
-    /* add to device state */
-    pthread_mutex_lock(&device_state->mutex);
-    if (device_state->num_cl + 1 == device_state->cl_cap) {
-        device_state->cl =
-            realloc(device_state->cl, device_state->cl_cap * 2 * sizeof(ze_command_list_handle_t));
-        device_state->cl_cap *= 2;
-    }
-    device_state->cl[device_state->num_cl++] = *p_h_command_list;
-    pthread_mutex_unlock(&device_state->mutex);
     return rc;
   fn_fail:
     goto fn_exit;
+}
+
+static int add_command_list(yaksuri_zei_device_state_s * device_state, ze_command_list_handle_t cl)
+{
+    /* add to device state */
+    if (device_state->num_cl + 1 == device_state->cl_cap) {
+        device_state->cl =
+            realloc(device_state->cl, device_state->cl_cap * 2 * sizeof(ze_command_list_handle_t));
+        assert(device_state->cl);
+        device_state->cl_cap *= 2;
+    }
+    device_state->cl[device_state->num_cl++] = cl;
 }
 
 static int throttle_ze(int dev_id)
@@ -219,9 +223,12 @@ int yaksuri_zei_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_ty
     uintptr_t iov_pack_threshold = yaksuri_zei_get_iov_pack_threshold(info);
 
     yaksuri_zei_device_state_s *device_state = yaksuri_zei_global.device_states + target;
+
+    pthread_mutex_lock(&device_state->mutex);
+
     ze_event_handle_t prev_event =
         device_state->last_event_idx ==
-        -1 ? NULL : device_state->events[device_state->last_event_idx];
+        -1 ? NULL : device_state->events[ZE_EVENT_POOL_INDEX(device_state->last_event_idx)];
 
     /* create an immediate command list */
     ze_command_list_handle_t command_list;
@@ -272,6 +279,7 @@ int yaksuri_zei_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_ty
         rc = create_ze_event(target, &ze_event, &ze_event_idx);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
+        assert(ze_type->pack_kernels && ze_type->pack_kernels[target]);
         ze_group_count_t launchArgs = { n_blocks_x, n_blocks_y, n_blocks_z };
 
         void *in_addr = (char *) inbuf + type->true_lb;
@@ -279,22 +287,28 @@ int yaksuri_zei_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_ty
                                        ze_type->md[target]);
         YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
 
+        yaksuri_zei_type_make_resident(type, target);
+
         zerr =
             zeCommandListAppendLaunchKernel(command_list, ze_type->pack_kernels[target],
                                             &launchArgs, ze_event, prev_event ? 1 : 0, &prev_event);
         YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
     }
 
+    add_command_list(device_state, command_list);
+    device_state->last_event_idx = ze_event_idx;
+
+    pthread_mutex_unlock(&device_state->mutex);
+
     if (device_state->num_cl >= yaksuri_zei_global.throttle_threshold) {
         rc = throttle_ze(target);
         YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
-    device_state->last_event_idx = ze_event_idx;
-
   fn_exit:
     return rc;
   fn_fail:
+    pthread_mutex_unlock(&device_state->mutex);
     goto fn_exit;
 }
 
@@ -310,9 +324,12 @@ int yaksuri_zei_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
     uintptr_t iov_unpack_threshold = yaksuri_zei_get_iov_unpack_threshold(info);
 
     yaksuri_zei_device_state_s *device_state = yaksuri_zei_global.device_states + target;
+
+    pthread_mutex_lock(&device_state->mutex);
+
     ze_event_handle_t prev_event =
         device_state->last_event_idx ==
-        -1 ? NULL : device_state->events[device_state->last_event_idx];
+        -1 ? NULL : device_state->events[ZE_EVENT_POOL_INDEX(device_state->last_event_idx)];
 
     /* create an immediate command list */
     ze_command_list_handle_t command_list;
@@ -362,6 +379,8 @@ int yaksuri_zei_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
         rc = get_thread_block_dims(count, type, &n_threads, &n_blocks_x, &n_blocks_y, &n_blocks_z);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
+        assert(ze_type->unpack_kernels && ze_type->unpack_kernels[target]);
+
         rc = create_ze_event(target, &ze_event, &ze_event_idx);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
@@ -372,21 +391,27 @@ int yaksuri_zei_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
                                      ze_type->md[target]);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
+        yaksuri_zei_type_make_resident(type, target);
+
         zerr =
             zeCommandListAppendLaunchKernel(command_list, ze_type->unpack_kernels[target],
                                             &launchArgs, ze_event, prev_event ? 1 : 0, &prev_event);
         YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
     }
 
+    add_command_list(device_state, command_list);
+    device_state->last_event_idx = ze_event_idx;
+
+    pthread_mutex_unlock(&device_state->mutex);
+
     if (device_state->num_cl >= yaksuri_zei_global.throttle_threshold) {
         rc = throttle_ze(target);
         YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
-    device_state->last_event_idx = ze_event_idx;
-
   fn_exit:
     return rc;
   fn_fail:
+    pthread_mutex_unlock(&device_state->mutex);
     goto fn_exit;
 }

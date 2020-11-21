@@ -210,10 +210,9 @@ int yaksuri_ze_init_hook(yaksur_gpudriver_hooks_s ** hooks)
         (yaksuri_zei_device_state_s *) calloc(yaksuri_zei_global.ndevices,
                                               sizeof(yaksuri_zei_device_state_s));
     yaksuri_zei_global.throttle_threshold = ZE_THROTTLE_THRESHOLD;
-    yaksuri_zei_global.ev_pool_cap = ZE_EVENT_POOL_CAP;
     ze_event_pool_desc_t pool_desc = { ZE_STRUCTURE_TYPE_EVENT_POOL_DESC };
     pool_desc.flags = 0;
-    pool_desc.count = yaksuri_zei_global.ev_pool_cap;
+    pool_desc.count = ZE_EVENT_POOL_CAP;
 
     for (int i = 0; i < yaksuri_zei_global.ndevices; i++) {
         yaksuri_zei_device_state_s *device_state = yaksuri_zei_global.device_states + i;
@@ -223,7 +222,7 @@ int yaksuri_ze_init_hook(yaksur_gpudriver_hooks_s ** hooks)
                                  &yaksuri_zei_global.device[i], &device_state->ep);
         YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
         device_state->events =
-            (ze_event_handle_t *) calloc(yaksuri_zei_global.ev_pool_cap, sizeof(ze_event_handle_t));
+            (ze_event_handle_t *) calloc(ZE_EVENT_POOL_CAP, sizeof(ze_event_handle_t));
         device_state->last_event_idx = -1;
         device_state->ev_lb = device_state->ev_ub = -1;
         device_state->cl_pool_size = ZE_CMD_LIST_INIT_POOL_SIZE;

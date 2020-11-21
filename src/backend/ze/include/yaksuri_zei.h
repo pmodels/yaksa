@@ -12,17 +12,24 @@
 #include <level_zero/ze_api.h>
 #include "yaksuri_zei_md.h"
 
+#define ZE_DEBUG 0
+
 #define ZE_P2P_ENABLED  (1)
 #define ZE_P2P_DISABLED (2)
 #define ZE_P2P_CLIQUES  (3)
 
 #define YAKSURI_KERNEL_NULL   -1
 
+/* create yaksuri_zei_md_s in USM host memory instead of USM shared memory */
+#define ZE_MD_HOST             1
+
 #define ZE_THROTTLE_THRESHOLD  (4 * 1024)
-#define ZE_EVENT_POOL_CAP      (6 * 1024)
 #define ZE_CMD_LIST_INIT_POOL_SIZE      8
 
-#define ZE_DEBUG 0
+#define ZE_EVENT_POOL_BITS      13
+#define ZE_EVENT_POOL_CAP       (1 << ZE_EVENT_POOL_BITS)
+#define ZE_EVENT_POOL_MASK      ((1 << ZE_EVENT_POOL_BITS) - 1)
+#define ZE_EVENT_POOL_INDEX(x)  ((x) & ZE_EVENT_POOL_MASK)
 
 #define YAKSURI_ZEI_INFO__DEFAULT_IOV_PUP_THRESHOLD     (16384)
 
@@ -50,10 +57,10 @@ extern "C" {
 
 typedef struct {
     ze_event_pool_handle_t ep;  /* event pool, one per device */
-    int ev_pool_idx;
-    int ev_lb, ev_ub;           /* [lb,ub] defines the events being used */
+    uint64_t ev_pool_idx;
+    uint64_t ev_lb, ev_ub;      /* [lb,ub] defines the events being used */
     ze_event_handle_t *events;
-    int last_event_idx;         /* immed. cmd lists are serialized */
+    uint64_t last_event_idx;    /* immed. cmd lists are serialized */
     ze_command_list_handle_t *cl;       /* immed. cmd lists being used */
     int num_cl;                 /* number of immed. cmd lists */
     int cl_cap;
@@ -74,13 +81,9 @@ typedef struct {
     uint32_t nsubdevices;
     ze_device_handle_t **subdevices;
     ze_context_handle_t context;
-
+    int throttle_threshold;
     bool **p2p;
     pthread_mutex_t ze_mutex;
-
-    int ev_pool_cap;
-    int throttle_threshold;
-
     yaksuri_zei_device_state_s *device_states;
 } yaksuri_zei_global_s;
 extern yaksuri_zei_global_s yaksuri_zei_global;
@@ -148,6 +151,9 @@ uintptr_t yaksuri_zei_get_iov_unpack_threshold(yaksi_info_s * info);
 
 ze_result_t yaksuri_ze_init_module_kernel(void);
 ze_result_t yaksuri_ze_finalize_module_kernel(void);
+
+int yaksuri_zei_type_make_resident(yaksi_type_s * type, int dev_id);
+int yaksuri_zei_type_evict_resident(yaksi_type_s * type, int dev_id);
 
 int create_ze_event(int dev_id, ze_event_handle_t * ze_event, int *idx);
 void recycle_command_list(ze_command_list_handle_t cl, int dev_id);
