@@ -99,16 +99,22 @@ static ze_result_t yaksuri_ze_load_kernel(int kernel, ze_kernel_handle_t ** hand
         for (int d = 0; d < yaksuri_zei_global.ndevices; d++) {
             if (module_handle[d] == NULL)
                 continue;
+            yaksuri_zei_device_state_s *device_state = yaksuri_zei_global.device_states + d;
+            pthread_mutex_lock(&device_state->mutex);
+
             zerr = zeKernelCreate(module_handle[d], &kdesc, &yaksuri_ze_kernels[kernel][d]);
             if (zerr != ZE_RESULT_SUCCESS) {
                 fprintf(stderr, "ZE Error (%s:%s,%d,%d): 0x%x \n", __func__, __FILE__, __LINE__,
                         kernel, zerr);
                 goto fn_fail;
             }
+#if 0
             zerr =
                 zeKernelSetIndirectAccess(yaksuri_ze_kernels[kernel][d],
                                           ZE_KERNEL_INDIRECT_ACCESS_FLAG_SHARED);
             YAKSURI_ZEI_ZE_ERR_CHECK(zerr);
+#endif
+            pthread_mutex_unlock(&device_state->mutex);
         }
     }
 
@@ -193,36 +199,53 @@ int yaksuri_zei_type_create_hook(yaksi_type_s * type)
 int yaksuri_zei_type_free_hook(yaksi_type_s * type)
 {
     int rc = YAKSA_SUCCESS;
-    yaksuri_zei_type_s *ze = (yaksuri_zei_type_s *) type->backend.ze.priv;
     ze_result_t zerr;
+    yaksuri_zei_type_s *ze = (yaksuri_zei_type_s *) type->backend.ze.priv;
 
     pthread_mutex_destroy(&ze->mdmutex);
     if (ze->md) {
+        /* evict resident memory before freeing it */
         for (int i = 0; i < yaksuri_zei_global.ndevices; i++) {
-            if (ze->md[i] == NULL)
+            yaksuri_zei_md_s *md = ze->md[i];
+            if (md == NULL)
                 continue;
+            yaksuri_zei_device_state_s *device_state = yaksuri_zei_global.device_states + i;
+            pthread_mutex_lock(&device_state->mutex);
+            yaksuri_zei_type_evict_resident(type, i);
+            pthread_mutex_unlock(&device_state->mutex);
+        }
+        /* free memory */
+        for (int i = 0; i < yaksuri_zei_global.ndevices; i++) {
+            yaksuri_zei_md_s *md = ze->md[i];
+            if (md == NULL)
+                continue;
+            yaksuri_zei_device_state_s *device_state = yaksuri_zei_global.device_states + i;
+            pthread_mutex_lock(&device_state->mutex);
             if (type->kind == YAKSI_TYPE_KIND__BLKHINDX) {
-                assert(ze->md[i]->u.blkhindx.array_of_displs);
+                assert(md->u.blkhindx.array_of_displs);
                 zerr =
-                    zeMemFree(yaksuri_zei_global.context,
-                              (void *) ze->md[i]->u.blkhindx.array_of_displs);
+                    zeMemFree(yaksuri_zei_global.context, (void *) md->u.blkhindx.array_of_displs);
                 YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
             } else if (type->kind == YAKSI_TYPE_KIND__HINDEXED) {
-                assert(ze->md[i]->u.hindexed.array_of_displs);
+                assert(md->u.hindexed.array_of_displs);
                 zerr =
-                    zeMemFree(yaksuri_zei_global.context,
-                              (void *) ze->md[i]->u.hindexed.array_of_displs);
+                    zeMemFree(yaksuri_zei_global.context, (void *) md->u.hindexed.array_of_displs);
                 YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
 
-                assert(ze->md[i]->u.hindexed.array_of_blocklengths);
+                assert(md->u.hindexed.array_of_blocklengths);
                 zerr =
                     zeMemFree(yaksuri_zei_global.context,
-                              (void *) ze->md[i]->u.hindexed.array_of_blocklengths);
+                              (void *) md->u.hindexed.array_of_blocklengths);
                 YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
             }
 
-            zerr = zeMemFree(yaksuri_zei_global.context, ze->md[i]);
+            zerr = zeMemFree(yaksuri_zei_global.context, md);
             YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
+            ze->md[i] = NULL;
+            pthread_mutex_unlock(&device_state->mutex);
+#if ZE_MD_HOST
+            break;
+#endif
         }
     }
     free(ze->md);
