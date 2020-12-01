@@ -1,5 +1,7 @@
 			Yaksa
 
+TEST
+
 Yaksa is a high-performance noncontiguous datatype engine that can be
 used to express and manipulate noncontiguous data.  This release is an
 experimental version of Yaksa that contains features related to
