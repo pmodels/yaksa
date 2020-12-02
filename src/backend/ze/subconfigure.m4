@@ -19,6 +19,27 @@ if test x"${with_ze}" != x ; then
         AC_MSG_RESULT([yes])
     fi
 fi
+# ze_api.h relies on support for c11
+if test "${have_ze}" = "yes" ; then
+    PAC_PUSH_FLAG([CFLAGS])
+    CFLAGS="$CFLAGS -Werror"
+    AC_CACHE_CHECK([for -Werror],ac_cv_werror,[
+    AC_TRY_COMPILE([],[],ac_cv_werror=yes,ac_cv_werror=no)])
+    if test "${ac_cv_werror}" = "yes" ; then
+        AC_CACHE_CHECK([for c11 support],ac_cv_support_c11,[
+        AC_TRY_COMPILE([
+typedef struct _ze_ipc_mem_handle_t
+{
+    int data;
+} ze_ipc_mem_handle_t;
+typedef struct _ze_ipc_mem_handle_t ze_ipc_mem_handle_t;
+        ],[],ac_cv_support_c11=yes,ac_cv_support_c11=no)])
+        if test "${ac_cv_support_c11}" = "no" ; then
+            have_ze=no
+        fi
+    fi
+    PAC_POP_FLAG([CFLAGS])
+fi
 if test "${have_ze}" = "yes" ; then
     AC_DEFINE([HAVE_ZE],[1],[Define is ZE is available])
 fi
