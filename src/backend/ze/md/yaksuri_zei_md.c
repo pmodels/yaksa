@@ -21,6 +21,7 @@ static yaksuri_zei_md_s *type_to_md(yaksi_type_s * type, int dev_id)
 int yaksuri_zei_md_alloc(yaksi_type_s * type, int dev_id)
 {
     int rc = YAKSA_SUCCESS;
+    yaksuri_zei_md_s *md = NULL;
     yaksuri_zei_type_s *ze = (yaksuri_zei_type_s *) type->backend.ze.priv;
     ze_result_t zerr;
 
@@ -30,12 +31,14 @@ int yaksuri_zei_md_alloc(yaksi_type_s * type, int dev_id)
         .flags = 0,
     };
 
+#if ! ZE_MD_HOST
     ze_device_mem_alloc_desc_t device_desc = {
         .stype = ZE_STRUCTURE_TYPE_DEVICE_MEM_ALLOC_DESC,
         .pNext = NULL,
         .flags = 0,
         .ordinal = 0,
     };
+#endif
 
     pthread_mutex_lock(&ze->mdmutex);
 
@@ -72,7 +75,7 @@ int yaksuri_zei_md_alloc(yaksi_type_s * type, int dev_id)
 #endif
     }
 
-    yaksuri_zei_md_s *md = ze->md[dev_id];
+    md = ze->md[dev_id];
 
     switch (type->kind) {
         case YAKSI_TYPE_KIND__BUILTIN:

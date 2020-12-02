@@ -57,10 +57,10 @@ extern "C" {
 
 typedef struct {
     ze_event_pool_handle_t ep;  /* event pool, one per device */
-    uint64_t ev_pool_idx;
-    uint64_t ev_lb, ev_ub;      /* [lb,ub] defines the events being used */
+    int ev_pool_idx;
+    int ev_lb, ev_ub;           /* [lb,ub] defines the events being used */
     ze_event_handle_t *events;
-    uint64_t last_event_idx;    /* immed. cmd lists are serialized */
+    int last_event_idx;         /* immed. cmd lists are serialized */
     ze_command_list_handle_t *cl;       /* immed. cmd lists being used */
     int num_cl;                 /* number of immed. cmd lists */
     int cl_cap;
@@ -69,7 +69,7 @@ typedef struct {
     int cl_pool_cnt;
     pthread_mutex_t cl_mutex;
     ze_command_queue_group_properties_t *queueProperties;
-    int numQueueGroups;
+    uint32_t numQueueGroups;
     pthread_mutex_t mutex;
     int dev_id;
 } yaksuri_zei_device_state_s;

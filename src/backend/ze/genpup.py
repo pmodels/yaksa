@@ -325,7 +325,7 @@ if __name__ == '__main__':
                     num_kernels += 2
     OUTFILE.write("ze_kernel_handle_t *yaksuri_ze_kernels[%d];\n\n" % num_kernels)
 
-    OUTFILE.write("const char * yaksuri_zei_pup_str[%d];\n" % num_modules)
+    OUTFILE.write("const unsigned char * yaksuri_zei_pup_str[%d];\n" % num_modules)
     OUTFILE.write("unsigned long yaksuri_zei_pup_size[%d];\n\n" % num_modules)
 
     OUTFILE.write("const char * yaksuri_zei_kernel_funcs[%d];\n" % num_kernels)
@@ -375,11 +375,7 @@ if __name__ == '__main__':
                     darray.pop()
                 m += 1
     OUTFILE.write("\n")
-
-    OUTFILE.write("fn_exit:\n")
     OUTFILE.write("    return zerr; \n")
-    OUTFILE.write("fn_fail:\n")
-    OUTFILE.write("    goto fn_exit; \n")
     yutils.display(OUTFILE, "}\n\n")
     OUTFILE.close()
 

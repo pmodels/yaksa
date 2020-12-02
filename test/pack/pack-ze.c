@@ -204,6 +204,7 @@ void pack_ze_get_ptr_attr(const void *inbuf, void *outbuf, yaksa_info_t * info)
 
 void pack_ze_copy_content(const void *sbuf, void *dbuf, size_t size, mem_type_e type)
 {
+    int i;
     if (type == MEM_TYPE__DEVICE) {
         int ret;
         ze_device_handle_t device = NULL;
@@ -237,7 +238,7 @@ void pack_ze_copy_content(const void *sbuf, void *dbuf, size_t size, mem_type_e 
             .pNext = NULL,
             .index = 0,
             .flags = 0,
-            .ordinal = -1,
+            .ordinal = 0,
             .mode = ZE_COMMAND_QUEUE_MODE_ASYNCHRONOUS,
             .priority = ZE_COMMAND_QUEUE_PRIORITY_NORMAL,
         };
@@ -249,13 +250,13 @@ void pack_ze_copy_content(const void *sbuf, void *dbuf, size_t size, mem_type_e 
             (ze_command_queue_group_properties_t *)
             malloc(sizeof(ze_command_queue_group_properties_t) * numQueueGroups);
         ret = zeDeviceGetCommandQueueGroupProperties(device, &numQueueGroups, queueProperties);
-        for (int i = 0; i < numQueueGroups; i++) {
+        for (i = 0; i < numQueueGroups; i++) {
             if (queueProperties[i].flags & ZE_COMMAND_QUEUE_GROUP_PROPERTY_FLAG_COMPUTE) {
                 cmdQueueDesc.ordinal = i;
                 break;
             }
         }
-        assert(cmdQueueDesc.ordinal != -1);
+        assert(i != numQueueGroups);
 
         ret = zeCommandQueueCreate(ze_context, device, &cmdQueueDesc, &cmdQueue);
         assert(ret == ZE_RESULT_SUCCESS);

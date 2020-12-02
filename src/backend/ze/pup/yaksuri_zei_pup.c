@@ -33,8 +33,18 @@ void recycle_command_list(ze_command_list_handle_t cl, int dev_id)
 
 static int create_command_list(int dev_id, ze_command_list_handle_t * p_h_command_list)
 {
+    int i;
     int rc = YAKSA_SUCCESS;
     ze_result_t zerr = ZE_RESULT_SUCCESS;
+    ze_command_queue_desc_t cmdQueueDesc = {
+        .stype = ZE_STRUCTURE_TYPE_COMMAND_QUEUE_DESC,
+        .pNext = NULL,
+        .ordinal = 0,
+        .index = 0,
+        .flags = 0,
+        .mode = ZE_COMMAND_QUEUE_MODE_ASYNCHRONOUS,
+        .priority = ZE_COMMAND_QUEUE_PRIORITY_NORMAL
+    };
     ze_device_handle_t h_device = yaksuri_zei_global.device[dev_id];
     yaksuri_zei_device_state_s *device_state = yaksuri_zei_global.device_states + dev_id;
 
@@ -48,19 +58,9 @@ static int create_command_list(int dev_id, ze_command_list_handle_t * p_h_comman
     }
     pthread_mutex_unlock(&device_state->cl_mutex);
 
-    ze_command_queue_desc_t cmdQueueDesc = {
-        .stype = ZE_STRUCTURE_TYPE_COMMAND_QUEUE_DESC,
-        .pNext = NULL,
-        .ordinal = -1,
-        .index = 0,
-        .flags = 0,
-        .mode = ZE_COMMAND_QUEUE_MODE_ASYNCHRONOUS,
-        .priority = ZE_COMMAND_QUEUE_PRIORITY_NORMAL
-    };
-
     if (device_state->queueProperties == NULL) {
         ze_command_queue_group_properties_t *queueProperties;
-        int numQueueGroups = 0;
+        uint32_t numQueueGroups = 0;
         zerr = zeDeviceGetCommandQueueGroupProperties(h_device, &numQueueGroups, NULL);
         assert(zerr == ZE_RESULT_SUCCESS && numQueueGroups);
         queueProperties = (ze_command_queue_group_properties_t *)
@@ -71,12 +71,13 @@ static int create_command_list(int dev_id, ze_command_list_handle_t * p_h_comman
         device_state->numQueueGroups = numQueueGroups;
     }
     /* use compute engine */
-    for (int i = 0; i < device_state->numQueueGroups; i++) {
+    for (i = 0; i < device_state->numQueueGroups; i++) {
         if (device_state->queueProperties[i].flags & ZE_COMMAND_QUEUE_GROUP_PROPERTY_FLAG_COMPUTE) {
             cmdQueueDesc.ordinal = i;
             break;
         }
     }
+    assert(i != device_state->numQueueGroups);
 
     zerr =
         zeCommandListCreateImmediate(yaksuri_zei_global.context, h_device, &cmdQueueDesc,
@@ -89,7 +90,7 @@ static int create_command_list(int dev_id, ze_command_list_handle_t * p_h_comman
     goto fn_exit;
 }
 
-static int add_command_list(yaksuri_zei_device_state_s * device_state, ze_command_list_handle_t cl)
+static void add_command_list(yaksuri_zei_device_state_s * device_state, ze_command_list_handle_t cl)
 {
     /* add to device state */
     if (device_state->num_cl + 1 == device_state->cl_cap) {
@@ -115,8 +116,9 @@ static int throttle_ze(int dev_id)
     goto fn_exit;
 }
 
-static int get_thread_block_dims(uint64_t count, yaksi_type_s * type, int *n_threads,
-                                 int *n_blocks_x, int *n_blocks_y, int *n_blocks_z)
+static int get_thread_block_dims(uint64_t count, yaksi_type_s * type, unsigned int *n_threads,
+                                 unsigned int *n_blocks_x, unsigned int *n_blocks_y,
+                                 unsigned int *n_blocks_z)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_zei_type_s *ze_type = (yaksuri_zei_type_s *) type->backend.ze.priv;
@@ -126,24 +128,22 @@ static int get_thread_block_dims(uint64_t count, yaksi_type_s * type, int *n_thr
     n_blocks += ! !(count * ze_type->num_elements % THREAD_BLOCK_SIZE);
 
     if (n_blocks <= MAX_GRIDSZ_X) {
-        *n_blocks_x = (int) n_blocks;
+        *n_blocks_x = (unsigned int) n_blocks;
         *n_blocks_y = 1;
         *n_blocks_z = 1;
     } else if (n_blocks <= MAX_GRIDSZ_X * MAX_GRIDSZ_Y) {
-        *n_blocks_x = YAKSU_CEIL(n_blocks, MAX_GRIDSZ_Y);
-        *n_blocks_y = YAKSU_CEIL(n_blocks, (*n_blocks_x));
+        *n_blocks_x = (unsigned int) YAKSU_CEIL(n_blocks, MAX_GRIDSZ_Y);
+        *n_blocks_y = (unsigned int) YAKSU_CEIL(n_blocks, (*n_blocks_x));
         *n_blocks_z = 1;
     } else {
-        int n_blocks_xy = YAKSU_CEIL(n_blocks, MAX_GRIDSZ_Z);
-        *n_blocks_x = YAKSU_CEIL(n_blocks_xy, MAX_GRIDSZ_Y);
-        *n_blocks_y = YAKSU_CEIL(n_blocks_xy, (*n_blocks_x));
-        *n_blocks_z = YAKSU_CEIL(n_blocks, (uintptr_t) (*n_blocks_x) * (*n_blocks_y));
+        unsigned int n_blocks_xy = (unsigned int) YAKSU_CEIL(n_blocks, MAX_GRIDSZ_Z);
+        *n_blocks_x = (unsigned int) YAKSU_CEIL(n_blocks_xy, MAX_GRIDSZ_Y);
+        *n_blocks_y = (unsigned int) YAKSU_CEIL(n_blocks_xy, (*n_blocks_x));
+        *n_blocks_z =
+            (unsigned int) YAKSU_CEIL(n_blocks, (uintptr_t) (*n_blocks_x) * (*n_blocks_y));
     }
 
-  fn_exit:
     return rc;
-  fn_fail:
-    goto fn_exit;
 }
 
 int yaksuri_zei_pup_is_supported(yaksi_type_s * type, bool * is_supported)
@@ -156,10 +156,7 @@ int yaksuri_zei_pup_is_supported(yaksi_type_s * type, bool * is_supported)
     else
         *is_supported = false;
 
-  fn_exit:
     return rc;
-  fn_fail:
-    goto fn_exit;
 }
 
 static inline int yaksuri_zei_prep_kernel(ze_kernel_handle_t kernel, const void *inbuf,
@@ -271,8 +268,8 @@ int yaksuri_zei_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_ty
     } else {
         rc = yaksuri_zei_md_alloc(type, target);
         YAKSU_ERR_CHECK(rc, fn_fail);
-        int n_threads;
-        int n_blocks_x, n_blocks_y, n_blocks_z;
+        unsigned int n_threads;
+        unsigned int n_blocks_x, n_blocks_y, n_blocks_z;
         rc = get_thread_block_dims(count, type, &n_threads, &n_blocks_x, &n_blocks_y, &n_blocks_z);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
@@ -283,9 +280,9 @@ int yaksuri_zei_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_ty
         ze_group_count_t launchArgs = { n_blocks_x, n_blocks_y, n_blocks_z };
 
         void *in_addr = (char *) inbuf + type->true_lb;
-        zerr = yaksuri_zei_prep_kernel(ze_type->pack_kernels[target], in_addr, outbuf, count,
-                                       ze_type->md[target]);
-        YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
+        rc = yaksuri_zei_prep_kernel(ze_type->pack_kernels[target], in_addr, outbuf, count,
+                                     ze_type->md[target]);
+        YAKSU_ERR_CHECK(rc, fn_fail);
 
         yaksuri_zei_type_make_resident(type, target);
 
@@ -374,8 +371,8 @@ int yaksuri_zei_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
         rc = yaksuri_zei_md_alloc(type, target);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
-        int n_threads;
-        int n_blocks_x, n_blocks_y, n_blocks_z;
+        unsigned int n_threads;
+        unsigned int n_blocks_x, n_blocks_y, n_blocks_z;
         rc = get_thread_block_dims(count, type, &n_threads, &n_blocks_x, &n_blocks_y, &n_blocks_z);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
