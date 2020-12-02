@@ -9,7 +9,7 @@
 #include "yaksu.h"
 #include "yaksuri_zei.h"
 
-extern const char *yaksuri_zei_pup_str[];
+extern const unsigned char *yaksuri_zei_pup_str[];
 extern unsigned long yaksuri_zei_pup_size[];
 
 extern char *yaksuri_zei_kernel_funcs[];
@@ -182,9 +182,9 @@ int yaksuri_zei_type_create_hook(yaksi_type_s * type)
     if (ze->pack != YAKSURI_KERNEL_NULL) {
         pthread_mutex_lock(&yaksuri_zei_global.ze_mutex);
         zerr = yaksuri_ze_load_kernel(ze->pack, &ze->pack_kernels);
-        YAKSURI_ZEI_ZE_ERR_CHECK(zerr);
+        YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
         zerr = yaksuri_ze_load_kernel(ze->unpack, &ze->unpack_kernels);
-        YAKSURI_ZEI_ZE_ERR_CHECK(zerr);
+        YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
         pthread_mutex_unlock(&yaksuri_zei_global.ze_mutex);
     }
 

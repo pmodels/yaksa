@@ -127,6 +127,12 @@ int yaksuri_ze_init_hook(yaksur_gpudriver_hooks_s ** hooks)
 {
     int rc = YAKSA_SUCCESS;
     ze_result_t zerr;
+    uint32_t num_drivers = 0;
+    ze_driver_handle_t *all_drivers = NULL;
+    uint32_t num_devices = 0;
+    ze_device_handle_t *all_devices = NULL;
+    ze_context_desc_t contextDesc;
+    ze_event_pool_desc_t pool_desc;
 
     ze_init_flag_t flags = ZE_INIT_FLAG_GPU_ONLY;
     zerr = zeInit(flags);
@@ -142,35 +148,29 @@ int yaksuri_ze_init_hook(yaksur_gpudriver_hooks_s ** hooks)
 
     /* get driver for Intel GPUs by first discovering all the drivers,
      * and then picks the first driver that supports GPU devices */
-    uint32_t num_drivers = 0;
     zerr = zeDriverGet(&num_drivers, NULL);
     YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
 
-    ze_driver_handle_t *all_drivers =
-        (ze_driver_handle_t *) malloc(num_drivers * sizeof(ze_driver_handle_t));
+    all_drivers = (ze_driver_handle_t *) malloc(num_drivers * sizeof(ze_driver_handle_t));
     zerr = zeDriverGet(&num_drivers, all_drivers);
     YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
 
     yaksuri_zei_global.driver = all_drivers[0];
     free(all_drivers);
 
-    uint32_t num_devices = 0;
     zerr = zeDeviceGet(yaksuri_zei_global.driver, &num_devices, NULL);
     YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
 
-    ze_device_handle_t *all_devices =
-        (ze_device_handle_t *) malloc(num_devices * sizeof(ze_device_handle_t));
+    all_devices = (ze_device_handle_t *) malloc(num_devices * sizeof(ze_device_handle_t));
     zerr = zeDeviceGet(yaksuri_zei_global.driver, &num_devices, all_devices);
     YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
 
     yaksuri_zei_global.ndevices = num_devices;
     yaksuri_zei_global.device = all_devices;
 
-    ze_context_desc_t contextDesc = {
-        .stype = ZE_STRUCTURE_TYPE_CONTEXT_DESC,
-        .pNext = NULL,
-        .flags = 0,
-    };
+    contextDesc.stype = ZE_STRUCTURE_TYPE_CONTEXT_DESC;
+    contextDesc.pNext = NULL;
+    contextDesc.flags = 0;
     zerr = zeContextCreate(yaksuri_zei_global.driver, &contextDesc, &yaksuri_zei_global.context);
     assert(zerr == ZE_RESULT_SUCCESS);
 
@@ -190,7 +190,7 @@ int yaksuri_ze_init_hook(yaksur_gpudriver_hooks_s ** hooks)
         (ze_device_handle_t **) calloc(yaksuri_zei_global.ndevices, sizeof(ze_device_handle_t *));
     yaksuri_zei_global.nsubdevices = 0;
     for (int i = 0; i < yaksuri_zei_global.ndevices; i++) {
-        int subcount = 0;
+        uint32_t subcount = 0;
         zerr = zeDeviceGetSubDevices(yaksuri_zei_global.device[i], &subcount, NULL);
         YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
         if (yaksuri_zei_global.nsubdevices == 0)
@@ -210,7 +210,7 @@ int yaksuri_ze_init_hook(yaksur_gpudriver_hooks_s ** hooks)
         (yaksuri_zei_device_state_s *) calloc(yaksuri_zei_global.ndevices,
                                               sizeof(yaksuri_zei_device_state_s));
     yaksuri_zei_global.throttle_threshold = ZE_THROTTLE_THRESHOLD;
-    ze_event_pool_desc_t pool_desc = { ZE_STRUCTURE_TYPE_EVENT_POOL_DESC };
+    pool_desc.stype = ZE_STRUCTURE_TYPE_EVENT_POOL_DESC;
     pool_desc.flags = 0;
     pool_desc.count = ZE_EVENT_POOL_CAP;
 

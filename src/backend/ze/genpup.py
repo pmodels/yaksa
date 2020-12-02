@@ -24,21 +24,18 @@ import gencomm
 num_paren_open = 0
 blklens = [ "generic" ]
 builtin_types = [ "char", "int", "short", "long", "int8_t", "int16_t", \
-                  "int32_t", "int64_t", "float", "double" ]
+                  "int32_t", "int64_t", "float" ]
 builtin_maps = {
     "YAKSA_TYPE__UNSIGNED_CHAR": "char",
     "YAKSA_TYPE__UNSIGNED": "int",
     "YAKSA_TYPE__UNSIGNED_SHORT": "short",
     "YAKSA_TYPE__UNSIGNED_LONG": "long",
-    "YAKSA_TYPE__LONG_DOUBLE": "double",
     "YAKSA_TYPE__UNSIGNED_LONG_LONG": "long",
     "YAKSA_TYPE__UINT8_T": "int8_t",
     "YAKSA_TYPE__UINT16_T": "int16_t",
     "YAKSA_TYPE__UINT32_T": "int32_t",
     "YAKSA_TYPE__UINT64_T": "int64_t",
     "YAKSA_TYPE__C_COMPLEX": "float",
-    "YAKSA_TYPE__C_DOUBLE_COMPLEX": "double",
-    "YAKSA_TYPE__C_LONG_DOUBLE_COMPLEX": "double",
     "YAKSA_TYPE__BYTE": "int8_t"
 }
 
@@ -325,7 +322,7 @@ if __name__ == '__main__':
                     num_kernels += 2
     OUTFILE.write("ze_kernel_handle_t *yaksuri_ze_kernels[%d];\n\n" % num_kernels)
 
-    OUTFILE.write("const char * yaksuri_zei_pup_str[%d];\n" % num_modules)
+    OUTFILE.write("const unsigned char * yaksuri_zei_pup_str[%d];\n" % num_modules)
     OUTFILE.write("unsigned long yaksuri_zei_pup_size[%d];\n\n" % num_modules)
 
     OUTFILE.write("const char * yaksuri_zei_kernel_funcs[%d];\n" % num_kernels)
@@ -375,11 +372,7 @@ if __name__ == '__main__':
                     darray.pop()
                 m += 1
     OUTFILE.write("\n")
-
-    OUTFILE.write("fn_exit:\n")
     OUTFILE.write("    return zerr; \n")
-    OUTFILE.write("fn_fail:\n")
-    OUTFILE.write("    goto fn_exit; \n")
     yutils.display(OUTFILE, "}\n\n")
     OUTFILE.close()
 
