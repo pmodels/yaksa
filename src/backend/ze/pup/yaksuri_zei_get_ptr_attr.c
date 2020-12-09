@@ -40,7 +40,13 @@ int yaksuri_zei_get_ptr_attr(const void *inbuf, void *outbuf, yaksi_info_s * inf
     int rc = YAKSA_SUCCESS;
     ze_result_t zerr;
     yaksuri_zei_info_s *infopriv = NULL;
-    ze_memory_allocation_properties_t prop;
+    ze_memory_allocation_properties_t prop = {
+        .stype = ZE_STRUCTURE_TYPE_MEMORY_ALLOCATION_PROPERTIES,
+        .pNext = NULL,
+        .type = 0,
+        .id = 0,
+        .pageSize = 0,
+    };
     ze_device_handle_t device;
 
     if (info) {
