@@ -189,6 +189,7 @@ void pack_ze_get_ptr_attr(const void *inbuf, void *outbuf, yaksa_info_t * info)
         assert(rc == YAKSA_SUCCESS);
 
         ze_alloc_attr_t attr;
+        memset(&attr.prop, 0, sizeof(ze_memory_allocation_properties_t));
         zerr = zeMemGetAllocProperties(ze_context, inbuf, &attr.prop, &attr.device);
         assert(zerr == ZE_RESULT_SUCCESS);
         rc = yaksa_info_keyval_append(*info, "yaksa_ze_inbuf_ptr_attr", &attr, sizeof(attr));
@@ -213,6 +214,8 @@ void pack_ze_copy_content(const void *sbuf, void *dbuf, size_t size, mem_type_e 
             ze_memory_allocation_properties_t prop;
             ze_device_handle_t device;
         } s_attr, d_attr;
+        memset(&s_attr.prop, 0, sizeof(ze_memory_allocation_properties_t));
+        memset(&d_attr.prop, 0, sizeof(ze_memory_allocation_properties_t));
         ret = zeMemGetAllocProperties(ze_context, sbuf, &s_attr.prop, &s_attr.device);
         assert(ret == ZE_RESULT_SUCCESS);
         ret = zeMemGetAllocProperties(ze_context, dbuf, &d_attr.prop, &d_attr.device);
