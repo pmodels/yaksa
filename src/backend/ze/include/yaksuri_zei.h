@@ -145,6 +145,7 @@ int yaksuri_zei_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_ty
                       yaksi_info_s * info, int target);
 int yaksuri_zei_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
                         yaksi_info_s * info, int target);
+int yaksuri_zei_flush_all(void);
 int yaksuri_zei_pup_is_supported(yaksi_type_s * type, bool * is_supported);
 uintptr_t yaksuri_zei_get_iov_pack_threshold(yaksi_info_s * info);
 uintptr_t yaksuri_zei_get_iov_unpack_threshold(yaksi_info_s * info);

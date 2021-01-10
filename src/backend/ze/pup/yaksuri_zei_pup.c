@@ -412,3 +412,8 @@ int yaksuri_zei_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
     pthread_mutex_unlock(&device_state->mutex);
     goto fn_exit;
 }
+
+int yaksuri_zei_flush_all(void)
+{
+    return YAKSA_SUCCESS;
+}
