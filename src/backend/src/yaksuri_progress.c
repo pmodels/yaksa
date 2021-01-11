@@ -1033,7 +1033,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
 int yaksuri_progress_poke(void)
 {
     int rc = YAKSA_SUCCESS;
-    yaksuri_gpudriver_id_e id;
+    yaksuri_gpudriver_id_e id = YAKSURI_GPUDRIVER_ID__UNSET;
 
     /* A progress poke is in two steps.  In the first step, we check
      * for event completions, finish any post-processing and retire
@@ -1106,11 +1106,19 @@ int yaksuri_progress_poke(void)
                 YAKSU_ERR_CHECK(rc, fn_fail);
 
                 if (chunk == NULL)
-                    goto fn_exit;
+                    goto flush;
 
                 subreq->u.multiple.issued_count += chunk->count;
             }
         }
+    }
+
+  flush:
+    /* if we issued any operations, call flush_all, so the driver
+     * layer can flush the kernels. */
+    if (id != YAKSURI_GPUDRIVER_ID__UNSET) {
+        rc = yaksuri_global.gpudriver[id].hooks->flush_all();
+        YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
   fn_exit:

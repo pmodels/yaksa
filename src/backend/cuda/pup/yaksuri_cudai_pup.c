@@ -209,3 +209,8 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
   fn_fail:
     goto fn_exit;
 }
+
+int yaksuri_cudai_flush_all(void)
+{
+    return YAKSA_SUCCESS;
+}

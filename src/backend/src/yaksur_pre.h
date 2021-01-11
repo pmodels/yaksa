@@ -62,6 +62,7 @@ typedef struct yaksur_gpudriver_hooks_s {
                   struct yaksi_type_s * type, struct yaksi_info_s * info, int device);
     int (*iunpack) (const void *inbuf, void *outbuf, uintptr_t count, struct yaksi_type_s * type,
                     struct yaksi_info_s * info, int device);
+    int (*flush_all) (void);
     int (*pup_is_supported) (struct yaksi_type_s * type, bool * is_supported);
 
     /* memory management */
