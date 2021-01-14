@@ -49,6 +49,22 @@ static void swap_segments(uintptr_t * starts, uintptr_t * lengths, int x, int y)
     lengths[y] = tmp;
 }
 
+static void host_only_get_ptr_attr(yaksa_info_t * info)
+{
+    static int count = 0;
+    if ((++count) % 2 == 0) {
+        int rc;
+
+        rc = yaksa_info_create(info);
+        assert(rc == YAKSA_SUCCESS);
+
+        rc = yaksa_info_keyval_append(*info, "yaksa_gpu_driver", "nogpu", strlen("nogpu"));
+        assert(rc == YAKSA_SUCCESS);
+    } else {
+        *info = NULL;
+    }
+}
+
 char typestr[MAX_DTP_BASESTRLEN + 1] = { 0 };
 
 int seed = -1;
@@ -228,8 +244,16 @@ void *runtest(void *arg)
         pack_alloc_mem(tbuf_devid, tbufsize, tbuf_memtype, &tbuf_h, &tbuf_d);
 
         yaksa_info_t pack_info, unpack_info;
-        pack_get_ptr_attr(sbuf_d + sobj.DTP_buf_offset, tbuf_d, &pack_info);
-        pack_get_ptr_attr(tbuf_d, dbuf_d + dobj.DTP_buf_offset, &unpack_info);
+        if (sbuf_memtype != MEM_TYPE__DEVICE && tbuf_memtype != MEM_TYPE__DEVICE) {
+            host_only_get_ptr_attr(&pack_info);
+        } else {
+            pack_get_ptr_attr(sbuf_d + sobj.DTP_buf_offset, tbuf_d, &pack_info);
+        }
+        if (tbuf_memtype != MEM_TYPE__DEVICE && dbuf_memtype != MEM_TYPE__DEVICE) {
+            host_only_get_ptr_attr(&unpack_info);
+        } else {
+            pack_get_ptr_attr(tbuf_d, dbuf_d + dobj.DTP_buf_offset, &unpack_info);
+        }
 
         for (int j = 0; j < segments; j++) {
             uintptr_t actual_pack_bytes;
