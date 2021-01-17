@@ -70,10 +70,9 @@ void pack_cuda_free_mem(mem_type_e type, void *hostbuf, void *devicebuf)
     }
 }
 
-void pack_cuda_get_ptr_attr(const void *inbuf, void *outbuf, yaksa_info_t * info)
+void pack_cuda_get_ptr_attr(const void *inbuf, void *outbuf, yaksa_info_t * info, int iter)
 {
-    static int count = 0;
-    if ((++count) % 2 == 0) {
+    if (iter % 2 == 0) {
         int rc;
 
         rc = yaksa_info_create(info);

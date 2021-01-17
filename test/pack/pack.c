@@ -49,10 +49,9 @@ static void swap_segments(uintptr_t * starts, uintptr_t * lengths, int x, int y)
     lengths[y] = tmp;
 }
 
-static void host_only_get_ptr_attr(yaksa_info_t * info)
+static void host_only_get_ptr_attr(yaksa_info_t * info, int iter)
 {
-    static int count = 0;
-    if ((++count) % 2 == 0) {
+    if (iter % 2 == 0) {
         int rc;
 
         rc = yaksa_info_create(info);
@@ -245,14 +244,14 @@ void *runtest(void *arg)
 
         yaksa_info_t pack_info, unpack_info;
         if (sbuf_memtype != MEM_TYPE__DEVICE && tbuf_memtype != MEM_TYPE__DEVICE) {
-            host_only_get_ptr_attr(&pack_info);
+            host_only_get_ptr_attr(&pack_info, i);
         } else {
-            pack_get_ptr_attr(sbuf_d + sobj.DTP_buf_offset, tbuf_d, &pack_info);
+            pack_get_ptr_attr(sbuf_d + sobj.DTP_buf_offset, tbuf_d, &pack_info, i);
         }
         if (tbuf_memtype != MEM_TYPE__DEVICE && dbuf_memtype != MEM_TYPE__DEVICE) {
-            host_only_get_ptr_attr(&unpack_info);
+            host_only_get_ptr_attr(&unpack_info, i);
         } else {
-            pack_get_ptr_attr(tbuf_d, dbuf_d + dobj.DTP_buf_offset, &unpack_info);
+            pack_get_ptr_attr(tbuf_d, dbuf_d + dobj.DTP_buf_offset, &unpack_info, i);
         }
 
         for (int j = 0; j < segments; j++) {

@@ -34,7 +34,7 @@ void pack_init_devices(void);
 void pack_finalize_devices(void);
 void pack_alloc_mem(int device_id, size_t size, mem_type_e type, void **hostbuf, void **devicebuf);
 void pack_free_mem(mem_type_e type, void *hostbuf, void *devicebuf);
-void pack_get_ptr_attr(const void *inbuf, void *outbuf, yaksa_info_t * info);
+void pack_get_ptr_attr(const void *inbuf, void *outbuf, yaksa_info_t * info, int iter);
 void pack_copy_content(const void *sbuf, void *dbuf, size_t size, mem_type_e type);
 
 #ifdef HAVE_CUDA
@@ -44,7 +44,7 @@ void pack_cuda_finalize_devices(void);
 void pack_cuda_alloc_mem(int device_id, size_t size, mem_type_e type, void **hostbuf,
                          void **devicebuf);
 void pack_cuda_free_mem(mem_type_e type, void *hostbuf, void *devicebuf);
-void pack_cuda_get_ptr_attr(const void *inbuf, void *outbuf, yaksa_info_t * info);
+void pack_cuda_get_ptr_attr(const void *inbuf, void *outbuf, yaksa_info_t * info, int iter);
 void pack_cuda_copy_content(const void *sbuf, void *dbuf, size_t size, mem_type_e type);
 #endif
 
@@ -55,7 +55,7 @@ void pack_ze_finalize_devices(void);
 void pack_ze_alloc_mem(int device_id, size_t size, mem_type_e type, void **hostbuf,
                        void **devicebuf);
 void pack_ze_free_mem(mem_type_e type, void *hostbuf, void *devicebuf);
-void pack_ze_get_ptr_attr(const void *inbuf, void *outbuf, yaksa_info_t * info);
+void pack_ze_get_ptr_attr(const void *inbuf, void *outbuf, yaksa_info_t * info, int iter);
 void pack_ze_copy_content(const void *sbuf, void *dbuf, size_t size, mem_type_e type);
 #endif
 
