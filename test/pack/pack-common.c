@@ -78,12 +78,12 @@ void pack_free_mem(mem_type_e type, void *hostbuf, void *devicebuf)
     }
 }
 
-void pack_get_ptr_attr(const void *inbuf, void *outbuf, yaksa_info_t * info)
+void pack_get_ptr_attr(const void *inbuf, void *outbuf, yaksa_info_t * info, int iter)
 {
 #ifdef HAVE_CUDA
-    pack_cuda_get_ptr_attr(inbuf, outbuf, info);
+    pack_cuda_get_ptr_attr(inbuf, outbuf, info, iter);
 #elif defined(HAVE_ZE)
-    pack_ze_get_ptr_attr(inbuf, outbuf, info);
+    pack_ze_get_ptr_attr(inbuf, outbuf, info, iter);
 #else
     *info = NULL;
 #endif
