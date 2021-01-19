@@ -404,6 +404,10 @@ int yaksa_type_create_struct(int count, const int *array_of_blocklengths,
                              const intptr_t * array_of_displacements,
                              const yaksa_type_t * array_of_types, yaksa_info_t info,
                              yaksa_type_t * newtype);
+int yaksa_type_create_struct_x(intptr_t count, const intptr_t * array_of_blocklengths,
+                               const intptr_t * array_of_displacements,
+                               const yaksa_type_t * array_of_types, yaksa_info_t info,
+                               yaksa_type_t * newtype);
 
 /*!
  * \brief creates a subarray layout

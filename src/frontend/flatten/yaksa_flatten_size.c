@@ -64,7 +64,7 @@ int yaksi_flatten_size(yaksi_type_s * type, uintptr_t * flattened_type_size)
 
         case YAKSI_TYPE_KIND__STRUCT:
             /* add space for array_of_blocklengths */
-            *flattened_type_size += type->u.str.count * sizeof(int);
+            *flattened_type_size += type->u.str.count * sizeof(intptr_t);
             /* add space for array_of_displs */
             *flattened_type_size += type->u.str.count * sizeof(intptr_t);
 

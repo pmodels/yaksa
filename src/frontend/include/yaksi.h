@@ -117,8 +117,8 @@ typedef struct yaksi_type_s {
             struct yaksi_type_s *child;
         } hindexed;
         struct {
-            int count;
-            int *array_of_blocklengths;
+            intptr_t count;
+            intptr_t *array_of_blocklengths;
             intptr_t *array_of_displs;
             struct yaksi_type_s **array_of_types;
         } str;
@@ -225,7 +225,7 @@ int yaksi_type_create_hindexed_block(intptr_t count, intptr_t blocklength,
                                      yaksi_type_s ** outtype);
 int yaksi_type_create_resized(yaksi_type_s * intype, intptr_t lb, intptr_t extent,
                               yaksi_type_s ** outtype);
-int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
+int yaksi_type_create_struct(intptr_t count, const intptr_t * array_of_blocklengths,
                              const intptr_t * array_of_displacements,
                              yaksi_type_s ** array_of_intypes, yaksi_type_s ** outtype);
 int yaksi_type_create_subarray(int ndims, const int *array_of_sizes, const int *array_of_subsizes,

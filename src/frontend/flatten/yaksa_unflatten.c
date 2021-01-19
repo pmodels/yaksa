@@ -84,10 +84,10 @@ static inline int unflatten(yaksi_type_s ** type, const void *flattened_type)
 
         case YAKSI_TYPE_KIND__STRUCT:
             newtype->u.str.array_of_blocklengths =
-                (int *) malloc(newtype->u.str.count * sizeof(int));
+                (intptr_t *) malloc(newtype->u.str.count * sizeof(intptr_t));
             memcpy(newtype->u.str.array_of_blocklengths, flatbuf,
-                   newtype->u.str.count * sizeof(int));
-            flatbuf += newtype->u.str.count * sizeof(int);
+                   newtype->u.str.count * sizeof(intptr_t));
+            flatbuf += newtype->u.str.count * sizeof(intptr_t);
 
             newtype->u.str.array_of_displs =
                 (intptr_t *) malloc(newtype->u.str.count * sizeof(intptr_t));

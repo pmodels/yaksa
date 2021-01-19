@@ -64,13 +64,14 @@ static int flatten(yaksi_type_s * type, void *flattened_type)
             break;
 
         case YAKSI_TYPE_KIND__STRUCT:
-            memcpy(flatbuf, type->u.str.array_of_blocklengths, type->u.str.count * sizeof(int));
-            flatbuf += type->u.str.count * sizeof(int);
+            memcpy(flatbuf, type->u.str.array_of_blocklengths,
+                   type->u.str.count * sizeof(intptr_t));
+            flatbuf += type->u.str.count * sizeof(intptr_t);
 
             memcpy(flatbuf, type->u.str.array_of_displs, type->u.str.count * sizeof(intptr_t));
             flatbuf += type->u.str.count * sizeof(intptr_t);
 
-            for (int i = 0; i < type->u.str.count; i++) {
+            for (intptr_t i = 0; i < type->u.str.count; i++) {
                 rc = flatten(type->u.str.array_of_types[i], flatbuf);
                 YAKSU_ERR_CHECK(rc, fn_fail);
 
