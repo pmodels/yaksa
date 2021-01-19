@@ -126,7 +126,7 @@ typedef struct yaksi_type_s {
             struct yaksi_type_s *child;
         } resized;
         struct {
-            int count;
+            intptr_t count;
             struct yaksi_type_s *child;
         } contig;
         struct {
@@ -215,7 +215,7 @@ typedef struct {
 /* function declarations come at the very end */
 int yaksi_type_create_hvector(int count, int blocklength, intptr_t stride, yaksi_type_s * intype,
                               yaksi_type_s ** outtype);
-int yaksi_type_create_contig(int count, yaksi_type_s * intype, yaksi_type_s ** outtype);
+int yaksi_type_create_contig(intptr_t count, yaksi_type_s * intype, yaksi_type_s ** outtype);
 int yaksi_type_create_dup(yaksi_type_s * intype, yaksi_type_s ** outtype);
 int yaksi_type_create_hindexed(int count, const int *array_of_blocklengths,
                                const intptr_t * array_of_displacements, yaksi_type_s * intype,

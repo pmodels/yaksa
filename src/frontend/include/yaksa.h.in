@@ -288,6 +288,8 @@ int yaksa_type_create_hvector(int count, int blocklength, intptr_t stride, yaksa
  */
 int yaksa_type_create_contig(int count, yaksa_type_t oldtype, yaksa_info_t info,
                              yaksa_type_t * newtype);
+int yaksa_type_create_contig_x(intptr_t count, yaksa_type_t oldtype, yaksa_info_t info,
+                               yaksa_type_t * newtype);
 
 /*!
  * \brief creates a copy of the oldtype
