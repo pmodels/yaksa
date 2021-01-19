@@ -111,8 +111,8 @@ typedef struct yaksi_type_s {
             struct yaksi_type_s *child;
         } blkhindx;
         struct {
-            int count;
-            int *array_of_blocklengths;
+            intptr_t count;
+            intptr_t *array_of_blocklengths;
             intptr_t *array_of_displs;
             struct yaksi_type_s *child;
         } hindexed;
@@ -217,7 +217,7 @@ int yaksi_type_create_hvector(intptr_t count, intptr_t blocklength, intptr_t str
                               yaksi_type_s * intype, yaksi_type_s ** outtype);
 int yaksi_type_create_contig(intptr_t count, yaksi_type_s * intype, yaksi_type_s ** outtype);
 int yaksi_type_create_dup(yaksi_type_s * intype, yaksi_type_s ** outtype);
-int yaksi_type_create_hindexed(int count, const int *array_of_blocklengths,
+int yaksi_type_create_hindexed(intptr_t count, const intptr_t * array_of_blocklengths,
                                const intptr_t * array_of_displacements, yaksi_type_s * intype,
                                yaksi_type_s ** outtype);
 int yaksi_type_create_hindexed_block(intptr_t count, intptr_t blocklength,

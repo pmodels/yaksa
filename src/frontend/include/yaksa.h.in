@@ -355,6 +355,9 @@ int yaksa_type_create_hindexed_block_x(intptr_t count, intptr_t blocklength,
 int yaksa_type_create_indexed(int count, const int *array_of_blocklengths,
                               const int *array_of_displacements, yaksa_type_t oldtype,
                               yaksa_info_t info, yaksa_type_t * newtype);
+int yaksa_type_create_indexed_x(intptr_t count, const intptr_t * array_of_blocklengths,
+                                const intptr_t * array_of_displacements, yaksa_type_t oldtype,
+                                yaksa_info_t info, yaksa_type_t * newtype);
 
 /*!
  * \brief creates a hindexed layout
@@ -370,6 +373,9 @@ int yaksa_type_create_indexed(int count, const int *array_of_blocklengths,
 int yaksa_type_create_hindexed(int count, const int *array_of_blocklengths,
                                const intptr_t * array_of_displacements, yaksa_type_t oldtype,
                                yaksa_info_t info, yaksa_type_t * newtype);
+int yaksa_type_create_hindexed_x(intptr_t count, const intptr_t * array_of_blocklengths,
+                                 const intptr_t * array_of_displacements, yaksa_type_t oldtype,
+                                 yaksa_info_t info, yaksa_type_t * newtype);
 
 /*!
  * \brief creates a resized layout with updated lower and extent

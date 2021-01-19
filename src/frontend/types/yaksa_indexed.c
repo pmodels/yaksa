@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-int yaksi_type_create_hindexed(int count, const int *array_of_blocklengths,
+int yaksi_type_create_hindexed(intptr_t count, const intptr_t * array_of_blocklengths,
                                const intptr_t * array_of_displs, yaksi_type_s * intype,
                                yaksi_type_s ** newtype)
 {
@@ -16,7 +16,7 @@ int yaksi_type_create_hindexed(int count, const int *array_of_blocklengths,
 
     /* shortcut for hindexed_block types */
     bool is_hindexed_block = true;
-    for (int i = 1; i < count; i++) {
+    for (intptr_t i = 1; i < count; i++) {
         if (array_of_blocklengths[i] != array_of_blocklengths[i - 1])
             is_hindexed_block = false;
     }
@@ -39,13 +39,13 @@ int yaksi_type_create_hindexed(int count, const int *array_of_blocklengths,
     outtype->tree_depth = intype->tree_depth + 1;
 
     outtype->size = 0;
-    for (int i = 0; i < count; i++)
+    for (intptr_t i = 0; i < count; i++)
         outtype->size += intype->size * array_of_blocklengths[i];
     outtype->alignment = intype->alignment;
 
     int is_set;
     is_set = 0;
-    for (int idx = 0; idx < count; idx++) {
+    for (intptr_t idx = 0; idx < count; idx++) {
         if (array_of_blocklengths[idx] == 0)
             continue;
 
@@ -81,7 +81,7 @@ int yaksi_type_create_hindexed(int count, const int *array_of_blocklengths,
     outtype->extent = outtype->ub - outtype->lb;
 
     outtype->u.hindexed.count = count;
-    outtype->u.hindexed.array_of_blocklengths = (int *) malloc(count * sizeof(intptr_t));
+    outtype->u.hindexed.array_of_blocklengths = (intptr_t *) malloc(count * sizeof(intptr_t));
     outtype->u.hindexed.array_of_displs = (intptr_t *) malloc(count * sizeof(intptr_t));
     for (int i = 0; i < count; i++) {
         outtype->u.hindexed.array_of_blocklengths[i] = array_of_blocklengths[i];
@@ -138,9 +138,9 @@ int yaksi_type_create_hindexed(int count, const int *array_of_blocklengths,
     goto fn_exit;
 }
 
-int yaksa_type_create_hindexed(int count, const int *array_of_blocklengths,
-                               const intptr_t * array_of_displs, yaksa_type_t oldtype,
-                               yaksa_info_t info, yaksa_type_t * newtype)
+int yaksa_type_create_hindexed_x(intptr_t count, const intptr_t * array_of_blocklengths,
+                                 const intptr_t * array_of_displs, yaksa_type_t oldtype,
+                                 yaksa_info_t info, yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -152,7 +152,7 @@ int yaksa_type_create_hindexed(int count, const int *array_of_blocklengths,
 
     uintptr_t total_size;
     total_size = 0;
-    for (int i = 0; i < count; i++) {
+    for (intptr_t i = 0; i < count; i++) {
         total_size += intype->size * array_of_blocklengths[i];
     }
     if (total_size == 0) {
@@ -174,11 +174,76 @@ int yaksa_type_create_hindexed(int count, const int *array_of_blocklengths,
     goto fn_exit;
 }
 
+int yaksa_type_create_hindexed(int count, const int *array_of_blocklengths,
+                               const intptr_t * array_of_displs, yaksa_type_t oldtype,
+                               yaksa_info_t info, yaksa_type_t * newtype)
+{
+    int rc = YAKSA_SUCCESS;
+
+    intptr_t *real_array_of_blkl = NULL;
+    real_array_of_blkl = (intptr_t *) malloc(count * sizeof(intptr_t));
+
+    for (int i = 0; i < count; i++)
+        real_array_of_blkl[i] = array_of_blocklengths[i];
+
+    rc = yaksa_type_create_hindexed_x(count, real_array_of_blkl, array_of_displs,
+                                      oldtype, info, newtype);
+    free(real_array_of_blkl);
+
+    return rc;
+}
+
+int yaksa_type_create_indexed_x(intptr_t count, const intptr_t * array_of_blocklengths,
+                                const intptr_t * array_of_displs, yaksa_type_t oldtype,
+                                yaksa_info_t info, yaksa_type_t * newtype)
+{
+    int rc = YAKSA_SUCCESS;
+    intptr_t *real_array_of_blocklengths = (intptr_t *) malloc(count * sizeof(intptr_t));
+    intptr_t *real_array_of_displs = (intptr_t *) malloc(count * sizeof(intptr_t));
+
+    assert(yaksu_atomic_load(&yaksi_is_initialized));
+
+    yaksi_type_s *intype;
+    rc = yaksi_type_get(oldtype, &intype);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    uintptr_t total_size;
+    total_size = 0;
+    for (intptr_t i = 0; i < count; i++) {
+        total_size += intype->size * array_of_blocklengths[i];
+    }
+    if (total_size == 0) {
+        *newtype = YAKSA_TYPE__NULL;
+        goto fn_exit;
+    }
+
+    for (intptr_t i = 0; i < count; i++) {
+        real_array_of_blocklengths[i] = array_of_blocklengths[i];
+        real_array_of_displs[i] = array_of_displs[i] * intype->extent;
+    }
+
+    yaksi_type_s *outtype;
+    rc = yaksi_type_create_hindexed(count, real_array_of_blocklengths, real_array_of_displs, intype,
+                                    &outtype);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    rc = yaksi_type_handle_alloc(outtype, newtype);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+  fn_exit:
+    free(real_array_of_blocklengths);
+    free(real_array_of_displs);
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
 int yaksa_type_create_indexed(int count, const int *array_of_blocklengths,
                               const int *array_of_displs, yaksa_type_t oldtype,
                               yaksa_info_t info, yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
+    intptr_t *real_array_of_blocklengths = (intptr_t *) malloc(count * sizeof(intptr_t));
     intptr_t *real_array_of_displs = (intptr_t *) malloc(count * sizeof(intptr_t));
 
     assert(yaksu_atomic_load(&yaksi_is_initialized));
@@ -197,11 +262,13 @@ int yaksa_type_create_indexed(int count, const int *array_of_blocklengths,
         goto fn_exit;
     }
 
-    for (int i = 0; i < count; i++)
+    for (int i = 0; i < count; i++) {
+        real_array_of_blocklengths[i] = array_of_blocklengths[i];
         real_array_of_displs[i] = array_of_displs[i] * intype->extent;
+    }
 
     yaksi_type_s *outtype;
-    rc = yaksi_type_create_hindexed(count, array_of_blocklengths, real_array_of_displs, intype,
+    rc = yaksi_type_create_hindexed(count, real_array_of_blocklengths, real_array_of_displs, intype,
                                     &outtype);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
@@ -209,6 +276,7 @@ int yaksa_type_create_indexed(int count, const int *array_of_blocklengths,
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
+    free(real_array_of_blocklengths);
     free(real_array_of_displs);
     return rc;
   fn_fail:

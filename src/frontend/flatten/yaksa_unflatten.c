@@ -67,10 +67,10 @@ static inline int unflatten(yaksi_type_s ** type, const void *flattened_type)
 
         case YAKSI_TYPE_KIND__HINDEXED:
             newtype->u.hindexed.array_of_blocklengths =
-                (int *) malloc(newtype->u.hindexed.count * sizeof(int));
+                (intptr_t *) malloc(newtype->u.hindexed.count * sizeof(intptr_t));
             memcpy(newtype->u.hindexed.array_of_blocklengths, flatbuf,
-                   newtype->u.hindexed.count * sizeof(int));
-            flatbuf += newtype->u.hindexed.count * sizeof(int);
+                   newtype->u.hindexed.count * sizeof(intptr_t));
+            flatbuf += newtype->u.hindexed.count * sizeof(intptr_t);
 
             newtype->u.hindexed.array_of_displs =
                 (intptr_t *) malloc(newtype->u.hindexed.count * sizeof(intptr_t));

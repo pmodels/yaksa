@@ -52,8 +52,8 @@ static int flatten(yaksi_type_s * type, void *flattened_type)
 
         case YAKSI_TYPE_KIND__HINDEXED:
             memcpy(flatbuf, type->u.hindexed.array_of_blocklengths,
-                   type->u.hindexed.count * sizeof(int));
-            flatbuf += type->u.hindexed.count * sizeof(int);
+                   type->u.hindexed.count * sizeof(intptr_t));
+            flatbuf += type->u.hindexed.count * sizeof(intptr_t);
 
             memcpy(flatbuf, type->u.hindexed.array_of_displs,
                    type->u.hindexed.count * sizeof(intptr_t));
