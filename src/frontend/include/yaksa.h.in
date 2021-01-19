@@ -263,6 +263,8 @@ int yaksa_finalize(void);
  */
 int yaksa_type_create_vector(int count, int blocklength, int stride, yaksa_type_t oldtype,
                              yaksa_info_t info, yaksa_type_t * newtype);
+int yaksa_type_create_vector_x(intptr_t count, intptr_t blocklength, intptr_t stride,
+                               yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t * newtype);
 
 /*!
  * \brief creates a hvector layout
@@ -277,6 +279,8 @@ int yaksa_type_create_vector(int count, int blocklength, int stride, yaksa_type_
  */
 int yaksa_type_create_hvector(int count, int blocklength, intptr_t stride, yaksa_type_t oldtype,
                               yaksa_info_t info, yaksa_type_t * newtype);
+int yaksa_type_create_hvector_x(intptr_t count, intptr_t blocklength, intptr_t stride,
+                                yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t * newtype);
 
 /*!
  * \brief creates a contig layout
