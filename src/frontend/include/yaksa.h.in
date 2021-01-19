@@ -424,6 +424,10 @@ int yaksa_type_create_struct_x(intptr_t count, const intptr_t * array_of_blockle
 int yaksa_type_create_subarray(int ndims, const int *array_of_sizes, const int *array_of_subsizes,
                                const int *array_of_starts, yaksa_subarray_order_e order,
                                yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t * newtype);
+int yaksa_type_create_subarray_x(int ndims, const intptr_t * array_of_sizes,
+                                 const intptr_t * array_of_subsizes,
+                                 const intptr_t * array_of_starts, yaksa_subarray_order_e order,
+                                 yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t * newtype);
 
 /*!
  * \brief gets the size of (number of bytes in) the datatype

@@ -228,9 +228,10 @@ int yaksi_type_create_resized(yaksi_type_s * intype, intptr_t lb, intptr_t exten
 int yaksi_type_create_struct(intptr_t count, const intptr_t * array_of_blocklengths,
                              const intptr_t * array_of_displacements,
                              yaksi_type_s ** array_of_intypes, yaksi_type_s ** outtype);
-int yaksi_type_create_subarray(int ndims, const int *array_of_sizes, const int *array_of_subsizes,
-                               const int *array_of_starts, yaksa_subarray_order_e order,
-                               yaksi_type_s * intype, yaksi_type_s ** outtype);
+int yaksi_type_create_subarray(int ndims, const intptr_t * array_of_sizes,
+                               const intptr_t * array_of_subsizes, const intptr_t * array_of_starts,
+                               yaksa_subarray_order_e order, yaksi_type_s * intype,
+                               yaksi_type_s ** outtype);
 int yaksi_type_free(yaksi_type_s * type);
 
 int yaksi_ipack(const void *inbuf, uintptr_t incount, yaksi_type_s * type, uintptr_t inoffset,
