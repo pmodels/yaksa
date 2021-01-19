@@ -318,6 +318,9 @@ int yaksa_type_create_dup(yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t 
 int yaksa_type_create_indexed_block(int count, int blocklength, const int *array_of_displacements,
                                     yaksa_type_t oldtype, yaksa_info_t info,
                                     yaksa_type_t * newtype);
+int yaksa_type_create_indexed_block_x(intptr_t count, intptr_t blocklength,
+                                      const intptr_t * array_of_displacements, yaksa_type_t oldtype,
+                                      yaksa_info_t info, yaksa_type_t * newtype);
 
 /*!
  * \brief creates a block-hindexed layout
@@ -333,6 +336,10 @@ int yaksa_type_create_indexed_block(int count, int blocklength, const int *array
 int yaksa_type_create_hindexed_block(int count, int blocklength,
                                      const intptr_t * array_of_displacements, yaksa_type_t oldtype,
                                      yaksa_info_t info, yaksa_type_t * newtype);
+int yaksa_type_create_hindexed_block_x(intptr_t count, intptr_t blocklength,
+                                       const intptr_t * array_of_displacements,
+                                       yaksa_type_t oldtype, yaksa_info_t info,
+                                       yaksa_type_t * newtype);
 
 /*!
  * \brief creates a indexed layout
