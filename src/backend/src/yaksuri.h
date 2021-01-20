@@ -36,15 +36,17 @@ extern yaksuri_global_s yaksuri_global;
 
 #define YAKSURI_SUBREQ_CHUNK_MAX_TMPBUFS (3)
 
+typedef struct yaksuri_tmpbuf {
+    void *buf;
+    yaksu_buffer_pool_s pool;
+} yaksuri_tmpbuf_s;
+
 typedef struct yaksuri_subreq_chunk {
     uintptr_t count_offset;
     uintptr_t count;
 
     int num_tmpbufs;
-    struct {
-        void *buf;
-        yaksu_buffer_pool_s pool;
-    } tmpbufs[YAKSURI_SUBREQ_CHUNK_MAX_TMPBUFS];
+    yaksuri_tmpbuf_s tmpbufs[YAKSURI_SUBREQ_CHUNK_MAX_TMPBUFS];
     void *event;
 
     struct yaksuri_subreq_chunk *next;
