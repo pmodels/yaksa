@@ -35,10 +35,12 @@ extern "C" {
     } while (0)
 
 typedef struct yaksuri_cudai_type_s {
-    void (*pack) (const void *inbuf, void *outbuf, uintptr_t count, yaksuri_cudai_md_s * md,
-                  int n_threads, int n_blocks_x, int n_blocks_y, int n_blocks_z, int device);
-    void (*unpack) (const void *inbuf, void *outbuf, uintptr_t count, yaksuri_cudai_md_s * md,
-                    int n_threads, int n_blocks_x, int n_blocks_y, int n_blocks_z, int device);
+    void (*pack) (const void *inbuf, void *outbuf, uintptr_t count, yaksa_op_t op,
+                  yaksuri_cudai_md_s * md, int n_threads, int n_blocks_x, int n_blocks_y,
+                  int n_blocks_z, int device);
+    void (*unpack) (const void *inbuf, void *outbuf, uintptr_t count, yaksa_op_t op,
+                    yaksuri_cudai_md_s * md, int n_threads, int n_blocks_x, int n_blocks_y,
+                    int n_blocks_z, int device);
     const char *name;
     yaksuri_cudai_md_s *md;
     pthread_mutex_t mdmutex;
