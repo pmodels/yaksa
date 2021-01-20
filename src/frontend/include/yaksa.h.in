@@ -45,7 +45,7 @@ typedef uint64_t yaksa_op_t;
 #define YAKSA_OP__LXOR                                ((yaksa_op_t) 8)
 #define YAKSA_OP__BXOR                                ((yaksa_op_t) 9)
 #define YAKSA_OP__REPLACE                             ((yaksa_op_t) 10)
-
+#define YAKSA_OP__LAST                                ((yaksa_op_t) 11)
  /*! @} */
 
 
