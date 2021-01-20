@@ -37,14 +37,14 @@ int main()
     yaksa_request_t request;
     uintptr_t actual_pack_bytes;
     rc = yaksa_ipack(input_matrix, 1, indexed, 0, pack_buf, 21 * sizeof(int), &actual_pack_bytes,
-                     NULL, &request);
+                     NULL, YAKSA_OP__REPLACE, &request);
     assert(rc == YAKSA_SUCCESS);
     rc = yaksa_request_wait(request);
     assert(rc == YAKSA_SUCCESS);
 
     uintptr_t actual_unpack_bytes;
     rc = yaksa_iunpack(pack_buf, 21 * sizeof(int), unpack_buf, 1, indexed, 0, &actual_unpack_bytes,
-                       NULL, &request);
+                       NULL, YAKSA_OP__REPLACE, &request);
     assert(rc == YAKSA_SUCCESS);
     rc = yaksa_request_wait(request);
     assert(rc == YAKSA_SUCCESS);

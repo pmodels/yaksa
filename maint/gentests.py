@@ -16,6 +16,11 @@ iters = {
     65536: 32,
 }
 types = [ "int", "short_int", "int:3+float:2", "int:3+double:2" ]
+oplist = {
+    "int": "int",
+    "short_int": "int",
+    "int:3+float:2": "float",
+    "int:3+double:2": "float" }
 seed = 1
 
 ##### simple tests generator
@@ -38,7 +43,7 @@ def gen_simple_tests(testlist):
     sys.stdout.write("done\n")
 
 ##### pack/iov tests generator
-def gen_pack_iov_tests(fn, testlist, extra_args = ""):
+def gen_pack_iov_tests(fn, testlist, add_ops, extra_args = ""):
     global seed
 
     segments = [ 1, 64 ]
@@ -70,15 +75,17 @@ def gen_pack_iov_tests(fn, testlist, extra_args = ""):
                               (fn, segment, ordering, overlap))
                 for count in counts:
                     for t in types:
-                        outstr = os.path.join(prefix, fn) + " "
-                        outstr += "-datatype %s " % t
-                        outstr += "-count %d " % count
-                        outstr += "-seed %d " % seed
+                        outstr = os.path.join(prefix, fn)
+                        outstr += " -datatype %s" % t
+                        outstr += " -count %d" % count
+                        outstr += " -seed %d" % seed
                         seed = seed + 1
-                        outstr += "-iters %d " % iters[count]
-                        outstr += "-segments %d " % segment
-                        outstr += "-ordering %s " % ordering
-                        outstr += "-overlap %s" % overlap
+                        outstr += " -iters %d" % iters[count]
+                        outstr += " -segments %d" % segment
+                        outstr += " -ordering %s" % ordering
+                        outstr += " -overlap %s" % overlap
+                        if (add_ops == True):
+                            outstr += " -oplist %s" % oplist[t]
                         if (extra_args != ""):
                             outstr += extra_args
                         outfile.write(outstr + "\n")
@@ -105,12 +112,12 @@ def gen_flatten_tests(testlist, extra_args = ""):
         sys.stdout.write("generating flatten (%s) tests ... " % extra_args)
     for count in counts:
         for t in types:
-            outstr = os.path.join(prefix, "flatten") + " "
-            outstr += "-datatype %s " % t
-            outstr += "-count %d " % count
-            outstr += "-seed %d " % seed
+            outstr = os.path.join(prefix, "flatten")
+            outstr += " -datatype %s" % t
+            outstr += " -count %d" % count
+            outstr += " -seed %d" % seed
             seed = seed + 1
-            outstr += "-iters %d" % iters[count]
+            outstr += " -iters %d" % iters[count]
             if (extra_args != ""):
                 outstr += extra_args
             outfile.write(outstr + "\n")
@@ -123,11 +130,11 @@ def gen_flatten_tests(testlist, extra_args = ""):
 if __name__ == '__main__':
     gen_simple_tests("test/simple/testlist.gen")
 
-    gen_pack_iov_tests("pack", "test/pack/testlist.gen")
-    gen_pack_iov_tests("pack", "test/pack/testlist.threads.gen", \
+    gen_pack_iov_tests("pack", "test/pack/testlist.gen", True)
+    gen_pack_iov_tests("pack", "test/pack/testlist.threads.gen", True, \
                        " -num-threads 4")
 
-    gen_pack_iov_tests("iov", "test/iov/testlist.gen")
-    gen_pack_iov_tests("iov", "test/iov/testlist.threads.gen", " -num-threads 4")
+    gen_pack_iov_tests("iov", "test/iov/testlist.gen", False)
+    gen_pack_iov_tests("iov", "test/iov/testlist.threads.gen", False, " -num-threads 4")
     gen_flatten_tests("test/flatten/testlist.gen")
     gen_flatten_tests("test/flatten/testlist.threads.gen", " -num-threads 4")
