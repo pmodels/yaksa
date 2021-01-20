@@ -51,22 +51,39 @@ def switcher_builtin_element(backend, OUTFILE, blklens, typelist, pupstr, key, v
             else:
                 yutils.display(OUTFILE, "default:\n")
             yutils.display(OUTFILE, "if (max_nesting_level >= %d) {\n" % nesting_level)
-            yutils.display(OUTFILE, "%s->pack = yaksuri_%si_pack_%s_blklen_%s_%s;\n" % (backend, backend, pupstr, blklen, val))
-            yutils.display(OUTFILE, "%s->unpack = yaksuri_%si_unpack_%s_blklen_%s_%s;\n" % (backend, backend, pupstr, blklen, val))
-            yutils.display(OUTFILE, "%s->name = \"yaksuri_%si_op_%s_blklen_%s_%s\";\n" % (backend, backend, pupstr, blklen, val))
+            if (backend == "ze"):
+                for op in type_ops[val]:
+                    yutils.display(OUTFILE, "%s->pack[YAKSA_OP__%s] = yaksuri_%si_pack_%s_%s_blklen_%s_%s;\n" % (backend, op, backend, op, pupstr, blklen, val))
+                    yutils.display(OUTFILE, "%s->unpack[YAKSA_OP__%s] = yaksuri_%si_unpack_%s_%s_blklen_%s_%s;\n" % (backend, op, backend, op, pupstr, blklen, val))
+                yutils.display(OUTFILE, "%s->name = \"yaksuri_%si_op_%s_blklen_%s_%s\";\n" % (backend, backend, pupstr, blklen, val))
+            else:
+                yutils.display(OUTFILE, "%s->pack = yaksuri_%si_pack_%s_blklen_%s_%s;\n" % (backend, backend, pupstr, blklen, val))
+                yutils.display(OUTFILE, "%s->unpack = yaksuri_%si_unpack_%s_blklen_%s_%s;\n" % (backend, backend, pupstr, blklen, val))
+                yutils.display(OUTFILE, "%s->name = \"yaksuri_%si_op_%s_blklen_%s_%s\";\n" % (backend, backend, pupstr, blklen, val))
             yutils.display(OUTFILE, "}\n")
             yutils.display(OUTFILE, "break;\n")
         yutils.display(OUTFILE, "}\n")
     elif (t != ""):
         yutils.display(OUTFILE, "if (max_nesting_level >= %d) {\n" % nesting_level)
-        yutils.display(OUTFILE, "%s->pack = yaksuri_%si_pack_%s_%s;\n" % (backend, backend, pupstr, val))
-        yutils.display(OUTFILE, "%s->unpack = yaksuri_%si_unpack_%s_%s;\n" % (backend, backend, pupstr, val))
-        yutils.display(OUTFILE, "%s->name = \"yaksuri_%si_op_%s_%s\";\n" % (backend, backend, pupstr, val))
+        if (backend == "ze"):
+                for op in type_ops[val]:
+                    yutils.display(OUTFILE, "%s->pack[YAKSA_OP__%s] = yaksuri_%si_pack_%s_%s_%s;\n" % (backend, op, backend, op, pupstr, val))
+                    yutils.display(OUTFILE, "%s->unpack[YAKSA_OP__%s] = yaksuri_%si_unpack_%s_%s_%s;\n" % (backend, op, backend, op, pupstr, val))
+                yutils.display(OUTFILE, "%s->name = \"yaksuri_%si_op_%s_%s\";\n" % (backend, backend, pupstr, val))
+        else:
+            yutils.display(OUTFILE, "%s->pack = yaksuri_%si_pack_%s_%s;\n" % (backend, backend, pupstr, val))
+            yutils.display(OUTFILE, "%s->unpack = yaksuri_%si_unpack_%s_%s;\n" % (backend, backend, pupstr, val))
+            yutils.display(OUTFILE, "%s->name = \"yaksuri_%si_op_%s_%s\";\n" % (backend, backend, pupstr, val))
         yutils.display(OUTFILE, "}\n")
     else:
-        yutils.display(OUTFILE, "%s->pack = yaksuri_%si_pack_%s;\n" % (backend, backend, val))
-        yutils.display(OUTFILE, "%s->unpack = yaksuri_%si_unpack_%s;\n" % (backend, backend, val))
-        yutils.display(OUTFILE, "%s->name = \"yaksuri_%si_op_%s\";\n" % (backend, backend, val))
+        if (backend == "ze"):
+                for op in type_ops[val]:
+                    yutils.display(OUTFILE, "%s->pack[YAKSA_OP__%s] = yaksuri_%si_pack_%s_%s;\n" % (backend, op, backend, op, val))
+                    yutils.display(OUTFILE, "%s->unpack[YAKSA_OP__%s] = yaksuri_%si_unpack_%s_%s;\n" % (backend, op, backend, op, val))
+                yutils.display(OUTFILE, "%s->name = \"yaksuri_%si_op_%s\";\n" % (backend, backend, val))
+        else:
+            yutils.display(OUTFILE, "%s->pack = yaksuri_%si_pack_%s;\n" % (backend, backend, val))
+            yutils.display(OUTFILE, "%s->unpack = yaksuri_%si_unpack_%s;\n" % (backend, backend, val))
 
     if (t != ""):
         typelist.append(t)
@@ -126,9 +143,16 @@ def populate_pupfns(pup_max_nesting, backend, blklens, builtin_types, builtin_ma
     yutils.display(OUTFILE, "yaksuri_%si_type_s *%s = (yaksuri_%si_type_s *) type->backend.%s.priv;\n" \
                    % (backend, backend, backend, backend))
     yutils.display(OUTFILE, "\n")
-    yutils.display(OUTFILE, "%s->pack = YAKSURI_KERNEL_NULL;\n" % backend)
-    yutils.display(OUTFILE, "%s->unpack = YAKSURI_KERNEL_NULL;\n" % backend)
-    yutils.display(OUTFILE, "\n")
+    if (backend == "ze"):
+        yutils.display(OUTFILE, "for (int i = 0; i < YAKSA_OP__LAST; i++) {\n")
+        yutils.display(OUTFILE, "   %s->pack[i] = YAKSURI_KERNEL_NULL;\n" % backend)
+        yutils.display(OUTFILE, "   %s->unpack[i] = YAKSURI_KERNEL_NULL;\n" % backend)
+        yutils.display(OUTFILE, "}\n")
+    else:
+        yutils.display(OUTFILE, "%s->pack = YAKSURI_KERNEL_NULL;\n" % backend)
+        yutils.display(OUTFILE, "%s->unpack = YAKSURI_KERNEL_NULL;\n" % backend)
+        yutils.display(OUTFILE, "\n")
+
     yutils.display(OUTFILE, "switch (type->kind) {\n")
     for dtype1 in derived_types:
         yutils.display(OUTFILE, "case YAKSI_TYPE_KIND__%s:\n" % dtype1.upper())
