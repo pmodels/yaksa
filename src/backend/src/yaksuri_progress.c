@@ -18,7 +18,7 @@ static yaksuri_request_s *pending_reqs = NULL;
 static pthread_mutex_t progress_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int icopy(yaksuri_gpudriver_id_e id, const void *inbuf, void *outbuf, uintptr_t bytes,
-                 yaksi_info_s * info, int device)
+                 yaksi_info_s * info, yaksa_op_t op, int device)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -26,7 +26,8 @@ static int icopy(yaksuri_gpudriver_id_e id, const void *inbuf, void *outbuf, uin
     rc = yaksi_type_get(YAKSA_TYPE__BYTE, &byte_type);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    rc = yaksuri_global.gpudriver[id].hooks->ipack(inbuf, outbuf, bytes, byte_type, info, device);
+    rc = yaksuri_global.gpudriver[id].hooks->ipack(inbuf, outbuf, bytes, byte_type, info, op,
+                                                   device);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
@@ -36,11 +37,11 @@ static int icopy(yaksuri_gpudriver_id_e id, const void *inbuf, void *outbuf, uin
 }
 
 static int ipack(yaksuri_gpudriver_id_e id, const void *inbuf, void *outbuf, uintptr_t count,
-                 yaksi_type_s * type, yaksi_info_s * info, int device)
+                 yaksi_type_s * type, yaksi_info_s * info, yaksa_op_t op, int device)
 {
     int rc = YAKSA_SUCCESS;
 
-    rc = yaksuri_global.gpudriver[id].hooks->ipack(inbuf, outbuf, count, type, info, device);
+    rc = yaksuri_global.gpudriver[id].hooks->ipack(inbuf, outbuf, count, type, info, op, device);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
@@ -50,11 +51,11 @@ static int ipack(yaksuri_gpudriver_id_e id, const void *inbuf, void *outbuf, uin
 }
 
 static int iunpack(yaksuri_gpudriver_id_e id, const void *inbuf, void *outbuf, uintptr_t count,
-                   yaksi_type_s * type, yaksi_info_s * info, int device)
+                   yaksi_type_s * type, yaksi_info_s * info, yaksa_op_t op, int device)
 {
     int rc = YAKSA_SUCCESS;
 
-    rc = yaksuri_global.gpudriver[id].hooks->iunpack(inbuf, outbuf, count, type, info, device);
+    rc = yaksuri_global.gpudriver[id].hooks->iunpack(inbuf, outbuf, count, type, info, op, device);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
@@ -213,7 +214,7 @@ static int pack_d2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subr
             (*chunk)->count_offset * subreq->u.multiple.type->extent;
 
         rc = ipack(id, sbuf, d_buf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
-                   reqpriv->request->backend.inattr.device);
+                   subreq->u.multiple.op, reqpriv->request->backend.inattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         /* second copy the data into the target device */
@@ -222,7 +223,7 @@ static int pack_d2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subr
             (*chunk)->count_offset * subreq->u.multiple.type->size;
 
         rc = icopy(id, d_buf, dbuf, (*chunk)->count * subreq->u.multiple.type->size, reqpriv->info,
-                   reqpriv->request->backend.inattr.device);
+                   subreq->u.multiple.op, reqpriv->request->backend.inattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         rc = event_record(id, reqpriv->request->backend.inattr.device, &(*chunk)->event);
@@ -271,12 +272,12 @@ static int pack_d2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subr
             (*chunk)->count_offset * subreq->u.multiple.type->extent;
 
         rc = ipack(id, sbuf, d_buf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
-                   reqpriv->request->backend.inattr.device);
+                   subreq->u.multiple.op, reqpriv->request->backend.inattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         /* second copy the data into the temporary host buffer */
         rc = icopy(id, d_buf, rh_buf, (*chunk)->count * subreq->u.multiple.type->size,
-                   reqpriv->info, reqpriv->request->backend.inattr.device);
+                   reqpriv->info, subreq->u.multiple.op, reqpriv->request->backend.inattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         /* third DMA from the host temporary buffer to the target device */
@@ -289,7 +290,7 @@ static int pack_d2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subr
             (*chunk)->count_offset * subreq->u.multiple.type->size;
 
         rc = icopy(id, rh_buf, dbuf, (*chunk)->count * subreq->u.multiple.type->size,
-                   reqpriv->info, reqpriv->request->backend.outattr.device);
+                   reqpriv->info, subreq->u.multiple.op, reqpriv->request->backend.outattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         rc = event_record(id, reqpriv->request->backend.outattr.device, &(*chunk)->event);
@@ -336,7 +337,7 @@ static int pack_d2rh_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * sub
         (*chunk)->count_offset * subreq->u.multiple.type->extent;
 
     rc = ipack(id, sbuf, d_buf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
-               reqpriv->request->backend.inattr.device);
+               subreq->u.multiple.op, reqpriv->request->backend.inattr.device);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     /* second copy the data into the destination buffer */
@@ -345,7 +346,7 @@ static int pack_d2rh_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * sub
         (char *) subreq->u.multiple.outbuf + (*chunk)->count_offset * subreq->u.multiple.type->size;
 
     rc = icopy(id, d_buf, dbuf, (*chunk)->count * subreq->u.multiple.type->size, reqpriv->info,
-               reqpriv->request->backend.inattr.device);
+               subreq->u.multiple.op, reqpriv->request->backend.inattr.device);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     rc = event_record(id, reqpriv->request->backend.inattr.device, &(*chunk)->event);
@@ -408,12 +409,12 @@ static int pack_d2urh_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * su
         (*chunk)->count_offset * subreq->u.multiple.type->extent;
 
     rc = ipack(id, sbuf, d_buf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
-               reqpriv->request->backend.inattr.device);
+               subreq->u.multiple.op, reqpriv->request->backend.inattr.device);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     /* second copy the data into the temporary host buffer */
     rc = icopy(id, d_buf, rh_buf, (*chunk)->count * subreq->u.multiple.type->size,
-               reqpriv->info, reqpriv->request->backend.inattr.device);
+               reqpriv->info, subreq->u.multiple.op, reqpriv->request->backend.inattr.device);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     rc = event_record(id, reqpriv->request->backend.inattr.device, &(*chunk)->event);
@@ -437,7 +438,8 @@ static int pack_d2urh_release(yaksuri_request_s * reqpriv, yaksuri_subreq_s * su
     char *dbuf;
     dbuf = (char *) subreq->u.multiple.outbuf + chunk->count_offset * subreq->u.multiple.type->size;
     rc = yaksuri_seq_ipack(chunk->tmpbufs[1].buf, dbuf,
-                           chunk->count * subreq->u.multiple.type->size, byte_type, reqpriv->info);
+                           chunk->count * subreq->u.multiple.type->size, byte_type,
+                           reqpriv->info, subreq->u.multiple.op);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     rc = simple_release(reqpriv, subreq, chunk);
@@ -480,7 +482,8 @@ static int pack_h2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subr
     sbuf = (const char *) subreq->u.multiple.inbuf +
         (*chunk)->count_offset * subreq->u.multiple.type->extent;
 
-    rc = yaksuri_seq_ipack(sbuf, rh_buf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info);
+    rc = yaksuri_seq_ipack(sbuf, rh_buf, (*chunk)->count, subreq->u.multiple.type,
+                           reqpriv->info, subreq->u.multiple.op);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     /* second copy the data into the target device */
@@ -489,7 +492,7 @@ static int pack_h2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subr
         (char *) subreq->u.multiple.outbuf + (*chunk)->count_offset * subreq->u.multiple.type->size;
 
     rc = icopy(id, rh_buf, dbuf, (*chunk)->count * subreq->u.multiple.type->size, reqpriv->info,
-               reqpriv->request->backend.outattr.device);
+               subreq->u.multiple.op, reqpriv->request->backend.outattr.device);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     rc = event_record(id, reqpriv->request->backend.outattr.device, &(*chunk)->event);
@@ -544,7 +547,7 @@ static int unpack_d2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * su
             (*chunk)->count_offset * subreq->u.multiple.type->size;
 
         rc = icopy(id, sbuf, d_buf, (*chunk)->count * subreq->u.multiple.type->size, reqpriv->info,
-                   reqpriv->request->backend.inattr.device);
+                   subreq->u.multiple.op, reqpriv->request->backend.inattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         /* second unpack the data into the destination buffer */
@@ -557,7 +560,7 @@ static int unpack_d2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * su
             (*chunk)->count_offset * subreq->u.multiple.type->extent;
 
         rc = iunpack(id, d_buf, dbuf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
-                     reqpriv->request->backend.outattr.device);
+                     subreq->u.multiple.op, reqpriv->request->backend.outattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         rc = event_record(id, reqpriv->request->backend.outattr.device, &(*chunk)->event);
@@ -606,7 +609,7 @@ static int unpack_d2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * su
             (*chunk)->count_offset * subreq->u.multiple.type->size;
 
         rc = icopy(id, sbuf, rh_buf, (*chunk)->count * subreq->u.multiple.type->size, reqpriv->info,
-                   reqpriv->request->backend.inattr.device);
+                   subreq->u.multiple.op, reqpriv->request->backend.inattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         /* second copy the data from the temporary host buffer into the
@@ -616,7 +619,7 @@ static int unpack_d2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * su
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         rc = icopy(id, rh_buf, d_buf, (*chunk)->count * subreq->u.multiple.type->size,
-                   reqpriv->info, reqpriv->request->backend.outattr.device);
+                   reqpriv->info, subreq->u.multiple.op, reqpriv->request->backend.outattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         /* third unpack from the temporary device buffer to the destination buffer */
@@ -625,7 +628,8 @@ static int unpack_d2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * su
             (*chunk)->count_offset * subreq->u.multiple.type->extent;
 
         rc = iunpack(id, d_buf, dbuf, (*chunk)->count, subreq->u.multiple.type,
-                     reqpriv->info, reqpriv->request->backend.outattr.device);
+                     reqpriv->info, subreq->u.multiple.op,
+                     reqpriv->request->backend.outattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         rc = event_record(id, reqpriv->request->backend.outattr.device, &(*chunk)->event);
@@ -673,7 +677,7 @@ static int unpack_rh2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * s
         (*chunk)->count_offset * subreq->u.multiple.type->size;
 
     rc = icopy(id, sbuf, d_buf, (*chunk)->count * subreq->u.multiple.type->size, reqpriv->info,
-               reqpriv->request->backend.outattr.device);
+               subreq->u.multiple.op, reqpriv->request->backend.outattr.device);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     /* second unpack the data into the destination buffer */
@@ -682,7 +686,7 @@ static int unpack_rh2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * s
         (*chunk)->count_offset * subreq->u.multiple.type->extent;
 
     rc = iunpack(id, d_buf, dbuf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
-                 reqpriv->request->backend.outattr.device);
+                 subreq->u.multiple.op, reqpriv->request->backend.outattr.device);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     rc = event_record(id, reqpriv->request->backend.outattr.device, &(*chunk)->event);
@@ -749,13 +753,13 @@ static int unpack_urh2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * 
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     rc = yaksuri_seq_ipack(sbuf, rh_buf, (*chunk)->count * subreq->u.multiple.type->size,
-                           byte_type, reqpriv->info);
+                           byte_type, reqpriv->info, subreq->u.multiple.op);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     /* second copy the data from the origin buffer into the temporary
      * buffer */
     rc = icopy(id, rh_buf, d_buf, (*chunk)->count * subreq->u.multiple.type->size, reqpriv->info,
-               reqpriv->request->backend.outattr.device);
+               subreq->u.multiple.op, reqpriv->request->backend.outattr.device);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     /* third unpack the data into the destination buffer */
@@ -764,7 +768,7 @@ static int unpack_urh2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * 
         (*chunk)->count_offset * subreq->u.multiple.type->extent;
 
     rc = iunpack(id, d_buf, dbuf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
-                 reqpriv->request->backend.outattr.device);
+                 subreq->u.multiple.op, reqpriv->request->backend.outattr.device);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     rc = event_record(id, reqpriv->request->backend.outattr.device, &(*chunk)->event);
@@ -808,7 +812,7 @@ static int unpack_d2h_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * su
         (*chunk)->count_offset * subreq->u.multiple.type->size;
 
     rc = icopy(id, sbuf, rh_buf, (*chunk)->count * subreq->u.multiple.type->size, reqpriv->info,
-               reqpriv->request->backend.inattr.device);
+               subreq->u.multiple.op, reqpriv->request->backend.inattr.device);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     rc = event_record(id, reqpriv->request->backend.inattr.device, &(*chunk)->event);
@@ -829,7 +833,7 @@ static int unpack_d2h_release(yaksuri_request_s * reqpriv, yaksuri_subreq_s * su
     dbuf =
         (char *) subreq->u.multiple.outbuf + chunk->count_offset * subreq->u.multiple.type->extent;
     rc = yaksuri_seq_iunpack(chunk->tmpbufs[0].buf, dbuf, chunk->count, subreq->u.multiple.type,
-                             reqpriv->info);
+                             reqpriv->info, subreq->u.multiple.op);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     rc = simple_release(reqpriv, subreq, chunk);
@@ -842,7 +846,7 @@ static int unpack_d2h_release(yaksuri_request_s * reqpriv, yaksuri_subreq_s * su
 }
 
 int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                             yaksi_info_s * info, yaksi_request_s * request)
+                             yaksi_info_s * info, yaksa_op_t op, yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_request_s *reqpriv = (yaksuri_request_s *) request->backend.priv;
@@ -856,7 +860,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
 
     /* if the GPU reqpriv cannot support this type, return */
     bool is_supported;
-    rc = yaksuri_global.gpudriver[id].hooks->pup_is_supported(type, &is_supported);
+    rc = yaksuri_global.gpudriver[id].hooks->pup_is_supported(type, op, &is_supported);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     if (!is_supported) {
@@ -868,7 +872,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
     subreq = (yaksuri_subreq_s *) malloc(sizeof(yaksuri_subreq_s));
 
     int (*pupfn) (yaksuri_gpudriver_id_e id, const void *inbuf, void *outbuf, uintptr_t count,
-                  yaksi_type_s * type, yaksi_info_s * info, int device);
+                  yaksi_type_s * type, yaksi_info_s * info, yaksa_op_t op, int device);
     if (reqpriv->optype == YAKSURI_OPTYPE__PACK) {
         pupfn = ipack;
     } else {
@@ -887,7 +891,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
             request->backend.inattr.device == request->backend.outattr.device) {
 
             subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
-            rc = pupfn(id, inbuf, outbuf, count, type, info, request->backend.inattr.device);
+            rc = pupfn(id, inbuf, outbuf, count, type, info, op, request->backend.inattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             rc = event_record(id, request->backend.inattr.device, &subreq->u.single.event);
@@ -901,7 +905,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
              request->backend.inattr.device == request->backend.outattr.device)) {
 
             subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
-            rc = pupfn(id, inbuf, outbuf, count, type, info, request->backend.inattr.device);
+            rc = pupfn(id, inbuf, outbuf, count, type, info, op, request->backend.inattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             rc = event_record(id, request->backend.inattr.device, &subreq->u.single.event);
@@ -914,7 +918,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
             (type->is_contig || type->size / type->num_contig >= threshold)) {
 
             subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
-            rc = pupfn(id, inbuf, outbuf, count, type, info, request->backend.inattr.device);
+            rc = pupfn(id, inbuf, outbuf, count, type, info, op, request->backend.inattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             rc = event_record(id, request->backend.inattr.device, &subreq->u.single.event);
@@ -928,7 +932,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
             (type->is_contig || type->size / type->num_contig >= threshold)) {
 
             subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
-            rc = pupfn(id, inbuf, outbuf, count, type, info, request->backend.outattr.device);
+            rc = pupfn(id, inbuf, outbuf, count, type, info, op, request->backend.outattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             rc = event_record(id, request->backend.outattr.device, &subreq->u.single.event);
@@ -943,7 +947,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
              request->backend.inattr.device == request->backend.outattr.device)) {
 
             subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
-            rc = pupfn(id, inbuf, outbuf, count, type, info, request->backend.outattr.device);
+            rc = pupfn(id, inbuf, outbuf, count, type, info, op, request->backend.outattr.device);
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             rc = event_record(id, request->backend.outattr.device, &subreq->u.single.event);
@@ -967,6 +971,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
     subreq->u.multiple.outbuf = outbuf;
     subreq->u.multiple.count = count;
     subreq->u.multiple.type = type;
+    subreq->u.multiple.op = op;
     subreq->u.multiple.issued_count = 0;
     subreq->u.multiple.chunks = NULL;
 

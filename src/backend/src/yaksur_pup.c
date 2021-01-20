@@ -10,7 +10,7 @@
 #include "yaksuri.h"
 
 static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                yaksi_info_s * info, yaksi_request_s * request)
+                yaksi_info_s * info, yaksa_op_t op, yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_request_s *reqpriv = (yaksuri_request_s *) request->backend.priv;
@@ -62,22 +62,22 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
     /* if this can be handled by the CPU, wrap it up */
     if (reqpriv->gpudriver_id == YAKSURI_GPUDRIVER_ID__LAST) {
         bool is_supported;
-        rc = yaksuri_seq_pup_is_supported(type, &is_supported);
+        rc = yaksuri_seq_pup_is_supported(type, op, &is_supported);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         if (!is_supported) {
             rc = YAKSA_ERR__NOT_SUPPORTED;
         } else {
             if (reqpriv->optype == YAKSURI_OPTYPE__PACK) {
-                rc = yaksuri_seq_ipack(inbuf, outbuf, count, type, info);
+                rc = yaksuri_seq_ipack(inbuf, outbuf, count, type, info, op);
                 YAKSU_ERR_CHECK(rc, fn_fail);
             } else {
-                rc = yaksuri_seq_iunpack(inbuf, outbuf, count, type, info);
+                rc = yaksuri_seq_iunpack(inbuf, outbuf, count, type, info, op);
                 YAKSU_ERR_CHECK(rc, fn_fail);
             }
         }
     } else {
-        rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, info, request);
+        rc = yaksuri_progress_enqueue(inbuf, outbuf, count, type, info, op, request);
         YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
@@ -88,13 +88,13 @@ static int ipup(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s *
 }
 
 int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                 yaksi_info_s * info, yaksi_request_s * request)
+                 yaksi_info_s * info, yaksa_op_t op, yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_request_s *reqpriv = (yaksuri_request_s *) request->backend.priv;
 
     reqpriv->optype = YAKSURI_OPTYPE__PACK;
-    rc = ipup(inbuf, outbuf, count, type, info, request);
+    rc = ipup(inbuf, outbuf, count, type, info, op, request);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
@@ -104,13 +104,13 @@ int yaksur_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s 
 }
 
 int yaksur_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                   yaksi_info_s * info, yaksi_request_s * request)
+                   yaksi_info_s * info, yaksa_op_t op, yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_request_s *reqpriv = (yaksuri_request_s *) request->backend.priv;
 
     reqpriv->optype = YAKSURI_OPTYPE__UNPACK;
-    rc = ipup(inbuf, outbuf, count, type, info, request);
+    rc = ipup(inbuf, outbuf, count, type, info, op, request);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:

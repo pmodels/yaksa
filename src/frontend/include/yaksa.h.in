@@ -25,6 +25,30 @@
 
 /** @file yaksa.h */
 
+/*! \addtogroup yaksa-ops Yaksa Reduction Operations
+  * @{
+  */
+
+typedef uint64_t yaksa_op_t;
+
+ /**
+  * \brief yaksa builtin reduction ops
+  */
+#define YAKSA_OP__MAX                                 ((yaksa_op_t) 0)
+#define YAKSA_OP__MIN                                 ((yaksa_op_t) 1)
+#define YAKSA_OP__SUM                                 ((yaksa_op_t) 2)
+#define YAKSA_OP__PROD                                ((yaksa_op_t) 3)
+#define YAKSA_OP__LAND                                ((yaksa_op_t) 4)
+#define YAKSA_OP__BAND                                ((yaksa_op_t) 5)
+#define YAKSA_OP__LOR                                 ((yaksa_op_t) 6)
+#define YAKSA_OP__BOR                                 ((yaksa_op_t) 7)
+#define YAKSA_OP__LXOR                                ((yaksa_op_t) 8)
+#define YAKSA_OP__BXOR                                ((yaksa_op_t) 9)
+#define YAKSA_OP__REPLACE                             ((yaksa_op_t) 10)
+
+ /*! @} */
+
+
 /*! \addtogroup yaksa-types Yaksa Builtin Datatypes
  * @{
  */
@@ -457,7 +481,7 @@ int yaksa_request_wait(yaksa_request_t request);
  */
 int yaksa_ipack(const void *inbuf, uintptr_t incount, yaksa_type_t type, uintptr_t inoffset,
                 void *outbuf, uintptr_t max_pack_bytes, uintptr_t * actual_pack_bytes,
-                yaksa_info_t info, yaksa_request_t * request);
+                yaksa_info_t info, yaksa_op_t op, yaksa_request_t * request);
 
 /*!
  * \brief unpacks data from a contiguous buffer into a buffer represented by the (incount, type) tuple
@@ -476,7 +500,7 @@ int yaksa_ipack(const void *inbuf, uintptr_t incount, yaksa_type_t type, uintptr
  */
 int yaksa_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t outcount,
                   yaksa_type_t type, uintptr_t outoffset, uintptr_t * actual_unpack_bytes,
-                  yaksa_info_t info, yaksa_request_t * request);
+                  yaksa_info_t info, yaksa_op_t op, yaksa_request_t * request);
 
 /*!
  * \brief gets the number of contiguous segments in the (count, type) tuple

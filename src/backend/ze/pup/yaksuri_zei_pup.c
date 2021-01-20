@@ -146,12 +146,13 @@ static int get_thread_block_dims(uint64_t count, yaksi_type_s * type, unsigned i
     return rc;
 }
 
-int yaksuri_zei_pup_is_supported(yaksi_type_s * type, bool * is_supported)
+int yaksuri_zei_pup_is_supported(yaksi_type_s * type, yaksa_op_t op, bool * is_supported)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_zei_type_s *ze_type = (yaksuri_zei_type_s *) type->backend.ze.priv;
 
-    if (type->is_contig || (ze_type->pack != YAKSURI_KERNEL_NULL && ze_type->pack_kernels))
+    if ((type->is_contig && op == YAKSA_OP__REPLACE) ||
+        (ze_type->pack != YAKSURI_KERNEL_NULL && ze_type->pack_kernels))
         *is_supported = true;
     else
         *is_supported = false;
