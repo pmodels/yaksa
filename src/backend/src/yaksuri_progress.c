@@ -24,31 +24,58 @@ static bool buf_is_aligned(const void *buf, yaksi_type_s * type)
 
 static yaksi_type_s *get_base_type(yaksi_type_s * type)
 {
+    int rc = YAKSA_SUCCESS;
+    yaksi_type_s *ret = NULL;
+
     switch (type->kind) {
         case YAKSI_TYPE_KIND__BUILTIN:
-            return type;
+            ret = type;
+            break;
 
         case YAKSI_TYPE_KIND__CONTIG:
-            return get_base_type(type->u.contig.child);
+            ret = get_base_type(type->u.contig.child);
+            break;
 
         case YAKSI_TYPE_KIND__RESIZED:
-            return get_base_type(type->u.resized.child);
+            ret = get_base_type(type->u.resized.child);
+            break;
 
         case YAKSI_TYPE_KIND__HVECTOR:
-            return get_base_type(type->u.hvector.child);
+            ret = get_base_type(type->u.hvector.child);
+            break;
 
         case YAKSI_TYPE_KIND__BLKHINDX:
-            return get_base_type(type->u.blkhindx.child);
+            ret = get_base_type(type->u.blkhindx.child);
+            break;
 
         case YAKSI_TYPE_KIND__HINDEXED:
-            return get_base_type(type->u.hindexed.child);
+            ret = get_base_type(type->u.hindexed.child);
+            break;
 
         case YAKSI_TYPE_KIND__SUBARRAY:
-            return get_base_type(type->u.subarray.primary);
+            ret = get_base_type(type->u.subarray.primary);
+            break;
+
+        case YAKSI_TYPE_KIND__STRUCT:
+            /* structs do not have a single base type, so we treat it
+             * as a collection of bytes.  this will only work for
+             * contiguous + REPLACE operations, but those are the only
+             * cases that we should be seeing struct types here
+             * anyway. */
+            assert(type->is_contig);
+            rc = yaksi_type_get(YAKSA_TYPE__BYTE, &ret);
+            YAKSU_ERR_CHECK(rc, fn_fail);
+            break;
 
         default:
-            return NULL;
+            ret = NULL;
+            break;
     }
+
+  fn_exit:
+    return ret;
+  fn_fail:
+    goto fn_exit;
 }
 
 static int icopy(yaksuri_gpudriver_id_e id, const void *inbuf, void *outbuf, uintptr_t count,
