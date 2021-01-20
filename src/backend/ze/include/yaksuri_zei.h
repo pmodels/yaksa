@@ -97,10 +97,10 @@ typedef struct {
 } yaksuri_zei_event_s;
 
 typedef struct yaksuri_zei_type_s {
-    int pack;
-    int unpack;
-    ze_kernel_handle_t *pack_kernels;
-    ze_kernel_handle_t *unpack_kernels;
+    int pack[YAKSA_OP__LAST];
+    int unpack[YAKSA_OP__LAST];
+    ze_kernel_handle_t *pack_kernels[YAKSA_OP__LAST];
+    ze_kernel_handle_t *unpack_kernels[YAKSA_OP__LAST];
     yaksuri_zei_md_s **md;
     pthread_mutex_t mdmutex;
     uintptr_t num_elements;
@@ -142,9 +142,9 @@ int yaksuri_zei_md_alloc(yaksi_type_s * type, int dev_id);
 int yaksuri_zei_populate_pupfns(yaksi_type_s * type);
 
 int yaksuri_zei_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                      yaksi_info_s * info, int target);
+                      yaksi_info_s * info, yaksa_op_t op, int target);
 int yaksuri_zei_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                        yaksi_info_s * info, int target);
+                        yaksi_info_s * info, yaksa_op_t op, int target);
 int yaksuri_zei_flush_all(void);
 int yaksuri_zei_pup_is_supported(yaksi_type_s * type, yaksa_op_t op, bool * is_supported);
 uintptr_t yaksuri_zei_get_iov_pack_threshold(yaksi_info_s * info);

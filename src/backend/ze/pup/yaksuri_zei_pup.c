@@ -152,7 +152,7 @@ int yaksuri_zei_pup_is_supported(yaksi_type_s * type, yaksa_op_t op, bool * is_s
     yaksuri_zei_type_s *ze_type = (yaksuri_zei_type_s *) type->backend.ze.priv;
 
     if ((type->is_contig && op == YAKSA_OP__REPLACE) ||
-        (ze_type->pack != YAKSURI_KERNEL_NULL && ze_type->pack_kernels))
+        (ze_type->pack[op] != YAKSURI_KERNEL_NULL && ze_type->pack_kernels[op]))
         *is_supported = true;
     else
         *is_supported = false;
@@ -210,7 +210,7 @@ uintptr_t yaksuri_zei_get_iov_unpack_threshold(yaksi_info_s * info)
 }
 
 int yaksuri_zei_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                      yaksi_info_s * info, int target)
+                      yaksi_info_s * info, yaksa_op_t op, int target)
 {
     int rc = YAKSA_SUCCESS;
     ze_event_handle_t ze_event;
@@ -234,7 +234,7 @@ int yaksuri_zei_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_ty
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     /* shortcut for contiguous types */
-    if (type->is_contig) {
+    if (op == YAKSA_OP__REPLACE && type->is_contig) {
         rc = create_ze_event(target, &ze_event, &ze_event_idx);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
@@ -243,7 +243,7 @@ int yaksuri_zei_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_ty
                                           (const char *) inbuf + type->true_lb, count * type->size,
                                           ze_event, prev_event ? 1 : 0, &prev_event);
         YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
-    } else if (type->size / type->num_contig >= iov_pack_threshold) {
+    } else if (op == YAKSA_OP__REPLACE && type->size / type->num_contig >= iov_pack_threshold) {
         struct iovec iov[MAX_IOV_LENGTH];
         char *dbuf = (char *) outbuf;
         uintptr_t offset = 0;
@@ -277,18 +277,18 @@ int yaksuri_zei_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_ty
         rc = create_ze_event(target, &ze_event, &ze_event_idx);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
-        assert(ze_type->pack_kernels && ze_type->pack_kernels[target]);
+        assert(ze_type->pack_kernels[op] && ze_type->pack_kernels[op][target]);
         ze_group_count_t launchArgs = { n_blocks_x, n_blocks_y, n_blocks_z };
 
         void *in_addr = (char *) inbuf + type->true_lb;
-        rc = yaksuri_zei_prep_kernel(ze_type->pack_kernels[target], in_addr, outbuf, count,
+        rc = yaksuri_zei_prep_kernel(ze_type->pack_kernels[op][target], in_addr, outbuf, count,
                                      ze_type->md[target]);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         yaksuri_zei_type_make_resident(type, target);
 
         zerr =
-            zeCommandListAppendLaunchKernel(command_list, ze_type->pack_kernels[target],
+            zeCommandListAppendLaunchKernel(command_list, ze_type->pack_kernels[op][target],
                                             &launchArgs, ze_event, prev_event ? 1 : 0, &prev_event);
         YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
     }
@@ -311,7 +311,7 @@ int yaksuri_zei_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_ty
 }
 
 int yaksuri_zei_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                        yaksi_info_s * info, int target)
+                        yaksi_info_s * info, yaksa_op_t op, int target)
 {
     int rc = YAKSA_SUCCESS;
     ze_event_handle_t ze_event;
@@ -335,7 +335,7 @@ int yaksuri_zei_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     /* shortcut for contiguous types */
-    if (type->is_contig) {
+    if (op == YAKSA_OP__REPLACE && type->is_contig) {
         rc = create_ze_event(target, &ze_event, &ze_event_idx);
         YAKSU_ERR_CHECK(rc, fn_fail);
         /* ze performance is optimized when we synchronize on the
@@ -345,7 +345,7 @@ int yaksuri_zei_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
                                           count * type->size, ze_event, prev_event ? 1 : 0,
                                           &prev_event);
         YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
-    } else if (type->size / type->num_contig >= iov_unpack_threshold) {
+    } else if (op == YAKSA_OP__REPLACE && type->size / type->num_contig >= iov_unpack_threshold) {
         struct iovec iov[MAX_IOV_LENGTH];
         const char *sbuf = (const char *) inbuf;
         uintptr_t offset = 0;
@@ -377,7 +377,7 @@ int yaksuri_zei_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
         rc = get_thread_block_dims(count, type, &n_threads, &n_blocks_x, &n_blocks_y, &n_blocks_z);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
-        assert(ze_type->unpack_kernels && ze_type->unpack_kernels[target]);
+        assert(ze_type->unpack_kernels[op] && ze_type->unpack_kernels[op][target]);
 
         rc = create_ze_event(target, &ze_event, &ze_event_idx);
         YAKSU_ERR_CHECK(rc, fn_fail);
@@ -385,14 +385,14 @@ int yaksuri_zei_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
         ze_group_count_t launchArgs = { n_blocks_x, n_blocks_y, n_blocks_z };
 
         void *out_addr = (char *) outbuf + type->true_lb;
-        rc = yaksuri_zei_prep_kernel(ze_type->unpack_kernels[target], inbuf, out_addr, count,
+        rc = yaksuri_zei_prep_kernel(ze_type->unpack_kernels[op][target], inbuf, out_addr, count,
                                      ze_type->md[target]);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         yaksuri_zei_type_make_resident(type, target);
 
         zerr =
-            zeCommandListAppendLaunchKernel(command_list, ze_type->unpack_kernels[target],
+            zeCommandListAppendLaunchKernel(command_list, ze_type->unpack_kernels[op][target],
                                             &launchArgs, ze_event, prev_event ? 1 : 0, &prev_event);
         YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
     }
