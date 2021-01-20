@@ -34,7 +34,7 @@ typedef struct {
 } yaksuri_global_s;
 extern yaksuri_global_s yaksuri_global;
 
-#define YAKSURI_SUBREQ_CHUNK_MAX_TMPBUFS (3)
+#define YAKSURI_SUBREQ_CHUNK_MAX_TMPBUFS (4)
 
 typedef struct yaksuri_tmpbuf {
     void *buf;

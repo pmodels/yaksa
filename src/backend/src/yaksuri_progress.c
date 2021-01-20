@@ -17,6 +17,11 @@
 static yaksuri_request_s *pending_reqs = NULL;
 static pthread_mutex_t progress_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static bool buf_is_aligned(const void *buf, yaksi_type_s * type)
+{
+    return !((uintptr_t) buf % type->alignment);
+}
+
 static yaksi_type_s *get_base_type(yaksi_type_s * type)
 {
     switch (type->kind) {
@@ -247,24 +252,34 @@ static int pack_d2d_p2p_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * 
 
     *chunk = NULL;
 
+    void *base_addr = (char *) subreq->u.multiple.outbuf + subreq->u.multiple.type->true_lb;
+
     if (op == YAKSA_OP__REPLACE) {
         int devices[] = { reqpriv->request->backend.inattr.device };
         rc = alloc_chunk(id, reqpriv, subreq, 1, devices, chunk);
         YAKSU_ERR_CHECK(rc, fn_fail);
-    } else {
+    } else if (buf_is_aligned(base_addr, subreq->u.multiple.type)) {
         int devices[] = { reqpriv->request->backend.inattr.device,
             reqpriv->request->backend.outattr.device
         };
         rc = alloc_chunk(id, reqpriv, subreq, 2, devices, chunk);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+    } else {
+        int devices[] = { reqpriv->request->backend.inattr.device,
+            reqpriv->request->backend.outattr.device,
+            reqpriv->request->backend.outattr.device
+        };
+        rc = alloc_chunk(id, reqpriv, subreq, 3, devices, chunk);
         YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
     if (*chunk == NULL)
         goto fn_exit;
 
-    void *src_d_buf, *dst_d_buf;
+    void *src_d_buf, *dst_d_buf, *dst_d_buf2;
     src_d_buf = (*chunk)->tmpbufs[0].buf;
     dst_d_buf = (*chunk)->tmpbufs[1].buf;
+    dst_d_buf2 = (*chunk)->tmpbufs[2].buf;
 
     const char *sbuf;
     char *dbuf;
@@ -284,7 +299,7 @@ static int pack_d2d_p2p_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * 
 
         rc = event_record(id, reqpriv->request->backend.inattr.device, &(*chunk)->event);
         YAKSU_ERR_CHECK(rc, fn_fail);
-    } else {
+    } else if (buf_is_aligned(base_addr, subreq->u.multiple.type)) {
         rc = icopy(id, src_d_buf, dst_d_buf, (*chunk)->count, subreq->u.multiple.type,
                    reqpriv->info, YAKSA_OP__REPLACE, reqpriv->request->backend.inattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
@@ -295,6 +310,29 @@ static int pack_d2d_p2p_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * 
 
         rc = icopy(id, dst_d_buf, dbuf, (*chunk)->count, subreq->u.multiple.type,
                    reqpriv->info, op, reqpriv->request->backend.outattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = event_record(id, reqpriv->request->backend.outattr.device, &(*chunk)->event);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+    } else {
+        rc = icopy(id, src_d_buf, dst_d_buf, (*chunk)->count, subreq->u.multiple.type,
+                   reqpriv->info, YAKSA_OP__REPLACE, reqpriv->request->backend.inattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = icopy(id, dbuf, dst_d_buf2, (*chunk)->count, subreq->u.multiple.type,
+                   reqpriv->info, YAKSA_OP__REPLACE, reqpriv->request->backend.outattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = add_dependency(id, reqpriv->request->backend.inattr.device,
+                            reqpriv->request->backend.outattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = icopy(id, dst_d_buf, dst_d_buf2, (*chunk)->count, subreq->u.multiple.type,
+                   reqpriv->info, op, reqpriv->request->backend.outattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = icopy(id, dst_d_buf2, dbuf, (*chunk)->count, subreq->u.multiple.type,
+                   reqpriv->info, YAKSA_OP__REPLACE, reqpriv->request->backend.outattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         rc = event_record(id, reqpriv->request->backend.outattr.device, &(*chunk)->event);
@@ -318,25 +356,35 @@ static int pack_d2d_nop2p_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s 
 
     *chunk = NULL;
 
+    void *base_addr = (char *) subreq->u.multiple.outbuf + subreq->u.multiple.type->true_lb;
+
     if (op == YAKSA_OP__REPLACE) {
         int devices[] = { reqpriv->request->backend.inattr.device, -1 };
         rc = alloc_chunk(id, reqpriv, subreq, 2, devices, chunk);
         YAKSU_ERR_CHECK(rc, fn_fail);
-    } else {
+    } else if (buf_is_aligned(base_addr, subreq->u.multiple.type)) {
         int devices[] = { reqpriv->request->backend.inattr.device, -1,
             reqpriv->request->backend.outattr.device
         };
         rc = alloc_chunk(id, reqpriv, subreq, 3, devices, chunk);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+    } else {
+        int devices[] = { reqpriv->request->backend.inattr.device, -1,
+            reqpriv->request->backend.outattr.device,
+            reqpriv->request->backend.outattr.device
+        };
+        rc = alloc_chunk(id, reqpriv, subreq, 4, devices, chunk);
         YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
     if (*chunk == NULL)
         goto fn_exit;
 
-    void *src_d_buf, *rh_buf, *dst_d_buf;
+    void *src_d_buf, *rh_buf, *dst_d_buf, *dst_d_buf2;
     src_d_buf = (*chunk)->tmpbufs[0].buf;
     rh_buf = (*chunk)->tmpbufs[1].buf;
     dst_d_buf = (*chunk)->tmpbufs[2].buf;
+    dst_d_buf2 = (*chunk)->tmpbufs[3].buf;
 
     const char *sbuf;
     char *dbuf;
@@ -361,17 +409,80 @@ static int pack_d2d_nop2p_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s 
         rc = icopy(id, rh_buf, dbuf, (*chunk)->count, subreq->u.multiple.type,
                    reqpriv->info, YAKSA_OP__REPLACE, reqpriv->request->backend.outattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
-    } else {
-        rc = icopy(id, rh_buf, dst_d_buf, (*chunk)->count, subreq->u.multiple.type,
-                   reqpriv->info, YAKSA_OP__REPLACE, reqpriv->request->backend.outattr.device);
+    } else if (buf_is_aligned(base_addr, subreq->u.multiple.type)) {
+        rc = icopy(id, rh_buf, dst_d_buf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+                   YAKSA_OP__REPLACE, reqpriv->request->backend.outattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         rc = icopy(id, dst_d_buf, dbuf, (*chunk)->count, subreq->u.multiple.type,
                    reqpriv->info, op, reqpriv->request->backend.outattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
+    } else {
+        rc = icopy(id, rh_buf, dst_d_buf, (*chunk)->count, subreq->u.multiple.type,
+                   reqpriv->info, YAKSA_OP__REPLACE, reqpriv->request->backend.outattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = icopy(id, dbuf, dst_d_buf2, (*chunk)->count, subreq->u.multiple.type,
+                   reqpriv->info, YAKSA_OP__REPLACE, reqpriv->request->backend.outattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = icopy(id, dst_d_buf, dst_d_buf2, (*chunk)->count, subreq->u.multiple.type,
+                   reqpriv->info, op, reqpriv->request->backend.outattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = icopy(id, dst_d_buf2, dbuf, (*chunk)->count, subreq->u.multiple.type,
+                   reqpriv->info, YAKSA_OP__REPLACE, reqpriv->request->backend.outattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
     rc = event_record(id, reqpriv->request->backend.outattr.device, &(*chunk)->event);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
+static int pack_d2d_unaligned_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subreq,
+                                      yaksuri_subreq_chunk_s ** chunk)
+{
+    int rc = YAKSA_SUCCESS;
+    yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+    yaksa_op_t op = subreq->u.multiple.op;
+
+    *chunk = NULL;
+
+    int devices[] = { reqpriv->request->backend.inattr.device };
+    rc = alloc_chunk(id, reqpriv, subreq, 1, devices, chunk);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (*chunk == NULL)
+        goto fn_exit;
+
+    void *d_buf;
+    d_buf = (*chunk)->tmpbufs[0].buf;
+
+    const char *sbuf;
+    char *dbuf;
+    sbuf = (const char *) subreq->u.multiple.inbuf +
+        (*chunk)->count_offset * subreq->u.multiple.type->extent;
+    dbuf =
+        (char *) subreq->u.multiple.outbuf + (*chunk)->count_offset * subreq->u.multiple.type->size;
+
+    rc = icopy(id, dbuf, d_buf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+               YAKSA_OP__REPLACE, reqpriv->request->backend.inattr.device);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    rc = ipack(id, sbuf, d_buf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+               op, reqpriv->request->backend.inattr.device);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    rc = icopy(id, d_buf, dbuf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+               YAKSA_OP__REPLACE, reqpriv->request->backend.inattr.device);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    rc = event_record(id, reqpriv->request->backend.inattr.device, &(*chunk)->event);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
@@ -535,22 +646,31 @@ static int pack_h2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subr
 
     *chunk = NULL;
 
+    void *base_addr = (char *) subreq->u.multiple.outbuf + subreq->u.multiple.type->true_lb;
+
     if (op == YAKSA_OP__REPLACE) {
         int devices[] = { -1 };
         rc = alloc_chunk(id, reqpriv, subreq, 1, devices, chunk);
         YAKSU_ERR_CHECK(rc, fn_fail);
-    } else {
+    } else if (buf_is_aligned(base_addr, subreq->u.multiple.type)) {
         int devices[] = { -1, reqpriv->request->backend.outattr.device };
         rc = alloc_chunk(id, reqpriv, subreq, 2, devices, chunk);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+    } else {
+        int devices[] = { -1, reqpriv->request->backend.outattr.device,
+            reqpriv->request->backend.outattr.device
+        };
+        rc = alloc_chunk(id, reqpriv, subreq, 3, devices, chunk);
         YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
     if (*chunk == NULL)
         goto fn_exit;
 
-    void *rh_buf, *d_buf;
+    void *rh_buf, *d_buf, *d_buf2;
     rh_buf = (*chunk)->tmpbufs[0].buf;
     d_buf = (*chunk)->tmpbufs[1].buf;
+    d_buf2 = (*chunk)->tmpbufs[2].buf;
 
     const char *sbuf;
     char *dbuf;
@@ -567,13 +687,29 @@ static int pack_h2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subr
         rc = icopy(id, rh_buf, dbuf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
                    YAKSA_OP__REPLACE, reqpriv->request->backend.outattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
-    } else {
+    } else if (buf_is_aligned(base_addr, subreq->u.multiple.type)) {
         rc = icopy(id, rh_buf, d_buf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
                    YAKSA_OP__REPLACE, reqpriv->request->backend.outattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
 
         rc = icopy(id, d_buf, dbuf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
                    op, reqpriv->request->backend.outattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+    } else {
+        rc = icopy(id, rh_buf, d_buf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+                   YAKSA_OP__REPLACE, reqpriv->request->backend.outattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = icopy(id, dbuf, d_buf2, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+                   YAKSA_OP__REPLACE, reqpriv->request->backend.outattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = icopy(id, d_buf, d_buf2, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+                   op, reqpriv->request->backend.outattr.device);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        rc = icopy(id, d_buf2, dbuf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+                   YAKSA_OP__REPLACE, reqpriv->request->backend.outattr.device);
         YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
@@ -679,6 +815,48 @@ static int unpack_d2d_nop2p_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     rc = event_record(id, reqpriv->request->backend.outattr.device, &(*chunk)->event);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
+static int unpack_d2d_unaligned_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subreq,
+                                        yaksuri_subreq_chunk_s ** chunk)
+{
+    int rc = YAKSA_SUCCESS;
+    yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+
+    *chunk = NULL;
+
+    int devices[] = { reqpriv->request->backend.inattr.device };
+    rc = alloc_chunk(id, reqpriv, subreq, 1, devices, chunk);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (*chunk == NULL)
+        goto fn_exit;
+
+    void *d_buf;
+    d_buf = (*chunk)->tmpbufs[0].buf;
+
+    const char *sbuf;
+    char *dbuf;
+    sbuf = (const char *) subreq->u.multiple.inbuf +
+        (*chunk)->count_offset * subreq->u.multiple.type->size;
+    dbuf = (char *) subreq->u.multiple.outbuf +
+        (*chunk)->count_offset * subreq->u.multiple.type->extent;
+
+    rc = icopy(id, sbuf, d_buf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+               YAKSA_OP__REPLACE, reqpriv->request->backend.inattr.device);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    rc = iunpack(id, d_buf, dbuf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+                 subreq->u.multiple.op, reqpriv->request->backend.inattr.device);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    rc = event_record(id, reqpriv->request->backend.inattr.device, &(*chunk)->event);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
@@ -869,7 +1047,27 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
 
         if (request->backend.inattr.type == YAKSUR_PTR_TYPE__GPU) {
             if (request->backend.outattr.type == YAKSUR_PTR_TYPE__GPU) {
-                if (request->backend.inattr.device == request->backend.outattr.device) {
+                if (!buf_is_aligned(outbuf, type) && op != YAKSA_OP__REPLACE) {
+                    if (request->backend.inattr.device == request->backend.outattr.device) {
+                        subreq->u.multiple.acquire = pack_d2d_unaligned_acquire;
+                        subreq->u.multiple.release = simple_release;
+                        goto multi_chunk;
+                    } else {
+                        bool is_enabled;
+                        rc = check_p2p_comm(id, reqpriv->request->backend.inattr.device,
+                                            reqpriv->request->backend.outattr.device, &is_enabled);
+                        YAKSU_ERR_CHECK(rc, fn_fail);
+
+                        if (is_enabled) {
+                            subreq->u.multiple.acquire = pack_d2d_p2p_acquire;
+                        } else {
+                            subreq->u.multiple.acquire = pack_d2d_nop2p_acquire;
+                        }
+                        subreq->u.multiple.release = simple_release;
+
+                        goto multi_chunk;
+                    }
+                } else if (request->backend.inattr.device == request->backend.outattr.device) {
                     subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
                     rc = ipack(id, inbuf, outbuf, count, type, info, op,
                                request->backend.inattr.device);
@@ -895,8 +1093,19 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                     goto multi_chunk;
                 }
             } else if (request->backend.outattr.type == YAKSUR_PTR_TYPE__MANAGED) {
-                if (request->backend.outattr.device == -1 ||
-                    request->backend.inattr.device == request->backend.outattr.device) {
+                if (!buf_is_aligned(outbuf, type) && op != YAKSA_OP__REPLACE) {
+                    if (request->backend.outattr.device == -1 ||
+                        request->backend.inattr.device == request->backend.outattr.device) {
+                        subreq->u.multiple.acquire = pack_d2d_unaligned_acquire;
+                        subreq->u.multiple.release = simple_release;
+                        goto multi_chunk;
+                    } else {
+                        subreq->u.multiple.acquire = pack_d2urh_acquire;
+                        subreq->u.multiple.release = pack_d2urh_release;
+                        goto multi_chunk;
+                    }
+                } else if (request->backend.outattr.device == -1 ||
+                           request->backend.inattr.device == request->backend.outattr.device) {
                     subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
                     rc = ipack(id, inbuf, outbuf, count, type, info, op,
                                request->backend.inattr.device);
@@ -940,8 +1149,12 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                 goto multi_chunk;
             }
         } else if (request->backend.inattr.type == YAKSUR_PTR_TYPE__MANAGED) {
-            if (request->backend.inattr.device == -1 ||
-                request->backend.inattr.device == request->backend.outattr.device) {
+            if (!buf_is_aligned(outbuf, type) && op != YAKSA_OP__REPLACE) {
+                subreq->u.multiple.acquire = pack_h2d_acquire;
+                subreq->u.multiple.release = simple_release;
+                goto multi_chunk;
+            } else if (request->backend.inattr.device == -1 ||
+                       request->backend.inattr.device == request->backend.outattr.device) {
                 subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
                 rc = ipack(id, inbuf, outbuf, count, type, info, op,
                            request->backend.outattr.device);
@@ -988,7 +1201,27 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
 
         if (request->backend.inattr.type == YAKSUR_PTR_TYPE__GPU) {
             if (request->backend.outattr.type == YAKSUR_PTR_TYPE__GPU) {
-                if (request->backend.inattr.device == request->backend.outattr.device) {
+                if (!buf_is_aligned(inbuf, type) && op != YAKSA_OP__REPLACE) {
+                    if (request->backend.inattr.device == request->backend.outattr.device) {
+                        subreq->u.multiple.acquire = unpack_d2d_unaligned_acquire;
+                        subreq->u.multiple.release = simple_release;
+                        goto multi_chunk;
+                    } else {
+                        bool is_enabled;
+                        rc = check_p2p_comm(id, reqpriv->request->backend.inattr.device,
+                                            reqpriv->request->backend.outattr.device, &is_enabled);
+                        YAKSU_ERR_CHECK(rc, fn_fail);
+
+                        if (is_enabled) {
+                            subreq->u.multiple.acquire = unpack_d2d_p2p_acquire;
+                        } else {
+                            subreq->u.multiple.acquire = unpack_d2d_nop2p_acquire;
+                        }
+                        subreq->u.multiple.release = simple_release;
+
+                        goto multi_chunk;
+                    }
+                } else if (request->backend.inattr.device == request->backend.outattr.device) {
                     subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
                     rc = iunpack(id, inbuf, outbuf, count, type, info, op,
                                  request->backend.inattr.device);
@@ -1014,8 +1247,12 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                     goto multi_chunk;
                 }
             } else if (request->backend.outattr.type == YAKSUR_PTR_TYPE__MANAGED) {
-                if (request->backend.outattr.device == -1 ||
-                    request->backend.inattr.device == request->backend.outattr.device) {
+                if (!buf_is_aligned(inbuf, type) && op != YAKSA_OP__REPLACE) {
+                    subreq->u.multiple.acquire = unpack_d2h_acquire;
+                    subreq->u.multiple.release = unpack_d2h_release;
+                    goto multi_chunk;
+                } else if (request->backend.outattr.device == -1 ||
+                           request->backend.inattr.device == request->backend.outattr.device) {
                     subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
                     rc = iunpack(id, inbuf, outbuf, count, type, info, op,
                                  request->backend.inattr.device);
@@ -1059,8 +1296,12 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                 goto multi_chunk;
             }
         } else if (request->backend.inattr.type == YAKSUR_PTR_TYPE__MANAGED) {
-            if (request->backend.inattr.device == -1 ||
-                request->backend.inattr.device == request->backend.outattr.device) {
+            if (!buf_is_aligned(inbuf, type) && op != YAKSA_OP__REPLACE) {
+                subreq->u.multiple.acquire = unpack_urh2d_acquire;
+                subreq->u.multiple.release = simple_release;
+                goto multi_chunk;
+            } else if (request->backend.inattr.device == -1 ||
+                       request->backend.inattr.device == request->backend.outattr.device) {
                 subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
                 rc = iunpack(id, inbuf, outbuf, count, type, info, op,
                              request->backend.outattr.device);
