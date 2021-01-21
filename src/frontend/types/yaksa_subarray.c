@@ -127,10 +127,10 @@ int yaksi_type_create_subarray(int ndims, const intptr_t * array_of_sizes,
     goto fn_exit;
 }
 
-int yaksa_type_create_subarray_x(int ndims, const intptr_t * array_of_sizes,
-                                 const intptr_t * array_of_subsizes,
-                                 const intptr_t * array_of_starts, yaksa_subarray_order_e order,
-                                 yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t * newtype)
+int yaksa_type_create_subarray(int ndims, const intptr_t * array_of_sizes,
+                               const intptr_t * array_of_subsizes,
+                               const intptr_t * array_of_starts, yaksa_subarray_order_e order,
+                               yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -154,49 +154,6 @@ int yaksa_type_create_subarray_x(int ndims, const intptr_t * array_of_sizes,
     YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
-    return rc;
-  fn_fail:
-    goto fn_exit;
-}
-
-int yaksa_type_create_subarray(int ndims, const int *array_of_sizes, const int *array_of_subsizes,
-                               const int *array_of_starts, yaksa_subarray_order_e order,
-                               yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t * newtype)
-{
-    int rc = YAKSA_SUCCESS;
-
-    assert(yaksu_atomic_load(&yaksi_is_initialized));
-
-    intptr_t *real_array_of_sizes = malloc(ndims * sizeof(intptr_t));
-    intptr_t *real_array_of_subsizes = malloc(ndims * sizeof(intptr_t));
-    intptr_t *real_array_of_starts = malloc(ndims * sizeof(intptr_t));
-
-    yaksi_type_s *intype;
-    rc = yaksi_type_get(oldtype, &intype);
-    YAKSU_ERR_CHECK(rc, fn_fail);
-
-    if (ndims * intype->size == 0) {
-        *newtype = YAKSA_TYPE__NULL;
-        goto fn_exit;
-    }
-
-    for (int i = 0; i < ndims; i++) {
-        real_array_of_sizes[i] = array_of_sizes[i];
-        real_array_of_subsizes[i] = array_of_subsizes[i];
-        real_array_of_starts[i] = array_of_starts[i];
-    }
-    yaksi_type_s *outtype;
-    rc = yaksi_type_create_subarray(ndims, real_array_of_sizes, real_array_of_subsizes,
-                                    real_array_of_starts, order, intype, &outtype);
-    YAKSU_ERR_CHECK(rc, fn_fail);
-
-    rc = yaksi_type_handle_alloc(outtype, newtype);
-    YAKSU_ERR_CHECK(rc, fn_fail);
-
-  fn_exit:
-    free(real_array_of_sizes);
-    free(real_array_of_subsizes);
-    free(real_array_of_starts);
     return rc;
   fn_fail:
     goto fn_exit;
