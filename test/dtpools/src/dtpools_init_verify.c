@@ -299,7 +299,7 @@ static int init_verify_base_type(DTP_pool_s dtp, DTP_obj_s obj, void *buf_,
     DTPI_FUNC_ENTER();
 
     if (dtpi->base_type_is_struct) {
-        for (int i = 0; i < dtpi->base_type_attrs.numblks; i++) {
+        for (intptr_t i = 0; i < dtpi->base_type_attrs.numblks; i++) {
             intptr_t offset = dtpi->base_type_attrs.array_of_displs[i];
             for (int j = 0; j < dtpi->base_type_attrs.array_of_blklens[i]; j++) {
                 rc = init_verify_basic_datatype(dtpi->base_type_attrs.array_of_types[i],
@@ -353,7 +353,7 @@ static int init_verify_subarray(DTP_pool_s dtp, DTP_obj_s obj, void *buf, DTPI_A
         base_offset *= attr->child_type_extent;
 
         uintptr_t offset = buf_offset + base_offset * attr->u.subarray.array_of_starts[dims_offset];
-        for (int i = 0; i < attr->u.subarray.array_of_subsizes[dims_offset]; i++) {
+        for (intptr_t i = 0; i < attr->u.subarray.array_of_subsizes[dims_offset]; i++) {
             rc = init_verify_subarray(dtp, obj, buf, attr, ndims - 1, offset, val_start,
                                       val_stride, rem_val_count, verify);
             DTPI_ERR_CHK_RC(rc);
@@ -366,7 +366,7 @@ static int init_verify_subarray(DTP_pool_s dtp, DTP_obj_s obj, void *buf, DTPI_A
         base_offset *= attr->child_type_extent;
 
         uintptr_t offset = buf_offset + base_offset * attr->u.subarray.array_of_starts[ndims - 1];
-        for (int i = 0; i < attr->u.subarray.array_of_subsizes[ndims - 1]; i++) {
+        for (intptr_t i = 0; i < attr->u.subarray.array_of_subsizes[ndims - 1]; i++) {
             rc = init_verify_subarray(dtp, obj, buf, attr, ndims - 1, offset, val_start,
                                       val_stride, rem_val_count, verify);
             DTPI_ERR_CHK_RC(rc);
@@ -407,7 +407,7 @@ int DTPI_init_verify(DTP_pool_s dtp, DTP_obj_s obj, void *buf, DTPI_Attr_s * att
         case DTPI_DATATYPE_KIND__CONTIG:
             {
                 uintptr_t offset = buf_offset;
-                for (int i = 0; i < attr->u.contig.blklen; i++) {
+                for (intptr_t i = 0; i < attr->u.contig.blklen; i++) {
                     rc = DTPI_init_verify(dtp, obj, buf, attr->child, offset, val_start,
                                           val_stride, rem_val_count, verify);
                     DTPI_ERR_CHK_RC(rc);
@@ -432,7 +432,7 @@ int DTPI_init_verify(DTP_pool_s dtp, DTP_obj_s obj, void *buf, DTPI_Attr_s * att
         case DTPI_DATATYPE_KIND__VECTOR:
             {
                 uintptr_t offset = buf_offset;
-                for (int i = 0; i < attr->u.vector.numblks; i++) {
+                for (intptr_t i = 0; i < attr->u.vector.numblks; i++) {
                     uintptr_t base_offset = offset;
                     for (int j = 0; j < attr->u.vector.blklen; j++) {
                         rc = DTPI_init_verify(dtp, obj, buf, attr->child, offset, val_start,
@@ -447,7 +447,7 @@ int DTPI_init_verify(DTP_pool_s dtp, DTP_obj_s obj, void *buf, DTPI_Attr_s * att
         case DTPI_DATATYPE_KIND__HVECTOR:
             {
                 uintptr_t offset = buf_offset;
-                for (int i = 0; i < attr->u.hvector.numblks; i++) {
+                for (intptr_t i = 0; i < attr->u.hvector.numblks; i++) {
                     uintptr_t base_offset = offset;
                     for (int j = 0; j < attr->u.hvector.blklen; j++) {
                         rc = DTPI_init_verify(dtp, obj, buf, attr->child, offset, val_start,
@@ -462,7 +462,7 @@ int DTPI_init_verify(DTP_pool_s dtp, DTP_obj_s obj, void *buf, DTPI_Attr_s * att
         case DTPI_DATATYPE_KIND__BLKINDX:
             {
                 uintptr_t offset = buf_offset;
-                for (int i = 0; i < attr->u.blkindx.numblks; i++) {
+                for (intptr_t i = 0; i < attr->u.blkindx.numblks; i++) {
                     uintptr_t base_offset = offset;
                     offset += attr->u.blkindx.array_of_displs[i] * attr->child_type_extent;
                     for (int j = 0; j < attr->u.blkindx.blklen; j++) {
@@ -478,7 +478,7 @@ int DTPI_init_verify(DTP_pool_s dtp, DTP_obj_s obj, void *buf, DTPI_Attr_s * att
         case DTPI_DATATYPE_KIND__BLKHINDX:
             {
                 uintptr_t offset = buf_offset;
-                for (int i = 0; i < attr->u.blkhindx.numblks; i++) {
+                for (intptr_t i = 0; i < attr->u.blkhindx.numblks; i++) {
                     uintptr_t base_offset = offset;
                     offset += attr->u.blkhindx.array_of_displs[i];
                     for (int j = 0; j < attr->u.blkhindx.blklen; j++) {
@@ -494,7 +494,7 @@ int DTPI_init_verify(DTP_pool_s dtp, DTP_obj_s obj, void *buf, DTPI_Attr_s * att
         case DTPI_DATATYPE_KIND__INDEXED:
             {
                 uintptr_t offset = buf_offset;
-                for (int i = 0; i < attr->u.indexed.numblks; i++) {
+                for (intptr_t i = 0; i < attr->u.indexed.numblks; i++) {
                     uintptr_t base_offset = offset;
                     offset += attr->u.indexed.array_of_displs[i] * attr->child_type_extent;
                     for (int j = 0; j < attr->u.indexed.array_of_blklens[i]; j++) {
@@ -510,7 +510,7 @@ int DTPI_init_verify(DTP_pool_s dtp, DTP_obj_s obj, void *buf, DTPI_Attr_s * att
         case DTPI_DATATYPE_KIND__HINDEXED:
             {
                 uintptr_t offset = buf_offset;
-                for (int i = 0; i < attr->u.hindexed.numblks; i++) {
+                for (intptr_t i = 0; i < attr->u.hindexed.numblks; i++) {
                     uintptr_t base_offset = offset;
                     offset += attr->u.hindexed.array_of_displs[i];
                     for (int j = 0; j < attr->u.hindexed.array_of_blklens[i]; j++) {
@@ -532,7 +532,7 @@ int DTPI_init_verify(DTP_pool_s dtp, DTP_obj_s obj, void *buf, DTPI_Attr_s * att
         case DTPI_DATATYPE_KIND__STRUCT:
             {
                 uintptr_t offset = buf_offset;
-                for (int i = 0; i < attr->u.structure.numblks; i++) {
+                for (intptr_t i = 0; i < attr->u.structure.numblks; i++) {
                     uintptr_t base_offset = offset;
                     offset += attr->u.structure.array_of_displs[i];
                     for (int j = 0; j < attr->u.structure.array_of_blklens[i]; j++) {
