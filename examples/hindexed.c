@@ -14,7 +14,7 @@ int main()
     int pack_buf[SIZE];
     int unpack_buf[SIZE];
     yaksa_type_t hindexed;
-    int array_of_blocklengths[ROWS - 1] = {
+    intptr_t array_of_blocklengths[ROWS - 1] = {
         1, 2, 2, 4, 4, 4, 4
     };
     intptr_t array_of_displacements[ROWS - 1] = {

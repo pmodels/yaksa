@@ -16,9 +16,9 @@ int main()
     int unpack_buf[SIZE];
     yaksa_type_t subarray;
     int ndims = 2;
-    int array_of_sizes[2] = { ROWS, COLS };
-    int array_of_subsizes[2] = { 4, 4 };
-    int array_of_starts[2] = { 4, 4 };
+    intptr_t array_of_sizes[2] = { ROWS, COLS };
+    intptr_t array_of_subsizes[2] = { 4, 4 };
+    intptr_t array_of_starts[2] = { 4, 4 };
     yaksa_subarray_order_e order = YAKSA_SUBARRAY_ORDER__C;
 
     yaksa_init(NULL);   /* before any yaksa API is called the library

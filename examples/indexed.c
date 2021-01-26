@@ -14,10 +14,10 @@ int main()
     int pack_buf[SIZE];
     int unpack_buf[SIZE];
     yaksa_type_t indexed;
-    int array_of_blocklengths[ROWS - 1] = {
+    intptr_t array_of_blocklengths[ROWS - 1] = {
         1, 2, 2, 4, 4, 4, 4
     };
-    int array_of_displacements[ROWS - 1] = {
+    intptr_t array_of_displacements[ROWS - 1] = {
         9,
         18, 26,
         36, 44, 52, 60
