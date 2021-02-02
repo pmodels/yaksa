@@ -59,11 +59,12 @@ typedef struct yaksur_gpudriver_hooks_s {
     uintptr_t (*get_iov_unpack_threshold) (struct yaksi_info_s * info);
     /* *INDENT-ON* */
     int (*ipack) (const void *inbuf, void *outbuf, uintptr_t count,
-                  struct yaksi_type_s * type, struct yaksi_info_s * info, int device);
+                  struct yaksi_type_s * type, struct yaksi_info_s * info, yaksa_op_t op,
+                  int device);
     int (*iunpack) (const void *inbuf, void *outbuf, uintptr_t count, struct yaksi_type_s * type,
-                    struct yaksi_info_s * info, int device);
+                    struct yaksi_info_s * info, yaksa_op_t op, int device);
     int (*flush_all) (void);
-    int (*pup_is_supported) (struct yaksi_type_s * type, bool * is_supported);
+    int (*pup_is_supported) (struct yaksi_type_s * type, yaksa_op_t op, bool * is_supported);
 
     /* memory management */
     void *(*host_malloc) (uintptr_t size);

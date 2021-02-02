@@ -235,21 +235,21 @@ int yaksi_type_free(yaksi_type_s * type);
 
 int yaksi_ipack(const void *inbuf, uintptr_t incount, yaksi_type_s * type, uintptr_t inoffset,
                 void *outbuf, uintptr_t max_pack_bytes, uintptr_t * actual_pack_bytes,
-                yaksi_info_s * info, yaksi_request_s * request);
+                yaksi_info_s * info, yaksa_op_t op, yaksi_request_s * request);
 int yaksi_ipack_backend(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                        yaksi_info_s * info, yaksi_request_s * request);
+                        yaksi_info_s * info, yaksa_op_t op, yaksi_request_s * request);
 int yaksi_ipack_element(const void *inbuf, yaksi_type_s * type, uintptr_t inoffset, void *outbuf,
                         uintptr_t max_pack_bytes, uintptr_t * actual_pack_bytes,
-                        yaksi_info_s * info, yaksi_request_s * request);
+                        yaksi_info_s * info, yaksa_op_t op, yaksi_request_s * request);
 
 int yaksi_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t outcount,
                   yaksi_type_s * type, uintptr_t outoffset, uintptr_t * actual_unpack_bytes,
-                  yaksi_info_s * info, yaksi_request_s * request);
+                  yaksi_info_s * info, yaksa_op_t op, yaksi_request_s * request);
 int yaksi_iunpack_backend(const void *inbuf, void *outbuf, uintptr_t outcount, yaksi_type_s * type,
-                          yaksi_info_s * info, yaksi_request_s * request);
+                          yaksi_info_s * info, yaksa_op_t op, yaksi_request_s * request);
 int yaksi_iunpack_element(const void *inbuf, uintptr_t insize, void *outbuf, yaksi_type_s * type,
                           uintptr_t outoffset, uintptr_t * actual_unpack_bytes,
-                          yaksi_info_s * info, yaksi_request_s * request);
+                          yaksi_info_s * info, yaksa_op_t op, yaksi_request_s * request);
 
 int yaksi_iov_len(uintptr_t count, yaksi_type_s * type, uintptr_t * iov_len);
 int yaksi_iov(const char *buf, uintptr_t count, yaksi_type_s * type, uintptr_t iov_offset,

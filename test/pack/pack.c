@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <string.h>
 #include <pthread.h>
+#include <inttypes.h>
 #include "yaksa_config.h"
 #include "yaksa.h"
 #include "dtpools.h"
@@ -80,6 +81,24 @@ int **device_ids;
 #define MAX_MEMTYPE_LIST (1024)
 mem_type_e **memtypes;
 
+yaksa_op_t int_ops[] =
+    { YAKSA_OP__MAX, YAKSA_OP__MIN, YAKSA_OP__SUM, YAKSA_OP__PROD, YAKSA_OP__LAND,
+    YAKSA_OP__BAND, YAKSA_OP__LOR, YAKSA_OP__BOR, YAKSA_OP__LXOR, YAKSA_OP__BXOR,
+    YAKSA_OP__REPLACE
+};
+
+yaksa_op_t float_ops[] =
+    { YAKSA_OP__MAX, YAKSA_OP__MIN, YAKSA_OP__SUM, YAKSA_OP__PROD, YAKSA_OP__REPLACE };
+
+enum {
+    OPLIST_TYPE__UNSET,
+    OPLIST_TYPE__INT,
+    OPLIST_TYPE__FLOAT,
+} oplist_type = OPLIST_TYPE__UNSET;
+
+#define MAX_OP_LIST  (1024)
+yaksa_op_t **ops;
+
 void *runtest(void *arg);
 void *runtest(void *arg)
 {
@@ -88,6 +107,8 @@ void *runtest(void *arg)
     uintptr_t tid = (uintptr_t) arg;
     int device_id_idx = 0;
     int memtype_idx = 0;
+    int op_idx = 0;
+    yaksa_request_t request;
 
     uintptr_t *segment_starts = (uintptr_t *) malloc(max_segments * sizeof(uintptr_t));
     uintptr_t *segment_lengths = (uintptr_t *) malloc(max_segments * sizeof(uintptr_t));
@@ -109,9 +130,18 @@ void *runtest(void *arg)
         int tbuf_devid = device_ids[tid][device_id_idx];
         device_id_idx = (device_id_idx + 1) % MAX_DEVID_LIST;
 
-        dprintf("sbuf: %s (%d), dbuf: %s (%d), tbuf: %s (%d)\n", memtype_str[sbuf_memtype],
-                sbuf_devid, memtype_str[dbuf_memtype], dbuf_devid, memtype_str[tbuf_memtype],
-                tbuf_devid);
+        yaksa_op_t op = ops[tid][op_idx];
+        op_idx = (op_idx + 1) % MAX_OP_LIST;
+
+        dprintf("sbuf: %s (%d), dbuf: %s (%d), tbuf: %s (%d), op: %" PRIu64 "\n",
+                memtype_str[sbuf_memtype], sbuf_devid, memtype_str[dbuf_memtype],
+                dbuf_devid, memtype_str[tbuf_memtype], tbuf_devid, op);
+
+        /* some ops are not compatible with overlapping segments */
+        if (overlap != OVERLAP__NONE &&
+            (op == YAKSA_OP__SUM || op == YAKSA_OP__PROD || op == YAKSA_OP__LXOR ||
+             op == YAKSA_OP__BXOR))
+            continue;
 
         /* create the source object */
         rc = DTP_obj_create(dtp[tid], &sobj, maxbufsize);
@@ -131,9 +161,6 @@ void *runtest(void *arg)
                     sobj.DTP_type_count, desc);
             free(desc);
         }
-
-        rc = DTP_obj_buf_init(sobj, sbuf_h, 0, 1, basecount);
-        assert(rc == DTP_SUCCESS);
 
         uintptr_t ssize;
         rc = yaksa_type_get_size(sobj.DTP_datatype, &ssize);
@@ -159,12 +186,67 @@ void *runtest(void *arg)
             free(desc);
         }
 
-        rc = DTP_obj_buf_init(dobj, dbuf_h, -1, -1, basecount);
-        assert(rc == DTP_SUCCESS);
-
         uintptr_t dsize;
         rc = yaksa_type_get_size(dobj.DTP_datatype, &dsize);
         assert(rc == YAKSA_SUCCESS);
+
+
+        /* create the temporary buffers */
+        void *tbuf_h, *tbuf_d;
+        uintptr_t tbufsize = ssize * sobj.DTP_type_count;
+        pack_alloc_mem(tbuf_devid, tbufsize, tbuf_memtype, &tbuf_h, &tbuf_d);
+        assert(tbuf_h);
+        assert(tbuf_d);
+
+
+        /* initialize buffers */
+        uintptr_t type_size;
+        rc = yaksa_type_get_size(dtp[tid].DTP_base_type, &type_size);
+        assert(rc == YAKSA_SUCCESS);
+
+        switch (op) {
+            case YAKSA_OP__SUM:
+            case YAKSA_OP__REPLACE:
+                rc = DTP_obj_buf_init(sobj, sbuf_h, 0, 1, basecount);
+                assert(rc == DTP_SUCCESS);
+
+                rc = DTP_obj_buf_init(dobj, dbuf_h, -1, -1, basecount);
+                assert(rc == DTP_SUCCESS);
+
+                break;
+
+            case YAKSA_OP__PROD:
+                rc = DTP_obj_buf_init(sobj, sbuf_h, 0, 1, basecount);
+                assert(rc == DTP_SUCCESS);
+
+                rc = DTP_obj_buf_init(dobj, dbuf_h, -1, 0, basecount);
+                assert(rc == DTP_SUCCESS);
+
+                break;
+
+            default:
+                rc = DTP_obj_buf_init(sobj, sbuf_h, 1, 0, basecount);
+                assert(rc == DTP_SUCCESS);
+
+                rc = DTP_obj_buf_init(dobj, dbuf_h, -1, 0, basecount);
+                assert(rc == DTP_SUCCESS);
+        }
+
+        /* pack the destination buffer into the temporary buffer, so
+         * their contents are equivalent -- this is useful for
+         * correctness in the accumulate operations */
+        uintptr_t actual_pack_bytes;
+        rc = yaksa_ipack(dbuf_h + dobj.DTP_buf_offset, dobj.DTP_type_count, dobj.DTP_datatype,
+                         0, tbuf_h, tbufsize, &actual_pack_bytes, NULL, YAKSA_OP__REPLACE,
+                         &request);
+        assert(rc == YAKSA_SUCCESS);
+
+        rc = yaksa_request_wait(request);
+        assert(rc == YAKSA_SUCCESS);
+
+        pack_copy_content(sbuf_h, sbuf_d, sobj.DTP_bufsize, sbuf_memtype);
+        pack_copy_content(dbuf_h, dbuf_d, dobj.DTP_bufsize, dbuf_memtype);
+        pack_copy_content(tbuf_h, tbuf_d, tbufsize, tbuf_memtype);
 
 
         /* the source and destination objects should have the same
@@ -176,10 +258,6 @@ void *runtest(void *arg)
          * unpack into the destination object */
 
         /* figure out the lengths and offsets of each segment */
-        uintptr_t type_size;
-        rc = yaksa_type_get_size(dtp[tid].DTP_base_type, &type_size);
-        assert(rc == YAKSA_SUCCESS);
-
         int segments = max_segments;
         while (((ssize * sobj.DTP_type_count) / type_size) % segments)
             segments--;
@@ -235,13 +313,6 @@ void *runtest(void *arg)
         }
 
         /* the actual pack/unpack loop */
-        pack_copy_content(sbuf_h, sbuf_d, sobj.DTP_bufsize, sbuf_memtype);
-        pack_copy_content(dbuf_h, dbuf_d, dobj.DTP_bufsize, dbuf_memtype);
-
-        void *tbuf_h, *tbuf_d;
-        uintptr_t tbufsize = ssize * sobj.DTP_type_count;
-        pack_alloc_mem(tbuf_devid, tbufsize, tbuf_memtype, &tbuf_h, &tbuf_d);
-
         yaksa_info_t pack_info, unpack_info;
         if (sbuf_memtype != MEM_TYPE__DEVICE && tbuf_memtype != MEM_TYPE__DEVICE) {
             host_only_get_ptr_attr(&pack_info, i);
@@ -254,13 +325,14 @@ void *runtest(void *arg)
             pack_get_ptr_attr(tbuf_d, dbuf_d + dobj.DTP_buf_offset, &unpack_info, i);
         }
 
+        yaksa_op_t pack_op = (i % 2 == 0) ? YAKSA_OP__REPLACE : op;
+        yaksa_op_t unpack_op = (i % 2) ? YAKSA_OP__REPLACE : op;
         for (int j = 0; j < segments; j++) {
             uintptr_t actual_pack_bytes;
-            yaksa_request_t request;
 
             rc = yaksa_ipack(sbuf_d + sobj.DTP_buf_offset, sobj.DTP_type_count, sobj.DTP_datatype,
-                             segment_starts[j], tbuf_d, segment_lengths[j], &actual_pack_bytes,
-                             pack_info, &request);
+                             segment_starts[j], (char *) tbuf_d + segment_starts[j],
+                             segment_lengths[j], &actual_pack_bytes, pack_info, pack_op, &request);
             assert(rc == YAKSA_SUCCESS);
             assert(actual_pack_bytes <= segment_lengths[j]);
 
@@ -272,9 +344,10 @@ void *runtest(void *arg)
             assert(rc == YAKSA_SUCCESS);
 
             uintptr_t actual_unpack_bytes;
-            rc = yaksa_iunpack(tbuf_d, actual_pack_bytes, dbuf_d + dobj.DTP_buf_offset,
-                               dobj.DTP_type_count, dobj.DTP_datatype, segment_starts[j],
-                               &actual_unpack_bytes, unpack_info, &request);
+            rc = yaksa_iunpack((char *) tbuf_d + segment_starts[j], actual_pack_bytes,
+                               dbuf_d + dobj.DTP_buf_offset, dobj.DTP_type_count, dobj.DTP_datatype,
+                               segment_starts[j], &actual_unpack_bytes, unpack_info, unpack_op,
+                               &request);
             assert(rc == YAKSA_SUCCESS);
             assert(actual_pack_bytes == actual_unpack_bytes);
 
@@ -293,8 +366,62 @@ void *runtest(void *arg)
         }
 
         pack_copy_content(dbuf_d, dbuf_h, dobj.DTP_bufsize, dbuf_memtype);
-        rc = DTP_obj_buf_check(dobj, dbuf_h, 0, 1, basecount);
-        assert(rc == DTP_SUCCESS);
+
+        switch (op) {
+            case YAKSA_OP__REPLACE:
+                rc = DTP_obj_buf_check(dobj, dbuf_h, 0, 1, basecount);
+                assert(rc == DTP_SUCCESS);
+
+                break;
+
+            case YAKSA_OP__MIN:
+                rc = DTP_obj_buf_check(dobj, dbuf_h, -1, 0, basecount);
+                assert(rc == DTP_SUCCESS);
+
+                break;
+
+            case YAKSA_OP__SUM:
+                rc = DTP_obj_buf_check(dobj, dbuf_h, -1, 0, basecount);
+                assert(rc == DTP_SUCCESS);
+
+                break;
+
+            case YAKSA_OP__PROD:
+                rc = DTP_obj_buf_check(dobj, dbuf_h, 0, -1, basecount);
+                assert(rc == DTP_SUCCESS);
+
+                break;
+
+            case YAKSA_OP__MAX:
+            case YAKSA_OP__LAND:
+            case YAKSA_OP__BAND:
+            case YAKSA_OP__LOR:
+                rc = DTP_obj_buf_check(dobj, dbuf_h, 1, 0, basecount);
+                assert(rc == DTP_SUCCESS);
+
+                break;
+
+            case YAKSA_OP__BOR:
+                rc = DTP_obj_buf_check(dobj, dbuf_h, -1, 0, basecount);
+                assert(rc == DTP_SUCCESS);
+
+                break;
+
+            case YAKSA_OP__LXOR:
+                rc = DTP_obj_buf_check(dobj, dbuf_h, 0, 0, basecount);
+                assert(rc == DTP_SUCCESS);
+
+                break;
+
+            case YAKSA_OP__BXOR:
+                rc = DTP_obj_buf_check(dobj, dbuf_h, -2, 0, basecount);
+                assert(rc == DTP_SUCCESS);
+
+                break;
+
+            default:
+                assert(0);
+        }
 
 
         /* free allocated buffers and objects */
@@ -349,6 +476,17 @@ int main(int argc, char **argv)
                 fprintf(stderr, "unknown packing order %s\n", *argv);
                 exit(1);
             }
+        } else if (!strcmp(*argv, "-oplist")) {
+            --argc;
+            ++argv;
+            if (!strcmp(*argv, "int")) {
+                oplist_type = OPLIST_TYPE__INT;
+            } else if (!strcmp(*argv, "float")) {
+                oplist_type = OPLIST_TYPE__FLOAT;
+            } else {
+                fprintf(stderr, "unknown oplist type %s\n", *argv);
+                exit(1);
+            }
         } else if (!strcmp(*argv, "-overlap")) {
             --argc;
             ++argv;
@@ -385,6 +523,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "   -overlap     should packing overlap (none, regular, irregular)\n");
         fprintf(stderr, "   -verbose     verbose output\n");
         fprintf(stderr, "   -num-threads number of threads to spawn\n");
+        fprintf(stderr, "   -oplist      oplist type (int, float)\n");
         exit(1);
     }
 
@@ -400,10 +539,14 @@ int main(int argc, char **argv)
     int ndevices = pack_get_ndevices();
     device_ids = (int **) malloc(num_threads * sizeof(int *));
     memtypes = (mem_type_e **) malloc(num_threads * sizeof(mem_type_e *));
+    ops = (yaksa_op_t **) malloc(num_threads * sizeof(yaksa_op_t *));
+
     srand(seed + num_threads);
     for (uintptr_t i = 0; i < num_threads; i++) {
         device_ids[i] = (int *) malloc(MAX_DEVID_LIST * sizeof(int));
         memtypes[i] = (mem_type_e *) malloc(MAX_MEMTYPE_LIST * sizeof(mem_type_e));
+        ops[i] = (yaksa_op_t *) malloc(MAX_OP_LIST * sizeof(yaksa_op_t));
+
         for (int j = 0; j < MAX_DEVID_LIST; j++) {
             if (ndevices > 0) {
                 device_ids[i][j] = rand() % ndevices;
@@ -416,6 +559,18 @@ int main(int argc, char **argv)
                 memtypes[i][j] = rand() % MEM_TYPE__NUM_MEMTYPES;
             } else {
                 memtypes[i][j] = MEM_TYPE__UNREGISTERED_HOST;
+            }
+        }
+
+        if (oplist_type == OPLIST_TYPE__INT) {
+            int max_ops = sizeof(int_ops) / sizeof(yaksa_op_t);
+            for (int j = 0; j < MAX_OP_LIST; j++) {
+                ops[i][j] = int_ops[rand() % max_ops];
+            }
+        } else {
+            int max_ops = sizeof(float_ops) / sizeof(yaksa_op_t);
+            for (int j = 0; j < MAX_OP_LIST; j++) {
+                ops[i][j] = float_ops[rand() % max_ops];
             }
         }
     }

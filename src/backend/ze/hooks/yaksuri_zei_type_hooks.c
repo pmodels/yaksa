@@ -177,15 +177,17 @@ int yaksuri_zei_type_create_hook(yaksi_type_s * type)
     rc = yaksuri_zei_populate_pupfns(type);
     YAKSU_ERR_CHECK(rc, fn_fail_no_lock);
 
-    ze->pack_kernels = NULL;
-    ze->unpack_kernels = NULL;
-    if (ze->pack != YAKSURI_KERNEL_NULL) {
-        pthread_mutex_lock(&yaksuri_zei_global.ze_mutex);
-        zerr = yaksuri_ze_load_kernel(ze->pack, &ze->pack_kernels);
-        YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
-        zerr = yaksuri_ze_load_kernel(ze->unpack, &ze->unpack_kernels);
-        YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
-        pthread_mutex_unlock(&yaksuri_zei_global.ze_mutex);
+    for (int i = 0; i < YAKSA_OP__LAST; i++) {
+        ze->pack_kernels[i] = NULL;
+        ze->unpack_kernels[i] = NULL;
+        if (ze->pack[i] != YAKSURI_KERNEL_NULL) {
+            pthread_mutex_lock(&yaksuri_zei_global.ze_mutex);
+            zerr = yaksuri_ze_load_kernel(ze->pack[i], &ze->pack_kernels[i]);
+            YAKSURI_ZEI_ZE_ERR_CHECK(zerr);
+            zerr = yaksuri_ze_load_kernel(ze->unpack[i], &ze->unpack_kernels[i]);
+            YAKSURI_ZEI_ZE_ERR_CHECK(zerr);
+            pthread_mutex_unlock(&yaksuri_zei_global.ze_mutex);
+        }
     }
 
   fn_exit:

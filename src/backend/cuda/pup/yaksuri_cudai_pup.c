@@ -47,12 +47,12 @@ static int get_thread_block_dims(uintptr_t count, yaksi_type_s * type, unsigned 
     return rc;
 }
 
-int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, bool * is_supported)
+int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, yaksa_op_t op, bool * is_supported)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
 
-    if (type->is_contig || cuda_type->pack)
+    if ((type->is_contig && op == YAKSA_OP__REPLACE) || cuda_type->pack)
         *is_supported = true;
     else
         *is_supported = false;
@@ -83,7 +83,7 @@ uintptr_t yaksuri_cudai_get_iov_unpack_threshold(yaksi_info_s * info)
 }
 
 int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                        yaksi_info_s * info, int target)
+                        yaksi_info_s * info, yaksa_op_t op, int target)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
@@ -92,14 +92,14 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
     uintptr_t iov_pack_threshold = yaksuri_cudai_get_iov_pack_threshold(info);
 
     /* shortcut for contiguous types */
-    if (type->is_contig) {
+    if (op == YAKSA_OP__REPLACE && type->is_contig) {
         /* cuda performance is optimized when we synchronize on the
          * source buffer's GPU */
         cerr =
             cudaMemcpyAsync(outbuf, (const char *) inbuf + type->true_lb, count * type->size,
                             cudaMemcpyDefault, yaksuri_cudai_global.stream[target]);
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-    } else if (type->size / type->num_contig >= iov_pack_threshold) {
+    } else if (op == YAKSA_OP__REPLACE && type->size / type->num_contig >= iov_pack_threshold) {
         struct iovec iov[MAX_IOV_LENGTH];
         char *dbuf = (char *) outbuf;
         uintptr_t offset = 0;
@@ -133,7 +133,7 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
         cerr = cudaSetDevice(target);
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-        cuda_type->pack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks_x, n_blocks_y,
+        cuda_type->pack(inbuf, outbuf, count, op, cuda_type->md, n_threads, n_blocks_x, n_blocks_y,
                         n_blocks_z, target);
 
         cerr = cudaSetDevice(cur_device);
@@ -147,7 +147,7 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
 }
 
 int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                          yaksi_info_s * info, int target)
+                          yaksi_info_s * info, yaksa_op_t op, int target)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
@@ -156,14 +156,14 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
     uintptr_t iov_unpack_threshold = yaksuri_cudai_get_iov_unpack_threshold(info);
 
     /* shortcut for contiguous types */
-    if (type->is_contig) {
+    if (op == YAKSA_OP__REPLACE && type->is_contig) {
         /* cuda performance is optimized when we synchronize on the
          * source buffer's GPU */
         cerr =
             cudaMemcpyAsync((char *) outbuf + type->true_lb, inbuf, count * type->size,
                             cudaMemcpyDefault, yaksuri_cudai_global.stream[target]);
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
-    } else if (type->size / type->num_contig >= iov_unpack_threshold) {
+    } else if (op == YAKSA_OP__REPLACE && type->size / type->num_contig >= iov_unpack_threshold) {
         struct iovec iov[MAX_IOV_LENGTH];
         const char *sbuf = (const char *) inbuf;
         uintptr_t offset = 0;
@@ -197,7 +197,7 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
         cerr = cudaSetDevice(target);
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-        cuda_type->unpack(inbuf, outbuf, count, cuda_type->md, n_threads, n_blocks_x,
+        cuda_type->unpack(inbuf, outbuf, count, op, cuda_type->md, n_threads, n_blocks_x,
                           n_blocks_y, n_blocks_z, target);
 
         cerr = cudaSetDevice(cur_device);
