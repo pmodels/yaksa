@@ -126,6 +126,13 @@
         yaksur_type_create_hook(tmp_type_);                             \
     } while (0)
 
+#define INIT_BUILTIN_PAIRTYPE_CONTIG(BASE_TYPE, TYPE, rc, fn_fail)      \
+    do {                                                                \
+        yaksa_type_t id;                                                \
+        yaksa_type_create_contig(2, YAKSA_TYPE__##BASE_TYPE, NULL, &id);\
+        assert(YAKSA_TYPE__##TYPE == id);                               \
+    } while (0)
+
 #define FINALIZE_BUILTIN_TYPE(TYPE, rc, fn_fail)                        \
     do {                                                                \
         yaksu_handle_t id = (yaksu_handle_t) YAKSA_TYPE__##TYPE;        \
@@ -244,15 +251,14 @@ int yaksa_init(yaksa_info_t info)
     INIT_BUILTIN_TYPE(double, DOUBLE, rc, fn_fail);
     INIT_BUILTIN_TYPE(long double, LONG_DOUBLE, rc, fn_fail);
 
-    INIT_BUILTIN_PAIRTYPE(float, float, yaksi_c_complex_s, C_COMPLEX, rc, fn_fail);
-    INIT_BUILTIN_PAIRTYPE(double, double, yaksi_c_double_complex_s, C_DOUBLE_COMPLEX, rc, fn_fail);
-    INIT_BUILTIN_PAIRTYPE(long double, long double, yaksi_c_long_double_complex_s,
-                          C_LONG_DOUBLE_COMPLEX, rc, fn_fail);
+    INIT_BUILTIN_PAIRTYPE_CONTIG(FLOAT, C_COMPLEX, rc, fn_fail);
+    INIT_BUILTIN_PAIRTYPE_CONTIG(DOUBLE, C_DOUBLE_COMPLEX, rc, fn_fail);
+    INIT_BUILTIN_PAIRTYPE_CONTIG(LONG_DOUBLE, C_LONG_DOUBLE_COMPLEX, rc, fn_fail);
     INIT_BUILTIN_PAIRTYPE(float, int, yaksi_float_int_s, FLOAT_INT, rc, fn_fail);
     INIT_BUILTIN_PAIRTYPE(double, int, yaksi_double_int_s, DOUBLE_INT, rc, fn_fail);
     INIT_BUILTIN_PAIRTYPE(long, int, yaksi_long_int_s, LONG_INT, rc, fn_fail);
     /* *INDENT-OFF* */
-    INIT_BUILTIN_PAIRTYPE(int, int, yaksi_2int_s, 2INT, rc, fn_fail);
+    INIT_BUILTIN_PAIRTYPE_CONTIG(INT, 2INT, rc, fn_fail);
     /* *INDENT-ON* */
     INIT_BUILTIN_PAIRTYPE(short, int, yaksi_short_int_s, SHORT_INT, rc, fn_fail);
     INIT_BUILTIN_PAIRTYPE(long double, int, yaksi_long_double_int_s, LONG_DOUBLE_INT, rc, fn_fail);
