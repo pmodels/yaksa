@@ -31,19 +31,19 @@ builtin_maps = { }
 
 ## hvector routines
 def hvector_decl(nesting, dtp, b):
-    yutils.display(OUTFILE, "int count%d = %s->u.hvector.count;\n" % (nesting, dtp))
-    yutils.display(OUTFILE, "int blocklength%d ATTRIBUTE((unused)) = %s->u.hvector.blocklength;\n" % (nesting, dtp))
+    yutils.display(OUTFILE, "intptr_t count%d = %s->u.hvector.count;\n" % (nesting, dtp))
+    yutils.display(OUTFILE, "intptr_t blocklength%d ATTRIBUTE((unused)) = %s->u.hvector.blocklength;\n" % (nesting, dtp))
     yutils.display(OUTFILE, "intptr_t stride%d = %s->u.hvector.stride;\n" % (nesting, dtp))
     yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent;\n" % (nesting, dtp))
 
 def hvector(suffix, b, blklen, last):
     global num_paren_open
     num_paren_open += 2
-    yutils.display(OUTFILE, "for (int j%d = 0; j%d < count%d; j%d++) {\n" % (suffix, suffix, suffix, suffix))
+    yutils.display(OUTFILE, "for (intptr_t j%d = 0; j%d < count%d; j%d++) {\n" % (suffix, suffix, suffix, suffix))
     if (blklen == "generic"):
-        yutils.display(OUTFILE, "for (int k%d = 0; k%d < blocklength%d; k%d++) {\n" % (suffix, suffix, suffix, suffix))
+        yutils.display(OUTFILE, "for (intptr_t k%d = 0; k%d < blocklength%d; k%d++) {\n" % (suffix, suffix, suffix, suffix))
     else:
-        yutils.display(OUTFILE, "for (int k%d = 0; k%d < %s; k%d++) {\n" % (suffix, suffix, blklen, suffix))
+        yutils.display(OUTFILE, "for (intptr_t k%d = 0; k%d < %s; k%d++) {\n" % (suffix, suffix, blklen, suffix))
     global s
     if (last != 1):
         s += " + j%d * stride%d + k%d * extent%d" % (suffix, suffix, suffix, suffix + 1)
@@ -52,19 +52,19 @@ def hvector(suffix, b, blklen, last):
 
 ## blkhindx routines
 def blkhindx_decl(nesting, dtp, b):
-    yutils.display(OUTFILE, "int count%d = %s->u.blkhindx.count;\n" % (nesting, dtp))
-    yutils.display(OUTFILE, "int blocklength%d ATTRIBUTE((unused)) = %s->u.blkhindx.blocklength;\n" % (nesting, dtp))
+    yutils.display(OUTFILE, "intptr_t count%d = %s->u.blkhindx.count;\n" % (nesting, dtp))
+    yutils.display(OUTFILE, "intptr_t blocklength%d ATTRIBUTE((unused)) = %s->u.blkhindx.blocklength;\n" % (nesting, dtp))
     yutils.display(OUTFILE, "intptr_t *restrict array_of_displs%d = %s->u.blkhindx.array_of_displs;\n" % (nesting, dtp))
     yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent;\n" % (nesting, dtp))
 
 def blkhindx(suffix, b, blklen, last):
     global num_paren_open
     num_paren_open += 2
-    yutils.display(OUTFILE, "for (int j%d = 0; j%d < count%d; j%d++) {\n" % (suffix, suffix, suffix, suffix))
+    yutils.display(OUTFILE, "for (intptr_t j%d = 0; j%d < count%d; j%d++) {\n" % (suffix, suffix, suffix, suffix))
     if (blklen == "generic"):
-        yutils.display(OUTFILE, "for (int k%d = 0; k%d < blocklength%d; k%d++) {\n" % (suffix, suffix, suffix, suffix))
+        yutils.display(OUTFILE, "for (intptr_t k%d = 0; k%d < blocklength%d; k%d++) {\n" % (suffix, suffix, suffix, suffix))
     else:
-        yutils.display(OUTFILE, "for (int k%d = 0; k%d < %s; k%d++) {\n" % (suffix, suffix, blklen, suffix))
+        yutils.display(OUTFILE, "for (intptr_t k%d = 0; k%d < %s; k%d++) {\n" % (suffix, suffix, blklen, suffix))
     global s
     if (last != 1):
         s += " + array_of_displs%d[j%d] + k%d * extent%d" % \
@@ -74,16 +74,16 @@ def blkhindx(suffix, b, blklen, last):
 
 ## hindexed routines
 def hindexed_decl(nesting, dtp, b):
-    yutils.display(OUTFILE, "int count%d = %s->u.hindexed.count;\n" % (nesting, dtp))
-    yutils.display(OUTFILE, "int *restrict array_of_blocklengths%d = %s->u.hindexed.array_of_blocklengths;\n" % (nesting, dtp))
+    yutils.display(OUTFILE, "intptr_t count%d = %s->u.hindexed.count;\n" % (nesting, dtp))
+    yutils.display(OUTFILE, "intptr_t *restrict array_of_blocklengths%d = %s->u.hindexed.array_of_blocklengths;\n" % (nesting, dtp))
     yutils.display(OUTFILE, "intptr_t *restrict array_of_displs%d = %s->u.hindexed.array_of_displs;\n" % (nesting, dtp))
     yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent;\n" % (nesting, dtp))
 
 def hindexed(suffix, b, blklen, last):
     global num_paren_open
     num_paren_open += 2
-    yutils.display(OUTFILE, "for (int j%d = 0; j%d < count%d; j%d++) {\n" % (suffix, suffix, suffix, suffix))
-    yutils.display(OUTFILE, "for (int k%d = 0; k%d < array_of_blocklengths%d[j%d]; k%d++) {\n" % \
+    yutils.display(OUTFILE, "for (intptr_t j%d = 0; j%d < count%d; j%d++) {\n" % (suffix, suffix, suffix, suffix))
+    yutils.display(OUTFILE, "for (intptr_t k%d = 0; k%d < array_of_blocklengths%d[j%d]; k%d++) {\n" % \
             (suffix, suffix, suffix, suffix, suffix))
     global s
     if (last != 1):
@@ -94,14 +94,14 @@ def hindexed(suffix, b, blklen, last):
 
 ## contig routines
 def contig_decl(nesting, dtp, b):
-    yutils.display(OUTFILE, "int count%d = %s->u.contig.count;\n" % (nesting, dtp))
+    yutils.display(OUTFILE, "intptr_t count%d = %s->u.contig.count;\n" % (nesting, dtp))
     yutils.display(OUTFILE, "intptr_t stride%d = %s->u.contig.child->extent;\n" % (nesting, dtp))
     yutils.display(OUTFILE, "uintptr_t extent%d ATTRIBUTE((unused)) = %s->extent;\n" % (nesting, dtp))
 
 def contig(suffix, b, blklen, last):
     global num_paren_open
     num_paren_open += 1
-    yutils.display(OUTFILE, "for (int j%d = 0; j%d < count%d; j%d++) {\n" % (suffix, suffix, suffix, suffix))
+    yutils.display(OUTFILE, "for (intptr_t j%d = 0; j%d < count%d; j%d++) {\n" % (suffix, suffix, suffix, suffix))
     global s
     s += " + j%d * stride%d" % (suffix, suffix)
 
@@ -162,7 +162,7 @@ def generate_kernels(b, darray, blklen):
             yutils.display(OUTFILE, "case YAKSA_OP__%s:\n" % op)
             yutils.display(OUTFILE, "{\n")
 
-            yutils.display(OUTFILE, "for (int i = 0; i < count; i++) {\n")
+            yutils.display(OUTFILE, "for (intptr_t i = 0; i < count; i++) {\n")
             num_paren_open += 1
             s = "i * extent"
             for x in range(len(darray)):

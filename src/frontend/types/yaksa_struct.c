@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
+int yaksi_type_create_struct(intptr_t count, const intptr_t * array_of_blocklengths,
                              const intptr_t * array_of_displs, yaksi_type_s ** array_of_intypes,
                              yaksi_type_s ** newtype)
 {
@@ -16,7 +16,7 @@ int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
 
     /* shortcut for hindexed types */
     bool is_hindexed = true;
-    for (int i = 1; i < count; i++) {
+    for (intptr_t i = 1; i < count; i++) {
         if (array_of_intypes[i] != array_of_intypes[i - 1])
             is_hindexed = false;
     }
@@ -36,7 +36,7 @@ int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
     outtype->kind = YAKSI_TYPE_KIND__STRUCT;
 
     outtype->size = 0;
-    for (int i = 0; i < count; i++) {
+    for (intptr_t i = 0; i < count; i++) {
         outtype->size += array_of_intypes[i]->size * array_of_blocklengths[i];
         yaksu_atomic_incr(&array_of_intypes[i]->refcount);
     }
@@ -44,7 +44,7 @@ int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
     int is_set;
     is_set = 0;
     outtype->alignment = 0;
-    for (int idx = 0; idx < count; idx++) {
+    for (intptr_t idx = 0; idx < count; idx++) {
         if (array_of_blocklengths[idx] == 0)
             continue;
 
@@ -97,17 +97,17 @@ int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
     if ((outtype->ub - outtype->lb) == outtype->size) {
         outtype->is_contig = true;
 
-        for (int i = 0; i < count; i++) {
+        for (intptr_t i = 0; i < count; i++) {
             if (array_of_intypes[i]->is_contig == false) {
                 outtype->is_contig = false;
                 break;
             }
         }
 
-        int left = 0;
+        intptr_t left = 0;
         while (array_of_blocklengths[left] == 0)
             left++;
-        int right = left + 1;
+        intptr_t right = left + 1;
         while (right < count && array_of_blocklengths[right] == 0)
             right++;
         while (right < count) {
@@ -129,7 +129,7 @@ int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
         outtype->num_contig = 1;
     } else {
         outtype->num_contig = 0;
-        for (int i = 0; i < count; i++) {
+        for (intptr_t i = 0; i < count; i++) {
             if (array_of_intypes[i]->is_contig && array_of_blocklengths[i]) {
                 outtype->num_contig++;
             } else {
@@ -139,10 +139,10 @@ int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
     }
 
     outtype->u.str.count = count;
-    outtype->u.str.array_of_blocklengths = (int *) malloc(count * sizeof(intptr_t));
+    outtype->u.str.array_of_blocklengths = (intptr_t *) malloc(count * sizeof(intptr_t));
     outtype->u.str.array_of_displs = (intptr_t *) malloc(count * sizeof(intptr_t));
     outtype->u.str.array_of_types = (yaksi_type_s **) malloc(count * sizeof(yaksi_type_s *));
-    for (int i = 0; i < count; i++) {
+    for (intptr_t i = 0; i < count; i++) {
         outtype->u.str.array_of_blocklengths[i] = array_of_blocklengths[i];
         outtype->u.str.array_of_displs[i] = array_of_displs[i];
         outtype->u.str.array_of_types[i] = array_of_intypes[i];
@@ -157,9 +157,10 @@ int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
     goto fn_exit;
 }
 
-int yaksa_type_create_struct(int count, const int *array_of_blocklengths,
-                             const intptr_t * array_of_displs, const yaksa_type_t * array_of_types,
-                             yaksa_info_t info, yaksa_type_t * newtype)
+int yaksa_type_create_struct(intptr_t count, const intptr_t * array_of_blocklengths,
+                             const intptr_t * array_of_displs,
+                             const yaksa_type_t * array_of_types, yaksa_info_t info,
+                             yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -167,7 +168,7 @@ int yaksa_type_create_struct(int count, const int *array_of_blocklengths,
 
     uintptr_t total_size;
     total_size = 0;
-    for (int i = 0; i < count; i++) {
+    for (intptr_t i = 0; i < count; i++) {
         yaksi_type_s *type;
         rc = yaksi_type_get(array_of_types[i], &type);
         YAKSU_ERR_CHECK(rc, fn_fail);
@@ -183,7 +184,7 @@ int yaksa_type_create_struct(int count, const int *array_of_blocklengths,
     yaksi_type_s **array_of_intypes;
     array_of_intypes = (yaksi_type_s **) malloc(count * sizeof(yaksi_type_s *));
 
-    for (int i = 0; i < count; i++) {
+    for (intptr_t i = 0; i < count; i++) {
         rc = yaksi_type_get(array_of_types[i], &array_of_intypes[i]);
         YAKSU_ERR_CHECK(rc, fn_fail);
     }

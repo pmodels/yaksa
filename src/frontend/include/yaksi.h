@@ -99,26 +99,26 @@ typedef struct yaksi_type_s {
 
     union {
         struct {
-            int count;
-            int blocklength;
+            intptr_t count;
+            intptr_t blocklength;
             intptr_t stride;
             struct yaksi_type_s *child;
         } hvector;
         struct {
-            int count;
-            int blocklength;
+            intptr_t count;
+            intptr_t blocklength;
             intptr_t *array_of_displs;
             struct yaksi_type_s *child;
         } blkhindx;
         struct {
-            int count;
-            int *array_of_blocklengths;
+            intptr_t count;
+            intptr_t *array_of_blocklengths;
             intptr_t *array_of_displs;
             struct yaksi_type_s *child;
         } hindexed;
         struct {
-            int count;
-            int *array_of_blocklengths;
+            intptr_t count;
+            intptr_t *array_of_blocklengths;
             intptr_t *array_of_displs;
             struct yaksi_type_s **array_of_types;
         } str;
@@ -126,7 +126,7 @@ typedef struct yaksi_type_s {
             struct yaksi_type_s *child;
         } resized;
         struct {
-            int count;
+            intptr_t count;
             struct yaksi_type_s *child;
         } contig;
         struct {
@@ -213,24 +213,25 @@ typedef struct {
 
 
 /* function declarations come at the very end */
-int yaksi_type_create_hvector(int count, int blocklength, intptr_t stride, yaksi_type_s * intype,
-                              yaksi_type_s ** outtype);
-int yaksi_type_create_contig(int count, yaksi_type_s * intype, yaksi_type_s ** outtype);
+int yaksi_type_create_hvector(intptr_t count, intptr_t blocklength, intptr_t stride,
+                              yaksi_type_s * intype, yaksi_type_s ** outtype);
+int yaksi_type_create_contig(intptr_t count, yaksi_type_s * intype, yaksi_type_s ** outtype);
 int yaksi_type_create_dup(yaksi_type_s * intype, yaksi_type_s ** outtype);
-int yaksi_type_create_hindexed(int count, const int *array_of_blocklengths,
+int yaksi_type_create_hindexed(intptr_t count, const intptr_t * array_of_blocklengths,
                                const intptr_t * array_of_displacements, yaksi_type_s * intype,
                                yaksi_type_s ** outtype);
-int yaksi_type_create_hindexed_block(int count, int blocklength,
+int yaksi_type_create_hindexed_block(intptr_t count, intptr_t blocklength,
                                      const intptr_t * array_of_displacements, yaksi_type_s * intype,
                                      yaksi_type_s ** outtype);
 int yaksi_type_create_resized(yaksi_type_s * intype, intptr_t lb, intptr_t extent,
                               yaksi_type_s ** outtype);
-int yaksi_type_create_struct(int count, const int *array_of_blocklengths,
+int yaksi_type_create_struct(intptr_t count, const intptr_t * array_of_blocklengths,
                              const intptr_t * array_of_displacements,
                              yaksi_type_s ** array_of_intypes, yaksi_type_s ** outtype);
-int yaksi_type_create_subarray(int ndims, const int *array_of_sizes, const int *array_of_subsizes,
-                               const int *array_of_starts, yaksa_subarray_order_e order,
-                               yaksi_type_s * intype, yaksi_type_s ** outtype);
+int yaksi_type_create_subarray(int ndims, const intptr_t * array_of_sizes,
+                               const intptr_t * array_of_subsizes, const intptr_t * array_of_starts,
+                               yaksa_subarray_order_e order, yaksi_type_s * intype,
+                               yaksi_type_s ** outtype);
 int yaksi_type_free(yaksi_type_s * type);
 
 int yaksi_ipack(const void *inbuf, uintptr_t incount, yaksi_type_s * type, uintptr_t inoffset,

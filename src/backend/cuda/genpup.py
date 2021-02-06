@@ -149,7 +149,7 @@ def generate_kernels(b, darray, op):
                 yutils.display(OUTFILE, "inner_elements /= %s->u.%s.blocklength;\n" % (md, d))
             elif (d == "hindexed"):
                 yutils.display(OUTFILE, "uintptr_t x%d;\n" % idx)
-                yutils.display(OUTFILE, "for (int i = 0; i < %s->u.%s.count; i++) {\n" % (md, d))
+                yutils.display(OUTFILE, "for (intptr_t i = 0; i < %s->u.%s.count; i++) {\n" % (md, d))
                 yutils.display(OUTFILE, "    uintptr_t in_elems = %s->u.%s.array_of_blocklengths[i] *\n" % (md, d))
                 yutils.display(OUTFILE, "                         %s->u.%s.child->num_elements;\n" % (md, d))
                 yutils.display(OUTFILE, "    if (res < in_elems) {\n")

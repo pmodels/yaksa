@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-int yaksi_type_create_contig(int count, yaksi_type_s * intype, yaksi_type_s ** newtype)
+int yaksi_type_create_contig(intptr_t count, yaksi_type_s * intype, yaksi_type_s ** newtype)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -64,7 +64,7 @@ int yaksi_type_create_contig(int count, yaksi_type_s * intype, yaksi_type_s ** n
     goto fn_exit;
 }
 
-int yaksa_type_create_contig(int count, yaksa_type_t oldtype, yaksa_info_t info,
+int yaksa_type_create_contig(intptr_t count, yaksa_type_t oldtype, yaksa_info_t info,
                              yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;

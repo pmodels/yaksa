@@ -122,8 +122,8 @@ typedef struct {
     /* in case the base type is a struct */
     int base_type_is_struct;
     struct {
-        int numblks;
-        int *array_of_blklens;
+        intptr_t numblks;
+        intptr_t *array_of_blklens;
         intptr_t *array_of_displs;
         yaksa_type_t *array_of_types;
     } base_type_attrs;
@@ -371,7 +371,7 @@ typedef struct DTPI_Attr {
 
     union {
         struct {
-            int blklen;
+            intptr_t blklen;
         } contig;
 
         struct {
@@ -380,52 +380,52 @@ typedef struct DTPI_Attr {
         } resized;
 
         struct {
-            int numblks;
-            int blklen;
-            int stride;
+            intptr_t numblks;
+            intptr_t blklen;
+            intptr_t stride;
         } vector;
 
         struct {
-            int numblks;
-            int blklen;
+            intptr_t numblks;
+            intptr_t blklen;
             intptr_t stride;
         } hvector;
 
         struct {
-            int numblks;
-            int blklen;
-            int *array_of_displs;
+            intptr_t numblks;
+            intptr_t blklen;
+            intptr_t *array_of_displs;
         } blkindx;
 
         struct {
-            int numblks;
-            int blklen;
+            intptr_t numblks;
+            intptr_t blklen;
             intptr_t *array_of_displs;
         } blkhindx;
 
         struct {
-            int numblks;
-            int *array_of_blklens;
-            int *array_of_displs;
+            intptr_t numblks;
+            intptr_t *array_of_blklens;
+            intptr_t *array_of_displs;
         } indexed;
 
         struct {
-            int numblks;
-            int *array_of_blklens;
+            intptr_t numblks;
+            intptr_t *array_of_blklens;
             intptr_t *array_of_displs;
         } hindexed;
 
         struct {
-            int ndims;
-            int *array_of_sizes;
-            int *array_of_subsizes;
-            int *array_of_starts;
+            intptr_t ndims;
+            intptr_t *array_of_sizes;
+            intptr_t *array_of_subsizes;
+            intptr_t *array_of_starts;
             int order;
         } subarray;
 
         struct {
-            int numblks;
-            int *array_of_blklens;
+            intptr_t numblks;
+            intptr_t *array_of_blklens;
             intptr_t *array_of_displs;
         } structure;
     } u;

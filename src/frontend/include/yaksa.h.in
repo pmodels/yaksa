@@ -261,8 +261,8 @@ int yaksa_finalize(void);
  * \param[in]  info         Info hint to apply
  * \param[out] newtype      Final generated type
  */
-int yaksa_type_create_vector(int count, int blocklength, int stride, yaksa_type_t oldtype,
-                             yaksa_info_t info, yaksa_type_t * newtype);
+int yaksa_type_create_vector(intptr_t count, intptr_t blocklength, intptr_t stride,
+                             yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t * newtype);
 
 /*!
  * \brief creates a hvector layout
@@ -275,8 +275,8 @@ int yaksa_type_create_vector(int count, int blocklength, int stride, yaksa_type_
  * \param[in]  info         Info hint to apply
  * \param[out] newtype      Final generated type
  */
-int yaksa_type_create_hvector(int count, int blocklength, intptr_t stride, yaksa_type_t oldtype,
-                              yaksa_info_t info, yaksa_type_t * newtype);
+int yaksa_type_create_hvector(intptr_t count, intptr_t blocklength, intptr_t stride,
+                              yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t * newtype);
 
 /*!
  * \brief creates a contig layout
@@ -286,7 +286,7 @@ int yaksa_type_create_hvector(int count, int blocklength, intptr_t stride, yaksa
  * \param[in]  info         Info hint to apply
  * \param[out] newtype      Final generated type
  */
-int yaksa_type_create_contig(int count, yaksa_type_t oldtype, yaksa_info_t info,
+int yaksa_type_create_contig(intptr_t count, yaksa_type_t oldtype, yaksa_info_t info,
                              yaksa_type_t * newtype);
 
 /*!
@@ -309,9 +309,9 @@ int yaksa_type_create_dup(yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t 
  * \param[in]  info                   Info hint to apply
  * \param[out] newtype                Final generated type
  */
-int yaksa_type_create_indexed_block(int count, int blocklength, const int *array_of_displacements,
-                                    yaksa_type_t oldtype, yaksa_info_t info,
-                                    yaksa_type_t * newtype);
+int yaksa_type_create_indexed_block(intptr_t count, intptr_t blocklength,
+                                    const intptr_t * array_of_displacements, yaksa_type_t oldtype,
+                                    yaksa_info_t info, yaksa_type_t * newtype);
 
 /*!
  * \brief creates a block-hindexed layout
@@ -324,9 +324,10 @@ int yaksa_type_create_indexed_block(int count, int blocklength, const int *array
  * \param[in]  info                   Info hint to apply
  * \param[out] newtype                Final generated type
  */
-int yaksa_type_create_hindexed_block(int count, int blocklength,
-                                     const intptr_t * array_of_displacements, yaksa_type_t oldtype,
-                                     yaksa_info_t info, yaksa_type_t * newtype);
+int yaksa_type_create_hindexed_block(intptr_t count, intptr_t blocklength,
+                                     const intptr_t * array_of_displacements,
+                                     yaksa_type_t oldtype, yaksa_info_t info,
+                                     yaksa_type_t * newtype);
 
 /*!
  * \brief creates a indexed layout
@@ -339,8 +340,8 @@ int yaksa_type_create_hindexed_block(int count, int blocklength,
  * \param[in]  info                   Info hint to apply
  * \param[out] newtype                Final generated type
  */
-int yaksa_type_create_indexed(int count, const int *array_of_blocklengths,
-                              const int *array_of_displacements, yaksa_type_t oldtype,
+int yaksa_type_create_indexed(intptr_t count, const intptr_t * array_of_blocklengths,
+                              const intptr_t * array_of_displacements, yaksa_type_t oldtype,
                               yaksa_info_t info, yaksa_type_t * newtype);
 
 /*!
@@ -354,7 +355,7 @@ int yaksa_type_create_indexed(int count, const int *array_of_blocklengths,
  * \param[in]  info                   Info hint to apply
  * \param[out] newtype                Final generated type
  */
-int yaksa_type_create_hindexed(int count, const int *array_of_blocklengths,
+int yaksa_type_create_hindexed(intptr_t count, const intptr_t * array_of_blocklengths,
                                const intptr_t * array_of_displacements, yaksa_type_t oldtype,
                                yaksa_info_t info, yaksa_type_t * newtype);
 
@@ -381,7 +382,7 @@ int yaksa_type_create_resized(yaksa_type_t oldtype, intptr_t lb, intptr_t extent
  * \param[in]  info                   Info hint to apply
  * \param[out] newtype                Final generated type
  */
-int yaksa_type_create_struct(int count, const int *array_of_blocklengths,
+int yaksa_type_create_struct(intptr_t count, const intptr_t * array_of_blocklengths,
                              const intptr_t * array_of_displacements,
                              const yaksa_type_t * array_of_types, yaksa_info_t info,
                              yaksa_type_t * newtype);
@@ -398,8 +399,9 @@ int yaksa_type_create_struct(int count, const int *array_of_blocklengths,
  * \param[in]  info                   Info hint to apply
  * \param[out] newtype                Final generated type
  */
-int yaksa_type_create_subarray(int ndims, const int *array_of_sizes, const int *array_of_subsizes,
-                               const int *array_of_starts, yaksa_subarray_order_e order,
+int yaksa_type_create_subarray(int ndims, const intptr_t * array_of_sizes,
+                               const intptr_t * array_of_subsizes,
+                               const intptr_t * array_of_starts, yaksa_subarray_order_e order,
                                yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t * newtype);
 
 /*!

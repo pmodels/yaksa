@@ -253,7 +253,7 @@ static yaksa_type_t name_to_type(const char *name)
 int DTPI_parse_base_type_str(DTP_pool_s * dtp, const char *str)
 {
     yaksa_type_t *array_of_types = NULL;
-    int *array_of_blklens = NULL;
+    intptr_t *array_of_blklens = NULL;
     char **typestr = NULL;
     char **countstr = NULL;
     int num_types = 0;
@@ -301,7 +301,7 @@ int DTPI_parse_base_type_str(DTP_pool_s * dtp, const char *str)
     DTPI_ERR_ASSERT(num_types < MAX_TYPES, rc);
 
     DTPI_ALLOC_OR_FAIL(array_of_types, num_types * sizeof(yaksa_type_t), rc);
-    DTPI_ALLOC_OR_FAIL(array_of_blklens, num_types * sizeof(int), rc);
+    DTPI_ALLOC_OR_FAIL(array_of_blklens, num_types * sizeof(intptr_t), rc);
 
     for (i = 0; i < num_types; i++) {
         array_of_types[i] = name_to_type(typestr[i]);

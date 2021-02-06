@@ -147,18 +147,19 @@ int yaksuri_zei_md_alloc(yaksi_type_s * type, int dev_id)
 
 #if ZE_MD_HOST
             zerr = zeMemAllocHost(yaksuri_zei_global.context, &host_desc,
-                                  type->u.hindexed.count * sizeof(int), 1,
+                                  type->u.hindexed.count * sizeof(intptr_t), 1,
                                   (void **) &md->u.hindexed.array_of_blocklengths);
 #else
             zerr = zeMemAllocShared(yaksuri_zei_global.context, &device_desc, &host_desc,
-                                    type->u.hindexed.count * sizeof(int), 1,
+                                    type->u.hindexed.count * sizeof(intptr_t), 1,
                                     yaksuri_zei_global.device[dev_id],
                                     (void **) &md->u.hindexed.array_of_blocklengths);
 #endif
             YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
 
             memcpy(md->u.hindexed.array_of_blocklengths,
-                   type->u.hindexed.array_of_blocklengths, type->u.hindexed.count * sizeof(int));
+                   type->u.hindexed.array_of_blocklengths,
+                   type->u.hindexed.count * sizeof(intptr_t));
 
             rc = yaksuri_zei_md_alloc(type->u.hindexed.child, dev_id);
             YAKSU_ERR_CHECK(rc, fn_fail);
@@ -246,7 +247,7 @@ int yaksuri_zei_type_make_resident(yaksi_type_s * type, int dev_id)
         zerr =
             zeContextMakeMemoryResident(yaksuri_zei_global.context, device,
                                         md->u.hindexed.array_of_blocklengths,
-                                        md->u.hindexed.count * sizeof(int));
+                                        md->u.hindexed.count * sizeof(intptr_t));
         YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
         if (md->u.hindexed.child) {
             zerr =
@@ -319,7 +320,7 @@ int yaksuri_zei_type_evict_resident(yaksi_type_s * type, int dev_id)
         zerr =
             zeContextEvictMemory(yaksuri_zei_global.context, device,
                                  md->u.hindexed.array_of_blocklengths,
-                                 md->u.hindexed.count * sizeof(int));
+                                 md->u.hindexed.count * sizeof(intptr_t));
         YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
         assert(md->u.hindexed.child);
         zerr =

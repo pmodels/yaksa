@@ -8,8 +8,8 @@
 #include <stdlib.h>
 #include <assert.h>
 
-int yaksi_type_create_hvector(int count, int blocklength, intptr_t stride, yaksi_type_s * intype,
-                              yaksi_type_s ** newtype)
+int yaksi_type_create_hvector(intptr_t count, intptr_t blocklength, intptr_t stride,
+                              yaksi_type_s * intype, yaksi_type_s ** newtype)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -81,8 +81,8 @@ int yaksi_type_create_hvector(int count, int blocklength, intptr_t stride, yaksi
     goto fn_exit;
 }
 
-int yaksa_type_create_hvector(int count, int blocklength, intptr_t stride, yaksa_type_t oldtype,
-                              yaksa_info_t info, yaksa_type_t * newtype)
+int yaksa_type_create_hvector(intptr_t count, intptr_t blocklength, intptr_t stride,
+                              yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -110,8 +110,8 @@ int yaksa_type_create_hvector(int count, int blocklength, intptr_t stride, yaksa
     goto fn_exit;
 }
 
-int yaksa_type_create_vector(int count, int blocklength, int stride, yaksa_type_t oldtype,
-                             yaksa_info_t info, yaksa_type_t * newtype)
+int yaksa_type_create_vector(intptr_t count, intptr_t blocklength, intptr_t stride,
+                             yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 
