@@ -65,13 +65,21 @@ static void free_fn(void *buf, void *state)
     assert(0);
 }
 
-int yaksur_init_hook(void)
+int yaksur_init_hook(yaksi_info_s * info)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id;
 
     rc = yaksuri_seq_init_hook();
     YAKSU_ERR_CHECK(rc, fn_fail);
+
+    if (info) {
+        yaksuri_info_s *infopriv = info->backend.priv;
+        if (infopriv->gpudriver_id == YAKSURI_GPUDRIVER_ID__LAST) {
+            /* gpu disabled */
+            goto fn_exit;
+        }
+    }
 
     /* CUDA hooks */
     id = YAKSURI_GPUDRIVER_ID__CUDA;
