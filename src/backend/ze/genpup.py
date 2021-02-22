@@ -24,7 +24,7 @@ import gencomm
 num_paren_open = 0
 blklens = [ "generic" ]
 builtin_types = [ "char", "int8_t", "int16_t", \
-                  "int32_t", "int64_t", "float"]
+                  "int32_t", "int64_t", "float", "double", "c_complex", "c_double_complex"]
 
 builtin_maps = {
     "YAKSA_TYPE__UNSIGNED_CHAR": "char",
@@ -32,7 +32,6 @@ builtin_maps = {
     "YAKSA_TYPE__UINT16_T": "int16_t",
     "YAKSA_TYPE__UINT32_T": "int32_t",
     "YAKSA_TYPE__UINT64_T": "int64_t",
-    "YAKSA_TYPE__C_COMPLEX": "float",
     "YAKSA_TYPE__BYTE": "int8_t"
 }
 
@@ -204,12 +203,27 @@ def generate_kernels(b, darray, op):
             x = x + 1
             dtp = dtp + "->u.%s.child" % d
 
+        type = b
+        if (b == "c_complex"):
+            type = "float2"
+        elif (b == "c_double_complex"):
+            type = "double2"
+        elif (b == "c_long_double_complex"):
+            type = "long double2"
+
         if (func == "pack_REPLACE"):
             yutils.display(OUTFILE, "*((%s *) (void *) (dbuf + idx * sizeof(%s))) = *((const %s *) (const void *) (sbuf + %s));\n"
-                                       % (b, b, b, s))
+                                       % (type,type,type,s.replace(b,type)))
         elif (func == "pack_SUM"):
             yutils.display(OUTFILE, "*((%s *) (void *) (dbuf + idx * sizeof(%s))) += *((const %s *) (const void *) (sbuf + %s));\n"
-                                       % (b, b, b, s))
+                                       % (type,type,type,s.replace(b,type)))
+        elif (func == "pack_PROD" and (b == "c_complex" or b == "c_double_complex" or b == "c_long_double_complex")):
+            yutils.display(OUTFILE, "%s dest;\n" % type)
+            yutils.display(OUTFILE, "%s src = *((const %s *) (const void *) (sbuf + %s));\n" % (type,type,s.replace(b,type)))
+            yutils.display(OUTFILE, "%s temp_dest = *((%s *) (void *) (dbuf + idx * sizeof(%s)));\n" % (type,type,type))
+            yutils.display(OUTFILE, "dest.x = temp_dest.x * src.x - temp_dest.y * src.y;\n")
+            yutils.display(OUTFILE, "dest.y = temp_dest.x * src.y + temp_dest.y * src.x;\n")
+            yutils.display(OUTFILE, "*((%s *) (void *) (dbuf + idx * sizeof(%s))) = dest;\n" % (type,type))
         elif (func == "pack_PROD"):
             yutils.display(OUTFILE, "*((%s *) (void *) (dbuf + idx * sizeof(%s))) *= *((const %s *) (const void *) (sbuf + %s));\n"
                                        % (b, b, b, s))
@@ -247,10 +261,17 @@ def generate_kernels(b, darray, op):
                     % (b, b, b, b, b, s, b, b, b, s, b, b))
         elif (func == "unpack_REPLACE"):
             yutils.display(OUTFILE, "*((%s *) (void *) (dbuf + %s)) = *((const %s *) (const void *) (sbuf + idx * sizeof(%s)));\n"
-                                       % (b, s, b, b))
+                                       % (type,s.replace(b,type),type,type))
         elif (func == "unpack_SUM"):
             yutils.display(OUTFILE, "*((%s *) (void *) (dbuf + %s)) += *((const %s *) (const void *) (sbuf + idx * sizeof(%s)));\n"
-                                       % (b, s, b, b))
+                                       % (type,s.replace(b,type),type,type))
+        elif (func == "unpack_PROD" and (b == "c_complex" or b == "c_double_complex" or b == "c_long_double_complex")):
+            yutils.display(OUTFILE, "%s dest;\n" % type)
+            yutils.display(OUTFILE, "%s src = *((const %s *) (const void *) (sbuf + idx * sizeof(%s)));\n" % (type,type,type))
+            yutils.display(OUTFILE, "%s temp_dest = *((%s *) (void *) (dbuf + %s));\n" % (type,type,s.replace(b,type)))
+            yutils.display(OUTFILE, "dest.x = temp_dest.x * src.x - temp_dest.y * src.y;\n")
+            yutils.display(OUTFILE, "dest.y = temp_dest.x * src.y + temp_dest.y * src.x;\n")
+            yutils.display(OUTFILE, "*((%s *) (void *) (dbuf + %s)) = dest;\n" % (type,s.replace(b,type)))
         elif (func == "unpack_PROD"):
             yutils.display(OUTFILE, "*((%s *) (void *) (dbuf + %s)) *= *((const %s *) (const void *) (sbuf + idx * sizeof(%s)));\n"
                                        % (b, s, b, b))

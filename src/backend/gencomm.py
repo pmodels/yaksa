@@ -20,6 +20,9 @@ type_ops = {'_Bool': {'REPLACE', 'LAND', 'LOR', 'LXOR'},
             'int64_t': {'REPLACE', 'SUM', 'PROD', 'MIN', 'MAX', 'LAND', 'LOR', 'LXOR', 'BAND', 'BOR', 'BXOR'},
             'float': {'REPLACE', 'SUM', 'PROD', 'MIN', 'MAX'},
             'double': {'REPLACE', 'SUM', 'PROD', 'MIN', 'MAX'},
+            'c_complex': {'REPLACE', 'SUM', 'PROD'},
+            'c_double_complex': {'REPLACE', 'SUM', 'PROD'},
+            'c_long_double_complex': {'REPLACE', 'SUM', 'PROD'},
             'long double': {'REPLACE', 'SUM', 'PROD', 'MIN', 'MAX'}}
 ########################################################################################
 ##### Switch statement generation for pup function selection
