@@ -12,7 +12,7 @@ AC_DEFUN([PAC_SET_HEADER_LIB_PATH],[
                                 [specify path where $1 include directory and lib directory can be found])],
 
                 [AS_CASE(["$withval"],
-                         [yes|no|''],
+                         [yes|''],
                          [AC_MSG_WARN([--with[out]-$1=PATH expects a valid PATH])
                           with_$1=""])],
                 [with_$1=$2])
@@ -37,6 +37,7 @@ AC_DEFUN([PAC_SET_HEADER_LIB_PATH],[
     # Now append -I/-L args to CPPFLAGS/LDFLAGS, with more specific options
     # taking priority
 
+    if test "x$with_$1" != "xno" ; then
     AS_IF([test -n "${with_$1_include}"],
           [PAC_APPEND_FLAG([-I${with_$1_include}],[CPPFLAGS])],
           [AS_IF([test -n "${with_$1}"],
@@ -49,6 +50,8 @@ AC_DEFUN([PAC_SET_HEADER_LIB_PATH],[
                  dnl we are on a 32-bit host that happens to have both lib dirs available?
                  [PAC_APPEND_FLAG([-L${with_$1}/lib64],[LDFLAGS])
                   PAC_APPEND_FLAG([-L${with_$1}/lib],[LDFLAGS])])])
+
+    fi
 ])
 
 

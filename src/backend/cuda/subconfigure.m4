@@ -55,8 +55,9 @@ AC_ARG_WITH([cuda-sm],
             [with_cuda_sm=all])
 
 
-# --with=cuda
+# --with-cuda
 PAC_SET_HEADER_LIB_PATH([cuda])
+if test "$with_cuda" != "no" ; then
 PAC_CHECK_HEADER_LIB([cuda_runtime_api.h],[cudart],[cudaStreamSynchronize],[have_cuda=yes],[have_cuda=no])
 if test "${have_cuda}" = "yes" ; then
     AC_MSG_CHECKING([whether nvcc works])
@@ -89,6 +90,7 @@ EOF
         AC_MSG_RESULT([no])
     fi
     rm -f conftest.*
+fi
 fi
 AM_CONDITIONAL([BUILD_CUDA_BACKEND], [test x${have_cuda} = xyes])
 AM_CONDITIONAL([BUILD_CUDA_TESTS], [test x${have_cuda} = xyes])

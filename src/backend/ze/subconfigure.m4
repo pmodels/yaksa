@@ -8,8 +8,9 @@
 ##### capture user arguments
 ##########################################################################
 
-# --with=ze
+# --with-ze
 PAC_SET_HEADER_LIB_PATH([ze])
+if test "$with_ze" != "no" ; then
 if test x"${with_ze}" != x ; then
     PAC_CHECK_HEADER_LIB([level_zero/ze_api.h],[ze_loader],[zeCommandQueueCreate],[have_ze=yes],[have_ze=no])
     AC_MSG_CHECKING([whether ocloc is installed])
@@ -42,6 +43,7 @@ typedef struct _ze_ipc_mem_handle_t ze_ipc_mem_handle_t;
 fi
 if test "${have_ze}" = "yes" ; then
     AC_DEFINE([HAVE_ZE],[1],[Define is ZE is available])
+fi
 fi
 AM_CONDITIONAL([BUILD_ZE_BACKEND], [test x${have_ze} = xyes])
 AM_CONDITIONAL([BUILD_ZE_TESTS], [test x${have_ze} = xyes])
