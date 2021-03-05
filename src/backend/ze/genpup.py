@@ -446,8 +446,39 @@ if __name__ == '__main__':
     OUTFILE.write("const unsigned char * yaksuri_zei_pup_str[%d];\n" % num_modules)
     OUTFILE.write("unsigned long yaksuri_zei_pup_size[%d];\n\n" % num_modules)
 
-    OUTFILE.write("const char * yaksuri_zei_kernel_funcs[%d];\n" % num_kernels)
-    OUTFILE.write("int yaksuri_zei_kernel_module_map[%d];\n\n" % num_kernels)
+    OUTFILE.write("int yaksuri_zei_kernel_module_map[%d];\n" % num_kernels)
+    OUTFILE.write("const char * yaksuri_zei_kernel_funcs[%d] = {\n" % num_kernels)
+    m = 0
+    i = 0
+    for b in builtin_types:
+        for op in gencomm.type_ops[b]:
+            for func in "pack", "unpack":
+                OUTFILE.write("    \"yaksuri_zei_kernel_%s_%s_%s\",\t/* %d */\n" % (func, op, b.replace(" ", "_"), i))
+                i += 1
+        m += 1
+        for d1 in gencomm.derived_types:
+            for op in gencomm.type_ops[b]:
+                for func in "pack", "unpack":
+                    OUTFILE.write("    \"yaksuri_zei_kernel_%s_%s_%s_%s\",\t/* %d */\n" % (func, op, d1, b.replace(" ", "_"), i))
+                    i += 1
+            m += 1
+            ##### generate the core pack/unpack kernels (more than one level)
+            for d2 in gencomm.derived_types:
+                for darray in darraylist:
+                    darray.append(d1)
+                    darray.append(d2)
+                    for op in gencomm.type_ops[b]:
+                        for func in "pack","unpack":
+                            func_name = "yaksuri_zei_kernel_%s_%s_" % (func, op)
+                            for d in darray:
+                                func_name = func_name + "%s_" % d
+                            func_name = func_name + b.replace(" ", "_")
+                            OUTFILE.write("    \"%s\",\t/* %d */\n" % (func_name, i))
+                            i += 1
+                    darray.pop()
+                    darray.pop()
+                m += 1
+    OUTFILE.write("};\n\n")
 
     # create modules using level zero API
     yutils.display(OUTFILE, "ze_result_t yaksuri_ze_init_module_kernel() {\n")
@@ -474,14 +505,12 @@ if __name__ == '__main__':
     for b in builtin_types:
         for op in gencomm.type_ops[b]:
             for func in "pack", "unpack":
-                OUTFILE.write("    yaksuri_zei_kernel_funcs[%d] = \"yaksuri_zei_kernel_%s_%s_%s\";\n" % (i, func, op, b.replace(" ", "_")))
                 OUTFILE.write("    yaksuri_zei_kernel_module_map[%d] = %d;\n" % (i, m))    
                 i += 1
         m += 1
         for d1 in gencomm.derived_types:
             for op in gencomm.type_ops[b]:
                 for func in "pack", "unpack":
-                    OUTFILE.write("    yaksuri_zei_kernel_funcs[%d] = \"yaksuri_zei_kernel_%s_%s_%s_%s\";\n" % (i, func, op, d1, b.replace(" ", "_")))
                     OUTFILE.write("    yaksuri_zei_kernel_module_map[%d] = %d;\n" % (i, m))
                     i += 1
             m += 1
@@ -496,7 +525,6 @@ if __name__ == '__main__':
                             for d in darray:
                                 func_name = func_name + "%s_" % d
                             func_name = func_name + b.replace(" ", "_")
-                            OUTFILE.write("    yaksuri_zei_kernel_funcs[%d] = \"%s\";\n" % (i, func_name))
                             OUTFILE.write("    yaksuri_zei_kernel_module_map[%d] = %d;\n" % (i, m))
                             i += 1
                     darray.pop()
