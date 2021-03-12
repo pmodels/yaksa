@@ -71,6 +71,7 @@ typedef struct {
     ze_command_queue_group_properties_t *queueProperties;
     uint32_t numQueueGroups;
     pthread_mutex_t mutex;
+    uint32_t deviceId;          /* level zero device Id */
     int dev_id;
 } yaksuri_zei_device_state_s;
 
