@@ -17,28 +17,16 @@
 
 #include "level_zero/ze_api.h"
 
+extern int use_subdevices;
+
 static ze_driver_handle_t global_ze_driver_handle;
 static ze_device_handle_t *global_devices = NULL;
 static ze_context_handle_t ze_context;
+static uint32_t device_count = 0;
 
 int pack_ze_get_ndevices(void)
 {
-    uint32_t driver_count = 0;
-    ze_result_t ret = zeDriverGet(&driver_count, NULL);
-    assert(ret == ZE_RESULT_SUCCESS);
-    assert(driver_count > 0);
-
-    ze_driver_handle_t *all_drivers = malloc(driver_count * sizeof(ze_driver_handle_t));
-    assert(all_drivers != NULL);
-    ret = zeDriverGet(&driver_count, all_drivers);
-    assert(ret == ZE_RESULT_SUCCESS);
-
-    uint32_t device_count = 0;
-    ret = zeDeviceGet(all_drivers[0], &device_count, NULL);
-    assert(ret == ZE_RESULT_SUCCESS);
-
-    free(all_drivers);
-
+    assert(device_count != 0);
     return (int) device_count;
 }
 
@@ -62,7 +50,6 @@ void pack_ze_init_devices(void)
     global_ze_driver_handle = all_drivers[0];
 
     ze_device_handle_t *all_devices = NULL;
-    uint32_t device_count = 0;
     ret = zeDeviceGet(all_drivers[0], &device_count, NULL);
     assert(ret == ZE_RESULT_SUCCESS);
     all_devices = malloc(device_count * sizeof(ze_device_handle_t));
@@ -70,6 +57,28 @@ void pack_ze_init_devices(void)
     ret = zeDeviceGet(all_drivers[0], &device_count, all_devices);
     assert(ret == ZE_RESULT_SUCCESS);
     global_devices = all_devices;
+    if (use_subdevices) {
+        ze_device_handle_t *subdevices;
+        int subdevice_count = 0;
+        for (int i = 0; i < device_count; i++) {
+            int subcount = 0;
+            ret = zeDeviceGetSubDevices(all_devices[i], &subcount, NULL);
+            assert(ret == ZE_RESULT_SUCCESS);
+            subdevice_count += subcount;
+        }
+        subdevices = (ze_device_handle_t *) malloc(sizeof(ze_device_handle_t) * subdevice_count);
+        int c = 0;
+        for (int i = 0; i < device_count; i++) {
+            int subcount = 0;
+            ret = zeDeviceGetSubDevices(all_devices[i], &subcount, NULL);
+            assert(ret == ZE_RESULT_SUCCESS);
+            ret = zeDeviceGetSubDevices(all_devices[i], &subcount, subdevices + c);
+            assert(ret == ZE_RESULT_SUCCESS);
+            c += subcount;
+        }
+        device_count = subdevice_count;
+        global_devices = subdevices;
+    }
 
     ze_context_desc_t contextDesc = { };
     ret = zeContextCreate(global_ze_driver_handle, &contextDesc, &ze_context);
