@@ -222,8 +222,13 @@ void *runtest(void *arg)
                 rc = DTP_obj_buf_init(sobj, sbuf_h, 0, 1, basecount);
                 assert(rc == DTP_SUCCESS);
 
-                rc = DTP_obj_buf_init(dobj, dbuf_h, -1, 0, basecount);
-                assert(rc == DTP_SUCCESS);
+                if (strstr(typestr, "complex") != NULL) {
+                    rc = DTP_obj_buf_init(dobj, dbuf_h, 0, 0, basecount);
+                    assert(rc == DTP_SUCCESS);
+                } else {
+                    rc = DTP_obj_buf_init(dobj, dbuf_h, -1, 0, basecount);
+                    assert(rc == DTP_SUCCESS);
+                }
 
                 break;
 
@@ -390,7 +395,11 @@ void *runtest(void *arg)
                 break;
 
             case YAKSA_OP__PROD:
-                rc = DTP_obj_buf_check(dobj, dbuf_h, 0, -1, basecount);
+                if (strstr(typestr, "complex") != NULL) {
+                    rc = DTP_obj_buf_check(dobj, dbuf_h, 0, 0, basecount);
+                } else {
+                    rc = DTP_obj_buf_check(dobj, dbuf_h, 0, -1, basecount);
+                }
                 assert(rc == DTP_SUCCESS);
 
                 break;
