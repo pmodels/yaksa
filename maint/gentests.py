@@ -15,12 +15,14 @@ iters = {
     1075: 128,
     65536: 32,
 }
-types = [ "int", "short_int", "int:3+float:2", "int:3+double:2" ]
+types = [ "int", "short_int", "int:3+float:2", "int:3+double:2", "c_complex", "c_double_complex" ]
 oplist = {
     "int": "int",
     "short_int": "int",
     "int:3+float:2": "float",
-    "int:3+double:2": "float" }
+    "int:3+double:2": "float",
+    "c_complex": "complex",
+    "c_double_complex": "complex"}
 seed = 1
 
 ##### simple tests generator

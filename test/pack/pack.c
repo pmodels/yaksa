@@ -90,10 +90,13 @@ yaksa_op_t int_ops[] =
 yaksa_op_t float_ops[] =
     { YAKSA_OP__MAX, YAKSA_OP__MIN, YAKSA_OP__SUM, YAKSA_OP__PROD, YAKSA_OP__REPLACE };
 
+yaksa_op_t complex_ops[] = { YAKSA_OP__SUM, YAKSA_OP__PROD, YAKSA_OP__REPLACE };
+
 enum {
     OPLIST_TYPE__UNSET,
     OPLIST_TYPE__INT,
     OPLIST_TYPE__FLOAT,
+    OPLIST_TYPE__COMPLEX,
 } oplist_type = OPLIST_TYPE__UNSET;
 
 #define MAX_OP_LIST  (1024)
@@ -483,6 +486,8 @@ int main(int argc, char **argv)
                 oplist_type = OPLIST_TYPE__INT;
             } else if (!strcmp(*argv, "float")) {
                 oplist_type = OPLIST_TYPE__FLOAT;
+            } else if (!strcmp(*argv, "complex")) {
+                oplist_type = OPLIST_TYPE__COMPLEX;
             } else {
                 fprintf(stderr, "unknown oplist type %s\n", *argv);
                 exit(1);
@@ -523,7 +528,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "   -overlap     should packing overlap (none, regular, irregular)\n");
         fprintf(stderr, "   -verbose     verbose output\n");
         fprintf(stderr, "   -num-threads number of threads to spawn\n");
-        fprintf(stderr, "   -oplist      oplist type (int, float)\n");
+        fprintf(stderr, "   -oplist      oplist type (int, float, complex)\n");
         exit(1);
     }
 
@@ -567,10 +572,15 @@ int main(int argc, char **argv)
             for (int j = 0; j < MAX_OP_LIST; j++) {
                 ops[i][j] = int_ops[rand() % max_ops];
             }
-        } else {
+        } else if (oplist_type == OPLIST_TYPE__FLOAT) {
             int max_ops = sizeof(float_ops) / sizeof(yaksa_op_t);
             for (int j = 0; j < MAX_OP_LIST; j++) {
                 ops[i][j] = float_ops[rand() % max_ops];
+            }
+        } else {
+            int max_ops = sizeof(complex_ops) / sizeof(yaksa_op_t);
+            for (int j = 0; j < MAX_OP_LIST; j++) {
+                ops[i][j] = complex_ops[rand() % max_ops];
             }
         }
     }
