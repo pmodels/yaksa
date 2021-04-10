@@ -1437,6 +1437,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                              yaksi_info_s * info, yaksa_op_t op, yaksi_request_s * request)
 {
     int rc = YAKSA_SUCCESS;
+    yaksuri_subreq_s *subreq = NULL;
     yaksuri_request_s *reqpriv = (yaksuri_request_s *) request->backend.priv;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
@@ -1456,7 +1457,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
         goto fn_exit;
     }
 
-    yaksuri_subreq_s *subreq = (yaksuri_subreq_s *) malloc(sizeof(yaksuri_subreq_s));
+    subreq = (yaksuri_subreq_s *) malloc(sizeof(yaksuri_subreq_s));
     uintptr_t threshold;
 
     if (reqpriv->optype == YAKSURI_OPTYPE__PACK) {
@@ -1504,14 +1505,6 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                 break;
         }
     }
-
-    /* Unsupported multichunk subreq */
-    if (rc == YAKSA_ERR__NOT_SUPPORTED) {
-        free(subreq);
-        goto fn_exit;
-    }
-
-    /* Other error handling */
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     pthread_mutex_lock(&progress_mutex);
@@ -1532,6 +1525,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
   fn_exit:
     return rc;
   fn_fail:
+    free(subreq);
     goto fn_exit;
 }
 
