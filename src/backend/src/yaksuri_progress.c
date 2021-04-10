@@ -1041,6 +1041,30 @@ static int unpack_d2h_release(yaksuri_request_s * reqpriv, yaksuri_subreq_s * su
     goto fn_exit;
 }
 
+static int set_multichunk_subreq(const void *inbuf, void *outbuf, uintptr_t count,
+                                 yaksi_type_s * type, yaksa_op_t op, yaksuri_subreq_s * subreq)
+{
+    int rc = YAKSA_SUCCESS;
+
+    /* we can only take on types where at least one count of the type
+     * fits into our temporary buffers. */
+    if (type->size > YAKSURI_TMPBUF_EL_SIZE) {
+        return YAKSA_ERR__NOT_SUPPORTED;
+    }
+
+    subreq->kind = YAKSURI_SUBREQ_KIND__MULTI_CHUNK;
+    subreq->u.multiple.inbuf = inbuf;
+    subreq->u.multiple.outbuf = outbuf;
+    subreq->u.multiple.count = count;
+    subreq->u.multiple.type = type;
+    subreq->u.multiple.op = op;
+    subreq->u.multiple.issued_count = 0;
+    subreq->u.multiple.chunks = NULL;
+
+    yaksu_atomic_incr(&type->refcount);
+    return rc;
+}
+
 int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
                              yaksi_info_s * info, yaksa_op_t op, yaksi_request_s * request)
 {
@@ -1078,7 +1102,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                     if (request->backend.inattr.device == request->backend.outattr.device) {
                         subreq->u.multiple.acquire = pack_d2d_unaligned_acquire;
                         subreq->u.multiple.release = simple_release;
-                        goto multi_chunk;
+                        rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
                     } else {
                         bool is_enabled;
                         rc = check_p2p_comm(id, reqpriv->request->backend.inattr.device,
@@ -1092,7 +1116,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                         }
                         subreq->u.multiple.release = simple_release;
 
-                        goto multi_chunk;
+                        rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
                     }
                 } else if (request->backend.inattr.device == request->backend.outattr.device) {
                     subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
@@ -1117,7 +1141,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                     }
                     subreq->u.multiple.release = simple_release;
 
-                    goto multi_chunk;
+                    rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
                 }
             } else if (request->backend.outattr.type == YAKSUR_PTR_TYPE__MANAGED) {
                 if (!buf_is_aligned(outbuf, type) && op != YAKSA_OP__REPLACE) {
@@ -1125,12 +1149,11 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                         request->backend.inattr.device == request->backend.outattr.device) {
                         subreq->u.multiple.acquire = pack_d2d_unaligned_acquire;
                         subreq->u.multiple.release = simple_release;
-                        goto multi_chunk;
                     } else {
                         subreq->u.multiple.acquire = pack_d2urh_acquire;
                         subreq->u.multiple.release = pack_d2urh_release;
-                        goto multi_chunk;
                     }
+                    rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
                 } else if (request->backend.outattr.device == -1 ||
                            request->backend.inattr.device == request->backend.outattr.device) {
                     subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
@@ -1145,7 +1168,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                 } else {
                     subreq->u.multiple.acquire = pack_d2urh_acquire;
                     subreq->u.multiple.release = pack_d2urh_release;
-                    goto multi_chunk;
+                    rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
                 }
             } else if (request->backend.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
                 if (op == YAKSA_OP__REPLACE) {
@@ -1163,23 +1186,23 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                     } else {
                         subreq->u.multiple.acquire = pack_d2rh_acquire;
                         subreq->u.multiple.release = pack_d2rh_release;
-                        goto multi_chunk;
+                        rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
                     }
                 } else {
                     subreq->u.multiple.acquire = pack_d2rh_acquire;
                     subreq->u.multiple.release = pack_d2rh_release;
-                    goto multi_chunk;
+                    rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
                 }
             } else {
                 subreq->u.multiple.acquire = pack_d2urh_acquire;
                 subreq->u.multiple.release = pack_d2urh_release;
-                goto multi_chunk;
+                rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
             }
         } else if (request->backend.inattr.type == YAKSUR_PTR_TYPE__MANAGED) {
             if (!buf_is_aligned(outbuf, type) && op != YAKSA_OP__REPLACE) {
                 subreq->u.multiple.acquire = pack_h2d_acquire;
                 subreq->u.multiple.release = simple_release;
-                goto multi_chunk;
+                rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
             } else if (request->backend.inattr.device == -1 ||
                        request->backend.inattr.device == request->backend.outattr.device) {
                 subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
@@ -1194,7 +1217,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
             } else {
                 subreq->u.multiple.acquire = pack_h2d_acquire;
                 subreq->u.multiple.release = simple_release;
-                goto multi_chunk;
+                rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
             }
         } else if (request->backend.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
             if (op == YAKSA_OP__REPLACE) {
@@ -1211,17 +1234,17 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                 } else {
                     subreq->u.multiple.acquire = pack_h2d_acquire;
                     subreq->u.multiple.release = simple_release;
-                    goto multi_chunk;
+                    rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
                 }
             } else {
                 subreq->u.multiple.acquire = pack_h2d_acquire;
                 subreq->u.multiple.release = simple_release;
-                goto multi_chunk;
+                rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
             }
         } else {
             subreq->u.multiple.acquire = pack_h2d_acquire;
             subreq->u.multiple.release = simple_release;
-            goto multi_chunk;
+            rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
         }
     } else {
         threshold = yaksuri_global.gpudriver[id].hooks->get_iov_unpack_threshold(info);
@@ -1232,7 +1255,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                     if (request->backend.inattr.device == request->backend.outattr.device) {
                         subreq->u.multiple.acquire = unpack_d2d_unaligned_acquire;
                         subreq->u.multiple.release = simple_release;
-                        goto multi_chunk;
+                        rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
                     } else {
                         bool is_enabled;
                         rc = check_p2p_comm(id, reqpriv->request->backend.inattr.device,
@@ -1246,7 +1269,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                         }
                         subreq->u.multiple.release = simple_release;
 
-                        goto multi_chunk;
+                        rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
                     }
                 } else if (request->backend.inattr.device == request->backend.outattr.device) {
                     subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
@@ -1271,13 +1294,13 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                     }
                     subreq->u.multiple.release = simple_release;
 
-                    goto multi_chunk;
+                    rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
                 }
             } else if (request->backend.outattr.type == YAKSUR_PTR_TYPE__MANAGED) {
                 if (!buf_is_aligned(inbuf, type) && op != YAKSA_OP__REPLACE) {
                     subreq->u.multiple.acquire = unpack_d2h_acquire;
                     subreq->u.multiple.release = unpack_d2h_release;
-                    goto multi_chunk;
+                    rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
                 } else if (request->backend.outattr.device == -1 ||
                            request->backend.inattr.device == request->backend.outattr.device) {
                     subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
@@ -1292,7 +1315,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                 } else {
                     subreq->u.multiple.acquire = unpack_d2h_acquire;
                     subreq->u.multiple.release = unpack_d2h_release;
-                    goto multi_chunk;
+                    rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
                 }
             } else if (request->backend.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
                 if (op == YAKSA_OP__REPLACE) {
@@ -1310,23 +1333,23 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                     } else {
                         subreq->u.multiple.acquire = unpack_d2h_acquire;
                         subreq->u.multiple.release = unpack_d2h_release;
-                        goto multi_chunk;
+                        rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
                     }
                 } else {
                     subreq->u.multiple.acquire = unpack_d2h_acquire;
                     subreq->u.multiple.release = unpack_d2h_release;
-                    goto multi_chunk;
+                    rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
                 }
             } else {
                 subreq->u.multiple.acquire = unpack_d2h_acquire;
                 subreq->u.multiple.release = unpack_d2h_release;
-                goto multi_chunk;
+                rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
             }
         } else if (request->backend.inattr.type == YAKSUR_PTR_TYPE__MANAGED) {
             if (!buf_is_aligned(inbuf, type) && op != YAKSA_OP__REPLACE) {
                 subreq->u.multiple.acquire = unpack_urh2d_acquire;
                 subreq->u.multiple.release = simple_release;
-                goto multi_chunk;
+                rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
             } else if (request->backend.inattr.device == -1 ||
                        request->backend.inattr.device == request->backend.outattr.device) {
                 subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
@@ -1341,7 +1364,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
             } else {
                 subreq->u.multiple.acquire = unpack_urh2d_acquire;
                 subreq->u.multiple.release = simple_release;
-                goto multi_chunk;
+                rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
             }
         } else if (request->backend.inattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
             if (op == YAKSA_OP__REPLACE) {
@@ -1358,39 +1381,25 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                 } else {
                     subreq->u.multiple.acquire = unpack_rh2d_acquire;
                     subreq->u.multiple.release = simple_release;
-                    goto multi_chunk;
+                    rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
                 }
             } else {
                 subreq->u.multiple.acquire = unpack_rh2d_acquire;
                 subreq->u.multiple.release = simple_release;
-                goto multi_chunk;
+                rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
             }
         } else {
             subreq->u.multiple.acquire = unpack_urh2d_acquire;
             subreq->u.multiple.release = simple_release;
-            goto multi_chunk;
+            rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
         }
     }
 
-  multi_chunk:
-    /* we can only take on types where at least one count of the type
-     * fits into our temporary buffers. */
-    if (type->size > YAKSURI_TMPBUF_EL_SIZE) {
-        rc = YAKSA_ERR__NOT_SUPPORTED;
+    /* Unsupported multichunk subreq */
+    if (rc == YAKSA_ERR__NOT_SUPPORTED) {
         free(subreq);
         goto fn_exit;
     }
-
-    subreq->kind = YAKSURI_SUBREQ_KIND__MULTI_CHUNK;
-    subreq->u.multiple.inbuf = inbuf;
-    subreq->u.multiple.outbuf = outbuf;
-    subreq->u.multiple.count = count;
-    subreq->u.multiple.type = type;
-    subreq->u.multiple.op = op;
-    subreq->u.multiple.issued_count = 0;
-    subreq->u.multiple.chunks = NULL;
-
-    yaksu_atomic_incr(&type->refcount);
 
   enqueue_subreq:
     pthread_mutex_lock(&progress_mutex);
