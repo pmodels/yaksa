@@ -1065,6 +1065,42 @@ static int set_multichunk_subreq(const void *inbuf, void *outbuf, uintptr_t coun
     return rc;
 }
 
+/* Fast-path pack subroutine */
+static int singlechunk_pack(yaksuri_gpudriver_id_e id, int device, const void *inbuf, void *outbuf,
+                            uintptr_t count, yaksi_type_s * type, yaksi_info_s * info,
+                            yaksa_op_t op, yaksuri_subreq_s * subreq)
+{
+    int rc = YAKSA_SUCCESS;
+    subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
+    rc = ipack(id, inbuf, outbuf, count, type, info, op, device);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    rc = event_record(id, device, &subreq->u.single.event);
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
+/* Fast-path unpack subroutine */
+static int singlechunk_unpack(yaksuri_gpudriver_id_e id, int device, const void *inbuf,
+                              void *outbuf, uintptr_t count, yaksi_type_s * type,
+                              yaksi_info_s * info, yaksa_op_t op, yaksuri_subreq_s * subreq)
+{
+    int rc = YAKSA_SUCCESS;
+    subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
+    rc = iunpack(id, inbuf, outbuf, count, type, info, op, device);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    rc = event_record(id, device, &subreq->u.single.event);
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
 /* Subroutines to setup subreq for pack with different buffer types */
 static int set_subreq_pack_from_device(const void *inbuf, void *outbuf, uintptr_t count,
                                        yaksi_type_s * type, yaksi_info_s * info, yaksa_op_t op,
@@ -1098,11 +1134,8 @@ static int set_subreq_pack_from_device(const void *inbuf, void *outbuf, uintptr_
                 YAKSU_ERR_CHECK(rc, fn_fail);
             }
         } else if (request->backend.inattr.device == request->backend.outattr.device) {
-            subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
-            rc = ipack(id, inbuf, outbuf, count, type, info, op, request->backend.inattr.device);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-
-            rc = event_record(id, request->backend.inattr.device, &subreq->u.single.event);
+            rc = singlechunk_pack(id, request->backend.inattr.device, inbuf, outbuf, count,
+                                  type, info, op, subreq);
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else {
             bool is_enabled;
@@ -1134,11 +1167,8 @@ static int set_subreq_pack_from_device(const void *inbuf, void *outbuf, uintptr_
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else if (request->backend.outattr.device == -1 ||
                    request->backend.inattr.device == request->backend.outattr.device) {
-            subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
-            rc = ipack(id, inbuf, outbuf, count, type, info, op, request->backend.inattr.device);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-
-            rc = event_record(id, request->backend.inattr.device, &subreq->u.single.event);
+            rc = singlechunk_pack(id, request->backend.inattr.device, inbuf, outbuf, count,
+                                  type, info, op, subreq);
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else {
             subreq->u.multiple.acquire = pack_d2urh_acquire;
@@ -1149,12 +1179,8 @@ static int set_subreq_pack_from_device(const void *inbuf, void *outbuf, uintptr_
     } else if (request->backend.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
         if (op == YAKSA_OP__REPLACE) {
             if (type->is_contig || type->size / type->num_contig >= threshold) {
-                subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
-                rc = ipack(id, inbuf, outbuf, count, type, info, op,
-                           request->backend.inattr.device);
-                YAKSU_ERR_CHECK(rc, fn_fail);
-
-                rc = event_record(id, request->backend.inattr.device, &subreq->u.single.event);
+                rc = singlechunk_pack(id, request->backend.inattr.device, inbuf, outbuf, count,
+                                      type, info, op, subreq);
                 YAKSU_ERR_CHECK(rc, fn_fail);
             } else {
                 subreq->u.multiple.acquire = pack_d2rh_acquire;
@@ -1196,11 +1222,8 @@ static int set_subreq_pack_from_managed(const void *inbuf, void *outbuf, uintptr
         YAKSU_ERR_CHECK(rc, fn_fail);
     } else if (request->backend.inattr.device == -1 ||
                request->backend.inattr.device == request->backend.outattr.device) {
-        subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
-        rc = ipack(id, inbuf, outbuf, count, type, info, op, request->backend.outattr.device);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-
-        rc = event_record(id, request->backend.outattr.device, &subreq->u.single.event);
+        rc = singlechunk_pack(id, request->backend.outattr.device, inbuf, outbuf, count,
+                              type, info, op, subreq);
         YAKSU_ERR_CHECK(rc, fn_fail);
     } else {
         subreq->u.multiple.acquire = pack_h2d_acquire;
@@ -1225,11 +1248,8 @@ static int set_subreq_pack_from_rhost(const void *inbuf, void *outbuf, uintptr_t
 
     if (op == YAKSA_OP__REPLACE) {
         if (type->is_contig || type->size / type->num_contig >= threshold) {
-            subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
-            rc = ipack(id, inbuf, outbuf, count, type, info, op, request->backend.outattr.device);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-
-            rc = event_record(id, request->backend.outattr.device, &subreq->u.single.event);
+            rc = singlechunk_pack(id, request->backend.outattr.device, inbuf, outbuf, count,
+                                  type, info, op, subreq);
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else {
             subreq->u.multiple.acquire = pack_h2d_acquire;
@@ -1283,11 +1303,8 @@ static int set_subreq_unpack_from_device(const void *inbuf, void *outbuf, uintpt
                 YAKSU_ERR_CHECK(rc, fn_fail);
             }
         } else if (request->backend.inattr.device == request->backend.outattr.device) {
-            subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
-            rc = iunpack(id, inbuf, outbuf, count, type, info, op, request->backend.inattr.device);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-
-            rc = event_record(id, request->backend.inattr.device, &subreq->u.single.event);
+            rc = singlechunk_unpack(id, request->backend.inattr.device, inbuf, outbuf, count,
+                                    type, info, op, subreq);
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else {
             bool is_enabled;
@@ -1313,11 +1330,8 @@ static int set_subreq_unpack_from_device(const void *inbuf, void *outbuf, uintpt
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else if (request->backend.outattr.device == -1 ||
                    request->backend.inattr.device == request->backend.outattr.device) {
-            subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
-            rc = iunpack(id, inbuf, outbuf, count, type, info, op, request->backend.inattr.device);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-
-            rc = event_record(id, request->backend.inattr.device, &subreq->u.single.event);
+            rc = singlechunk_unpack(id, request->backend.inattr.device, inbuf, outbuf, count,
+                                    type, info, op, subreq);
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else {
             subreq->u.multiple.acquire = unpack_d2h_acquire;
@@ -1328,12 +1342,8 @@ static int set_subreq_unpack_from_device(const void *inbuf, void *outbuf, uintpt
     } else if (request->backend.outattr.type == YAKSUR_PTR_TYPE__REGISTERED_HOST) {
         if (op == YAKSA_OP__REPLACE) {
             if (type->is_contig || type->size / type->num_contig >= threshold) {
-                subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
-                rc = iunpack(id, inbuf, outbuf, count, type, info, op,
-                             request->backend.inattr.device);
-                YAKSU_ERR_CHECK(rc, fn_fail);
-
-                rc = event_record(id, request->backend.inattr.device, &subreq->u.single.event);
+                rc = singlechunk_unpack(id, request->backend.inattr.device, inbuf, outbuf, count,
+                                        type, info, op, subreq);
                 YAKSU_ERR_CHECK(rc, fn_fail);
             } else {
                 subreq->u.multiple.acquire = unpack_d2h_acquire;
@@ -1375,11 +1385,8 @@ static int set_subreq_unpack_from_managed(const void *inbuf, void *outbuf, uintp
         YAKSU_ERR_CHECK(rc, fn_fail);
     } else if (request->backend.inattr.device == -1 ||
                request->backend.inattr.device == request->backend.outattr.device) {
-        subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
-        rc = iunpack(id, inbuf, outbuf, count, type, info, op, request->backend.outattr.device);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-
-        rc = event_record(id, request->backend.outattr.device, &subreq->u.single.event);
+        rc = singlechunk_unpack(id, request->backend.outattr.device, inbuf, outbuf, count,
+                                type, info, op, subreq);
         YAKSU_ERR_CHECK(rc, fn_fail);
     } else {
         subreq->u.multiple.acquire = unpack_urh2d_acquire;
@@ -1404,11 +1411,8 @@ static int set_subreq_unpack_from_rhost(const void *inbuf, void *outbuf, uintptr
 
     if (op == YAKSA_OP__REPLACE) {
         if (type->is_contig || type->size / type->num_contig >= threshold) {
-            subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
-            rc = iunpack(id, inbuf, outbuf, count, type, info, op, request->backend.outattr.device);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-
-            rc = event_record(id, request->backend.outattr.device, &subreq->u.single.event);
+            rc = singlechunk_unpack(id, request->backend.outattr.device, inbuf, outbuf, count,
+                                    type, info, op, subreq);
             YAKSU_ERR_CHECK(rc, fn_fail);
         } else {
             subreq->u.multiple.acquire = unpack_rh2d_acquire;
