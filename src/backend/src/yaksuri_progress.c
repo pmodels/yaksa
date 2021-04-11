@@ -1105,7 +1105,7 @@ static int singlechunk_unpack(yaksuri_gpudriver_id_e id, int device, const void 
 static int set_subreq_pack_d2d(const void *inbuf, void *outbuf, uintptr_t count,
                                yaksi_type_s * type, yaksi_info_s * info, yaksa_op_t op,
                                yaksi_request_s * request, yaksuri_request_s * reqpriv,
-                               uintptr_t threshold, yaksuri_subreq_s * subreq)
+                               yaksuri_subreq_s * subreq)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
@@ -1146,7 +1146,7 @@ static int set_subreq_pack_d2d(const void *inbuf, void *outbuf, uintptr_t count,
 static int set_subreq_pack_d2m(const void *inbuf, void *outbuf, uintptr_t count,
                                yaksi_type_s * type, yaksi_info_s * info, yaksa_op_t op,
                                yaksi_request_s * request, yaksuri_request_s * reqpriv,
-                               uintptr_t threshold, yaksuri_subreq_s * subreq)
+                               yaksuri_subreq_s * subreq)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
@@ -1177,10 +1177,11 @@ static int set_subreq_pack_d2m(const void *inbuf, void *outbuf, uintptr_t count,
 static int set_subreq_pack_d2rh(const void *inbuf, void *outbuf, uintptr_t count,
                                 yaksi_type_s * type, yaksi_info_s * info, yaksa_op_t op,
                                 yaksi_request_s * request, yaksuri_request_s * reqpriv,
-                                uintptr_t threshold, yaksuri_subreq_s * subreq)
+                                yaksuri_subreq_s * subreq)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+    uintptr_t threshold = yaksuri_global.gpudriver[id].hooks->get_iov_pack_threshold(info);
 
     /* Fast path for REPLACE with contig type or noncontig type with large contig chunk */
     if (op == YAKSA_OP__REPLACE && (type->is_contig || type->size / type->num_contig >= threshold)) {
@@ -1200,22 +1201,22 @@ static int set_subreq_pack_d2rh(const void *inbuf, void *outbuf, uintptr_t count
 static int set_subreq_pack_from_device(const void *inbuf, void *outbuf, uintptr_t count,
                                        yaksi_type_s * type, yaksi_info_s * info, yaksa_op_t op,
                                        yaksi_request_s * request, yaksuri_request_s * reqpriv,
-                                       uintptr_t threshold, yaksuri_subreq_s * subreq)
+                                       yaksuri_subreq_s * subreq)
 {
     int rc = YAKSA_SUCCESS;
 
     switch (request->backend.outattr.type) {
         case YAKSUR_PTR_TYPE__GPU:
             rc = set_subreq_pack_d2d(inbuf, outbuf, count, type, info, op, request, reqpriv,
-                                     threshold, subreq);
+                                     subreq);
             break;
         case YAKSUR_PTR_TYPE__MANAGED:
             rc = set_subreq_pack_d2m(inbuf, outbuf, count, type, info, op, request, reqpriv,
-                                     threshold, subreq);
+                                     subreq);
             break;
         case YAKSUR_PTR_TYPE__REGISTERED_HOST:
             rc = set_subreq_pack_d2rh(inbuf, outbuf, count, type, info, op, request, reqpriv,
-                                      threshold, subreq);
+                                      subreq);
             break;
         case YAKSUR_PTR_TYPE__UNREGISTERED_HOST:
         default:
@@ -1230,7 +1231,7 @@ static int set_subreq_pack_from_device(const void *inbuf, void *outbuf, uintptr_
 static int set_subreq_pack_from_managed(const void *inbuf, void *outbuf, uintptr_t count,
                                         yaksi_type_s * type, yaksi_info_s * info, yaksa_op_t op,
                                         yaksi_request_s * request, yaksuri_request_s * reqpriv,
-                                        uintptr_t threshold, yaksuri_subreq_s * subreq)
+                                        yaksuri_subreq_s * subreq)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
@@ -1256,10 +1257,11 @@ static int set_subreq_pack_from_managed(const void *inbuf, void *outbuf, uintptr
 static int set_subreq_pack_from_rhost(const void *inbuf, void *outbuf, uintptr_t count,
                                       yaksi_type_s * type, yaksi_info_s * info, yaksa_op_t op,
                                       yaksi_request_s * request, yaksuri_request_s * reqpriv,
-                                      uintptr_t threshold, yaksuri_subreq_s * subreq)
+                                      yaksuri_subreq_s * subreq)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+    uintptr_t threshold = yaksuri_global.gpudriver[id].hooks->get_iov_pack_threshold(info);
 
     /* Fast path for REPLACE with contig type or noncontig type with large contig chunk */
     if (op == YAKSA_OP__REPLACE && (type->is_contig || type->size / type->num_contig >= threshold)) {
@@ -1280,7 +1282,7 @@ static int set_subreq_pack_from_rhost(const void *inbuf, void *outbuf, uintptr_t
 static int set_subreq_unpack_d2d(const void *inbuf, void *outbuf, uintptr_t count,
                                  yaksi_type_s * type, yaksi_info_s * info, yaksa_op_t op,
                                  yaksi_request_s * request, yaksuri_request_s * reqpriv,
-                                 uintptr_t threshold, yaksuri_subreq_s * subreq)
+                                 yaksuri_subreq_s * subreq)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
@@ -1321,7 +1323,7 @@ static int set_subreq_unpack_d2d(const void *inbuf, void *outbuf, uintptr_t coun
 static int set_subreq_unpack_d2m(const void *inbuf, void *outbuf, uintptr_t count,
                                  yaksi_type_s * type, yaksi_info_s * info, yaksa_op_t op,
                                  yaksi_request_s * request, yaksuri_request_s * reqpriv,
-                                 uintptr_t threshold, yaksuri_subreq_s * subreq)
+                                 yaksuri_subreq_s * subreq)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
@@ -1346,10 +1348,11 @@ static int set_subreq_unpack_d2m(const void *inbuf, void *outbuf, uintptr_t coun
 static int set_subreq_unpack_d2rh(const void *inbuf, void *outbuf, uintptr_t count,
                                   yaksi_type_s * type, yaksi_info_s * info, yaksa_op_t op,
                                   yaksi_request_s * request, yaksuri_request_s * reqpriv,
-                                  uintptr_t threshold, yaksuri_subreq_s * subreq)
+                                  yaksuri_subreq_s * subreq)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+    uintptr_t threshold = yaksuri_global.gpudriver[id].hooks->get_iov_unpack_threshold(info);
 
     /* Fast path for REPLACE with contig type or noncontig type with large contig chunk */
     if (op == YAKSA_OP__REPLACE && (type->is_contig || type->size / type->num_contig >= threshold)) {
@@ -1369,22 +1372,22 @@ static int set_subreq_unpack_d2rh(const void *inbuf, void *outbuf, uintptr_t cou
 static int set_subreq_unpack_from_device(const void *inbuf, void *outbuf, uintptr_t count,
                                          yaksi_type_s * type, yaksi_info_s * info, yaksa_op_t op,
                                          yaksi_request_s * request, yaksuri_request_s * reqpriv,
-                                         uintptr_t threshold, yaksuri_subreq_s * subreq)
+                                         yaksuri_subreq_s * subreq)
 {
     int rc = YAKSA_SUCCESS;
 
     switch (request->backend.outattr.type) {
         case YAKSUR_PTR_TYPE__GPU:
             rc = set_subreq_unpack_d2d(inbuf, outbuf, count, type, info, op, request, reqpriv,
-                                       threshold, subreq);
+                                       subreq);
             break;
         case YAKSUR_PTR_TYPE__MANAGED:
             rc = set_subreq_unpack_d2m(inbuf, outbuf, count, type, info, op, request, reqpriv,
-                                       threshold, subreq);
+                                       subreq);
             break;
         case YAKSUR_PTR_TYPE__REGISTERED_HOST:
             rc = set_subreq_unpack_d2rh(inbuf, outbuf, count, type, info, op, request, reqpriv,
-                                        threshold, subreq);
+                                        subreq);
             break;
         case YAKSUR_PTR_TYPE__UNREGISTERED_HOST:
         default:
@@ -1399,7 +1402,7 @@ static int set_subreq_unpack_from_device(const void *inbuf, void *outbuf, uintpt
 static int set_subreq_unpack_from_managed(const void *inbuf, void *outbuf, uintptr_t count,
                                           yaksi_type_s * type, yaksi_info_s * info, yaksa_op_t op,
                                           yaksi_request_s * request, yaksuri_request_s * reqpriv,
-                                          uintptr_t threshold, yaksuri_subreq_s * subreq)
+                                          yaksuri_subreq_s * subreq)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
@@ -1425,10 +1428,11 @@ static int set_subreq_unpack_from_managed(const void *inbuf, void *outbuf, uintp
 static int set_subreq_unpack_from_rhost(const void *inbuf, void *outbuf, uintptr_t count,
                                         yaksi_type_s * type, yaksi_info_s * info, yaksa_op_t op,
                                         yaksi_request_s * request, yaksuri_request_s * reqpriv,
-                                        uintptr_t threshold, yaksuri_subreq_s * subreq)
+                                        yaksuri_subreq_s * subreq)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+    uintptr_t threshold = yaksuri_global.gpudriver[id].hooks->get_iov_unpack_threshold(info);
 
     /* Fast path for REPLACE with contig type or noncontig type with large contig chunk */
     if (op == YAKSA_OP__REPLACE && (type->is_contig || type->size / type->num_contig >= threshold)) {
@@ -1470,22 +1474,20 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
     }
 
     subreq = (yaksuri_subreq_s *) malloc(sizeof(yaksuri_subreq_s));
-    uintptr_t threshold;
 
     if (reqpriv->optype == YAKSURI_OPTYPE__PACK) {
-        threshold = yaksuri_global.gpudriver[id].hooks->get_iov_pack_threshold(info);
         switch (request->backend.inattr.type) {
             case YAKSUR_PTR_TYPE__GPU:
                 rc = set_subreq_pack_from_device(inbuf, outbuf, count, type, info, op, request,
-                                                 reqpriv, threshold, subreq);
+                                                 reqpriv, subreq);
                 break;
             case YAKSUR_PTR_TYPE__MANAGED:
                 rc = set_subreq_pack_from_managed(inbuf, outbuf, count, type, info, op, request,
-                                                  reqpriv, threshold, subreq);
+                                                  reqpriv, subreq);
                 break;
             case YAKSUR_PTR_TYPE__REGISTERED_HOST:
                 rc = set_subreq_pack_from_rhost(inbuf, outbuf, count, type, info, op, request,
-                                                reqpriv, threshold, subreq);
+                                                reqpriv, subreq);
                 break;
             case YAKSUR_PTR_TYPE__UNREGISTERED_HOST:
             default:
@@ -1495,19 +1497,18 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                 break;
         }
     } else {
-        threshold = yaksuri_global.gpudriver[id].hooks->get_iov_unpack_threshold(info);
         switch (request->backend.inattr.type) {
             case YAKSUR_PTR_TYPE__GPU:
                 rc = set_subreq_unpack_from_device(inbuf, outbuf, count, type, info, op, request,
-                                                   reqpriv, threshold, subreq);
+                                                   reqpriv, subreq);
                 break;
             case YAKSUR_PTR_TYPE__MANAGED:
                 rc = set_subreq_unpack_from_managed(inbuf, outbuf, count, type, info, op, request,
-                                                    reqpriv, threshold, subreq);
+                                                    reqpriv, subreq);
                 break;
             case YAKSUR_PTR_TYPE__REGISTERED_HOST:
                 rc = set_subreq_unpack_from_rhost(inbuf, outbuf, count, type, info, op, request,
-                                                  reqpriv, threshold, subreq);
+                                                  reqpriv, subreq);
                 break;
             case YAKSUR_PTR_TYPE__UNREGISTERED_HOST:
             default:
