@@ -1110,29 +1110,17 @@ static int set_subreq_pack_d2d(const void *inbuf, void *outbuf, uintptr_t count,
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    if (!buf_is_aligned(outbuf, type) || op != YAKSA_OP__REPLACE) {
-        if (request->backend.inattr.device == request->backend.outattr.device) {
-            subreq->u.multiple.acquire = pack_d2d_unaligned_acquire;
-            subreq->u.multiple.release = simple_release;
-            rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
-        } else {
-            bool is_enabled;
-            rc = check_p2p_comm(id, reqpriv->request->backend.inattr.device,
-                                reqpriv->request->backend.outattr.device, &is_enabled);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-
-            if (is_enabled) {
-                subreq->u.multiple.acquire = pack_d2d_p2p_acquire;
-            } else {
-                subreq->u.multiple.acquire = pack_d2d_nop2p_acquire;
-            }
-            subreq->u.multiple.release = simple_release;
-
-            rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
-        }
-    } else if (request->backend.inattr.device == request->backend.outattr.device) {
+    /* Fast path for REPLACE with aligned outbuf on the same device */
+    if (op == YAKSA_OP__REPLACE && request->backend.inattr.device == request->backend.outattr.device
+        && buf_is_aligned(outbuf, type)) {
         rc = singlechunk_pack(id, request->backend.inattr.device, inbuf, outbuf, count,
                               type, info, op, subreq);
+    }
+    /* Slow paths */
+    else if (request->backend.inattr.device == request->backend.outattr.device) {
+        subreq->u.multiple.acquire = pack_d2d_unaligned_acquire;
+        subreq->u.multiple.release = simple_release;
+        rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
     } else {
         bool is_enabled;
         rc = check_p2p_comm(id, reqpriv->request->backend.inattr.device,
@@ -1163,20 +1151,20 @@ static int set_subreq_pack_d2m(const void *inbuf, void *outbuf, uintptr_t count,
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    if (!buf_is_aligned(outbuf, type) || op != YAKSA_OP__REPLACE) {
-        if (request->backend.outattr.device == -1 ||
-            request->backend.inattr.device == request->backend.outattr.device) {
-            subreq->u.multiple.acquire = pack_d2d_unaligned_acquire;
-            subreq->u.multiple.release = simple_release;
-        } else {
-            subreq->u.multiple.acquire = pack_d2urh_acquire;
-            subreq->u.multiple.release = pack_d2urh_release;
-        }
+    /* Fast path for REPLACE with aligned outbuf on host or the same device */
+    if (op == YAKSA_OP__REPLACE && (request->backend.outattr.device == -1 ||
+                                    request->backend.inattr.device ==
+                                    request->backend.outattr.device) &&
+        buf_is_aligned(outbuf, type)) {
+        rc = singlechunk_pack(id, request->backend.inattr.device, inbuf, outbuf, count, type, info,
+                              op, subreq);
+    }
+    /* Slow paths */
+    else if (request->backend.outattr.device == -1 ||
+             request->backend.inattr.device == request->backend.outattr.device) {
+        subreq->u.multiple.acquire = pack_d2d_unaligned_acquire;
+        subreq->u.multiple.release = simple_release;
         rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
-    } else if (request->backend.outattr.device == -1 ||
-               request->backend.inattr.device == request->backend.outattr.device) {
-        rc = singlechunk_pack(id, request->backend.inattr.device, inbuf, outbuf, count,
-                              type, info, op, subreq);
     } else {
         subreq->u.multiple.acquire = pack_d2urh_acquire;
         subreq->u.multiple.release = pack_d2urh_release;
@@ -1194,16 +1182,13 @@ static int set_subreq_pack_d2rh(const void *inbuf, void *outbuf, uintptr_t count
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    if (op == YAKSA_OP__REPLACE) {
-        if (type->is_contig || type->size / type->num_contig >= threshold) {
-            rc = singlechunk_pack(id, request->backend.inattr.device, inbuf, outbuf, count,
-                                  type, info, op, subreq);
-        } else {
-            subreq->u.multiple.acquire = pack_d2rh_acquire;
-            subreq->u.multiple.release = pack_d2rh_release;
-            rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
-        }
-    } else {
+    /* Fast path for REPLACE with contig type or noncontig type with large contig chunk */
+    if (op == YAKSA_OP__REPLACE && (type->is_contig || type->size / type->num_contig >= threshold)) {
+        rc = singlechunk_pack(id, request->backend.inattr.device, inbuf, outbuf, count,
+                              type, info, op, subreq);
+    }
+    /* Slow path */
+    else {
         subreq->u.multiple.acquire = pack_d2rh_acquire;
         subreq->u.multiple.release = pack_d2rh_release;
         rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
@@ -1250,27 +1235,22 @@ static int set_subreq_pack_from_managed(const void *inbuf, void *outbuf, uintptr
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    if (!buf_is_aligned(outbuf, type) || op != YAKSA_OP__REPLACE) {
+    /* Fast path for REPLACE with aligned outbuf from host or the same device. */
+    if (op == YAKSA_OP__REPLACE && (request->backend.inattr.device == -1 ||
+                                    request->backend.inattr.device ==
+                                    request->backend.outattr.device) &&
+        buf_is_aligned(outbuf, type)) {
+        rc = singlechunk_pack(id, request->backend.outattr.device, inbuf, outbuf, count, type, info,
+                              op, subreq);
+    }
+    /* Slow path */
+    else {
         subreq->u.multiple.acquire = pack_h2d_acquire;
         subreq->u.multiple.release = simple_release;
         rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-    } else if (request->backend.inattr.device == -1 ||
-               request->backend.inattr.device == request->backend.outattr.device) {
-        rc = singlechunk_pack(id, request->backend.outattr.device, inbuf, outbuf, count,
-                              type, info, op, subreq);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-    } else {
-        subreq->u.multiple.acquire = pack_h2d_acquire;
-        subreq->u.multiple.release = simple_release;
-        rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
-        YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
-  fn_exit:
     return rc;
-  fn_fail:
-    goto fn_exit;
 }
 
 static int set_subreq_pack_from_rhost(const void *inbuf, void *outbuf, uintptr_t count,
@@ -1281,28 +1261,19 @@ static int set_subreq_pack_from_rhost(const void *inbuf, void *outbuf, uintptr_t
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    if (op == YAKSA_OP__REPLACE) {
-        if (type->is_contig || type->size / type->num_contig >= threshold) {
-            rc = singlechunk_pack(id, request->backend.outattr.device, inbuf, outbuf, count,
-                                  type, info, op, subreq);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        } else {
-            subreq->u.multiple.acquire = pack_h2d_acquire;
-            subreq->u.multiple.release = simple_release;
-            rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        }
-    } else {
+    /* Fast path for REPLACE with contig type or noncontig type with large contig chunk */
+    if (op == YAKSA_OP__REPLACE && (type->is_contig || type->size / type->num_contig >= threshold)) {
+        rc = singlechunk_pack(id, request->backend.outattr.device, inbuf, outbuf, count,
+                              type, info, op, subreq);
+    }
+    /* Slow path */
+    else {
         subreq->u.multiple.acquire = pack_h2d_acquire;
         subreq->u.multiple.release = simple_release;
         rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
-        YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
-  fn_exit:
     return rc;
-  fn_fail:
-    goto fn_exit;
 }
 
 /* Subroutines to setup subreq for unpack with different buffer types */
@@ -1314,29 +1285,17 @@ static int set_subreq_unpack_d2d(const void *inbuf, void *outbuf, uintptr_t coun
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    if (!buf_is_aligned(inbuf, type) || op != YAKSA_OP__REPLACE) {
-        if (request->backend.inattr.device == request->backend.outattr.device) {
-            subreq->u.multiple.acquire = unpack_d2d_unaligned_acquire;
-            subreq->u.multiple.release = simple_release;
-            rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
-        } else {
-            bool is_enabled;
-            rc = check_p2p_comm(id, reqpriv->request->backend.inattr.device,
-                                reqpriv->request->backend.outattr.device, &is_enabled);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-
-            if (is_enabled) {
-                subreq->u.multiple.acquire = unpack_d2d_p2p_acquire;
-            } else {
-                subreq->u.multiple.acquire = unpack_d2d_nop2p_acquire;
-            }
-            subreq->u.multiple.release = simple_release;
-
-            rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
-        }
-    } else if (request->backend.inattr.device == request->backend.outattr.device) {
+    /* Fast path for REPLACE with aligned inbuf on the same device */
+    if (op == YAKSA_OP__REPLACE && request->backend.inattr.device == request->backend.outattr.device
+        && buf_is_aligned(inbuf, type)) {
         rc = singlechunk_unpack(id, request->backend.inattr.device, inbuf, outbuf, count,
                                 type, info, op, subreq);
+    }
+    /* Slow paths */
+    else if (request->backend.inattr.device == request->backend.outattr.device) {
+        subreq->u.multiple.acquire = unpack_d2d_unaligned_acquire;
+        subreq->u.multiple.release = simple_release;
+        rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
     } else {
         bool is_enabled;
         rc = check_p2p_comm(id, reqpriv->request->backend.inattr.device,
@@ -1367,15 +1326,16 @@ static int set_subreq_unpack_d2m(const void *inbuf, void *outbuf, uintptr_t coun
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    if (!buf_is_aligned(inbuf, type) || op != YAKSA_OP__REPLACE) {
-        subreq->u.multiple.acquire = unpack_d2h_acquire;
-        subreq->u.multiple.release = unpack_d2h_release;
-        rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
-    } else if (request->backend.outattr.device == -1 ||
-               request->backend.inattr.device == request->backend.outattr.device) {
+    /* Fast path for REPLACE with aligned inbuf to host or the same device */
+    if (op == YAKSA_OP__REPLACE && (request->backend.outattr.device == -1 ||
+                                    request->backend.inattr.device ==
+                                    request->backend.outattr.device) &&
+        buf_is_aligned(inbuf, type)) {
         rc = singlechunk_unpack(id, request->backend.inattr.device, inbuf, outbuf, count,
                                 type, info, op, subreq);
-    } else {
+    }
+    /* Slow path */
+    else {
         subreq->u.multiple.acquire = unpack_d2h_acquire;
         subreq->u.multiple.release = unpack_d2h_release;
         rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
@@ -1391,16 +1351,13 @@ static int set_subreq_unpack_d2rh(const void *inbuf, void *outbuf, uintptr_t cou
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    if (op == YAKSA_OP__REPLACE) {
-        if (type->is_contig || type->size / type->num_contig >= threshold) {
-            rc = singlechunk_unpack(id, request->backend.inattr.device, inbuf, outbuf, count,
-                                    type, info, op, subreq);
-        } else {
-            subreq->u.multiple.acquire = unpack_d2h_acquire;
-            subreq->u.multiple.release = unpack_d2h_release;
-            rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
-        }
-    } else {
+    /* Fast path for REPLACE with contig type or noncontig type with large contig chunk */
+    if (op == YAKSA_OP__REPLACE && (type->is_contig || type->size / type->num_contig >= threshold)) {
+        rc = singlechunk_unpack(id, request->backend.inattr.device, inbuf, outbuf, count,
+                                type, info, op, subreq);
+    }
+    /* Slow path */
+    else {
         subreq->u.multiple.acquire = unpack_d2h_acquire;
         subreq->u.multiple.release = unpack_d2h_release;
         rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
@@ -1447,27 +1404,22 @@ static int set_subreq_unpack_from_managed(const void *inbuf, void *outbuf, uintp
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    if (!buf_is_aligned(inbuf, type) || op != YAKSA_OP__REPLACE) {
-        subreq->u.multiple.acquire = unpack_urh2d_acquire;
-        subreq->u.multiple.release = simple_release;
-        rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-    } else if (request->backend.inattr.device == -1 ||
-               request->backend.inattr.device == request->backend.outattr.device) {
+    /* Fast path for REPLACE with aligned inbuf from host or the same device. */
+    if (op == YAKSA_OP__REPLACE && (request->backend.inattr.device == -1 ||
+                                    request->backend.inattr.device ==
+                                    request->backend.outattr.device) &&
+        buf_is_aligned(inbuf, type)) {
         rc = singlechunk_unpack(id, request->backend.outattr.device, inbuf, outbuf, count,
                                 type, info, op, subreq);
-        YAKSU_ERR_CHECK(rc, fn_fail);
-    } else {
+    }
+    /* Slow path */
+    else {
         subreq->u.multiple.acquire = unpack_urh2d_acquire;
         subreq->u.multiple.release = simple_release;
         rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
-        YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
-  fn_exit:
     return rc;
-  fn_fail:
-    goto fn_exit;
 }
 
 static int set_subreq_unpack_from_rhost(const void *inbuf, void *outbuf, uintptr_t count,
@@ -1478,28 +1430,19 @@ static int set_subreq_unpack_from_rhost(const void *inbuf, void *outbuf, uintptr
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    if (op == YAKSA_OP__REPLACE) {
-        if (type->is_contig || type->size / type->num_contig >= threshold) {
-            rc = singlechunk_unpack(id, request->backend.outattr.device, inbuf, outbuf, count,
-                                    type, info, op, subreq);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        } else {
-            subreq->u.multiple.acquire = unpack_rh2d_acquire;
-            subreq->u.multiple.release = simple_release;
-            rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        }
-    } else {
+    /* Fast path for REPLACE with contig type or noncontig type with large contig chunk */
+    if (op == YAKSA_OP__REPLACE && (type->is_contig || type->size / type->num_contig >= threshold)) {
+        rc = singlechunk_unpack(id, request->backend.outattr.device, inbuf, outbuf, count,
+                                type, info, op, subreq);
+    }
+    /* Slow path */
+    else {
         subreq->u.multiple.acquire = unpack_rh2d_acquire;
         subreq->u.multiple.release = simple_release;
         rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
-        YAKSU_ERR_CHECK(rc, fn_fail);
     }
 
-  fn_exit:
     return rc;
-  fn_fail:
-    goto fn_exit;
 }
 
 int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
