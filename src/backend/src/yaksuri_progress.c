@@ -1111,7 +1111,7 @@ static int set_subreq_pack_from_device(const void *inbuf, void *outbuf, uintptr_
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
     if (request->backend.outattr.type == YAKSUR_PTR_TYPE__GPU) {
-        if (!buf_is_aligned(outbuf, type) && op != YAKSA_OP__REPLACE) {
+        if (!buf_is_aligned(outbuf, type) || op != YAKSA_OP__REPLACE) {
             if (request->backend.inattr.device == request->backend.outattr.device) {
                 subreq->u.multiple.acquire = pack_d2d_unaligned_acquire;
                 subreq->u.multiple.release = simple_release;
@@ -1154,7 +1154,7 @@ static int set_subreq_pack_from_device(const void *inbuf, void *outbuf, uintptr_
             YAKSU_ERR_CHECK(rc, fn_fail);
         }
     } else if (request->backend.outattr.type == YAKSUR_PTR_TYPE__MANAGED) {
-        if (!buf_is_aligned(outbuf, type) && op != YAKSA_OP__REPLACE) {
+        if (!buf_is_aligned(outbuf, type) || op != YAKSA_OP__REPLACE) {
             if (request->backend.outattr.device == -1 ||
                 request->backend.inattr.device == request->backend.outattr.device) {
                 subreq->u.multiple.acquire = pack_d2d_unaligned_acquire;
@@ -1215,7 +1215,7 @@ static int set_subreq_pack_from_managed(const void *inbuf, void *outbuf, uintptr
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    if (!buf_is_aligned(outbuf, type) && op != YAKSA_OP__REPLACE) {
+    if (!buf_is_aligned(outbuf, type) || op != YAKSA_OP__REPLACE) {
         subreq->u.multiple.acquire = pack_h2d_acquire;
         subreq->u.multiple.release = simple_release;
         rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
@@ -1280,7 +1280,7 @@ static int set_subreq_unpack_from_device(const void *inbuf, void *outbuf, uintpt
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
     if (request->backend.outattr.type == YAKSUR_PTR_TYPE__GPU) {
-        if (!buf_is_aligned(inbuf, type) && op != YAKSA_OP__REPLACE) {
+        if (!buf_is_aligned(inbuf, type) || op != YAKSA_OP__REPLACE) {
             if (request->backend.inattr.device == request->backend.outattr.device) {
                 subreq->u.multiple.acquire = unpack_d2d_unaligned_acquire;
                 subreq->u.multiple.release = simple_release;
@@ -1323,7 +1323,7 @@ static int set_subreq_unpack_from_device(const void *inbuf, void *outbuf, uintpt
             YAKSU_ERR_CHECK(rc, fn_fail);
         }
     } else if (request->backend.outattr.type == YAKSUR_PTR_TYPE__MANAGED) {
-        if (!buf_is_aligned(inbuf, type) && op != YAKSA_OP__REPLACE) {
+        if (!buf_is_aligned(inbuf, type) || op != YAKSA_OP__REPLACE) {
             subreq->u.multiple.acquire = unpack_d2h_acquire;
             subreq->u.multiple.release = unpack_d2h_release;
             rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
@@ -1378,7 +1378,7 @@ static int set_subreq_unpack_from_managed(const void *inbuf, void *outbuf, uintp
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    if (!buf_is_aligned(inbuf, type) && op != YAKSA_OP__REPLACE) {
+    if (!buf_is_aligned(inbuf, type) || op != YAKSA_OP__REPLACE) {
         subreq->u.multiple.acquire = unpack_urh2d_acquire;
         subreq->u.multiple.release = simple_release;
         rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
