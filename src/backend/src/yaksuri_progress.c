@@ -1102,9 +1102,14 @@ static int set_subreq_pack_d2d(const void *inbuf, void *outbuf, uintptr_t count,
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    /* Fast path for REPLACE with aligned outbuf on the same device */
-    if (op == YAKSA_OP__REPLACE && request->backend.inattr.device == request->backend.outattr.device
-        && buf_is_aligned(outbuf, type)) {
+    /* Fast path for REPLACE with aligned outbuf on the same device or different
+     * devices with P2P support. Note that IPC mapping requires P2P support, thus
+     * we don't handle the IPC case explicitly. */
+    if (op == YAKSA_OP__REPLACE &&
+        (request->backend.inattr.device == request->backend.outattr.device ||
+         check_p2p_comm(id, reqpriv->request->backend.inattr.device,
+                        reqpriv->request->backend.outattr.device)) &&
+        buf_is_aligned(outbuf, type)) {
         rc = singlechunk_pack(id, request->backend.inattr.device, inbuf, outbuf, count,
                               type, info, op, subreq);
     }
@@ -1277,9 +1282,13 @@ static int set_subreq_unpack_d2d(const void *inbuf, void *outbuf, uintptr_t coun
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    /* Fast path for REPLACE with aligned inbuf on the same device */
-    if (op == YAKSA_OP__REPLACE && request->backend.inattr.device == request->backend.outattr.device
-        && buf_is_aligned(inbuf, type)) {
+    /* Fast path for REPLACE with aligned inbuf on the same device or different
+     * devices with P2P support. Note that IPC mapping requires P2P support, thus
+     * we don't handle the IPC case explicitly. */
+    if (op == YAKSA_OP__REPLACE &&
+        (request->backend.inattr.device == request->backend.outattr.device ||
+         check_p2p_comm(id, reqpriv->request->backend.inattr.device,
+                        reqpriv->request->backend.outattr.device)) && buf_is_aligned(inbuf, type)) {
         rc = singlechunk_unpack(id, request->backend.inattr.device, inbuf, outbuf, count,
                                 type, info, op, subreq);
     }
