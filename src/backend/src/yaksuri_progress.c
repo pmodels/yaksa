@@ -123,17 +123,9 @@ static int iunpack(yaksuri_gpudriver_id_e id, const void *inbuf, void *outbuf, u
     goto fn_exit;
 }
 
-static int check_p2p_comm(yaksuri_gpudriver_id_e id, int indev, int outdev, bool * is_enabled)
+static bool check_p2p_comm(yaksuri_gpudriver_id_e id, int indev, int outdev)
 {
-    int rc = YAKSA_SUCCESS;
-
-    rc = yaksuri_global.gpudriver[id].hooks->check_p2p_comm(indev, outdev, is_enabled);
-    YAKSU_ERR_CHECK(rc, fn_fail);
-
-  fn_exit:
-    return rc;
-  fn_fail:
-    goto fn_exit;
+    return yaksuri_global.gpudriver[id].hooks->check_p2p_comm(indev, outdev);
 }
 
 static int event_record(yaksuri_gpudriver_id_e id, int device, void **event)
@@ -1122,10 +1114,8 @@ static int set_subreq_pack_d2d(const void *inbuf, void *outbuf, uintptr_t count,
         subreq->u.multiple.release = simple_release;
         rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
     } else {
-        bool is_enabled;
-        rc = check_p2p_comm(id, reqpriv->request->backend.inattr.device,
-                            reqpriv->request->backend.outattr.device, &is_enabled);
-        YAKSU_ERR_CHECK(rc, fn_fail);
+        bool is_enabled = check_p2p_comm(id, reqpriv->request->backend.inattr.device,
+                                         reqpriv->request->backend.outattr.device);
 
         if (is_enabled) {
             subreq->u.multiple.acquire = pack_d2d_p2p_acquire;
@@ -1299,10 +1289,8 @@ static int set_subreq_unpack_d2d(const void *inbuf, void *outbuf, uintptr_t coun
         subreq->u.multiple.release = simple_release;
         rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
     } else {
-        bool is_enabled;
-        rc = check_p2p_comm(id, reqpriv->request->backend.inattr.device,
-                            reqpriv->request->backend.outattr.device, &is_enabled);
-        YAKSU_ERR_CHECK(rc, fn_fail);
+        bool is_enabled = check_p2p_comm(id, reqpriv->request->backend.inattr.device,
+                                         reqpriv->request->backend.outattr.device);
 
         if (is_enabled) {
             subreq->u.multiple.acquire = unpack_d2d_p2p_acquire;

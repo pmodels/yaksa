@@ -107,20 +107,17 @@ static int get_num_devices(int *ndevices)
     return YAKSA_SUCCESS;
 }
 
-static int check_p2p_comm(int sdev, int ddev, bool * is_enabled)
+static bool check_p2p_comm(int sdev, int ddev)
 {
+    bool is_enabled = 0;
 #if ZE_P2P == ZE_P2P_ENABLED
-    *is_enabled = yaksuri_zei_global.p2p[sdev][ddev];
+    is_enabled = yaksuri_zei_global.p2p[sdev][ddev];
 #elif ZE_P2P == ZE_P2P_CLIQUES
-    if ((sdev + ddev) % 2)
-        *is_enabled = 0;
-    else
-        *is_enabled = yaksuri_zei_global.p2p[sdev][ddev];
-#else
-    *is_enabled = 0;
+    if ((sdev + ddev) % 2 == 0)
+        is_enabled = yaksuri_zei_global.p2p[sdev][ddev];
 #endif
 
-    return YAKSA_SUCCESS;
+    return is_enabled;
 }
 
 int yaksuri_ze_init_hook(yaksur_gpudriver_hooks_s ** hooks)
