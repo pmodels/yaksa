@@ -20,7 +20,7 @@ import gencomm
 
 num_paren_open = 0
 builtin_types = [ "_Bool", "char", "wchar_t", "int8_t", "int16_t", \
-                  "int32_t", "int64_t", "float", "double", "long double" ]
+                  "int32_t", "int64_t", "float", "double", "long double", "c_complex", "c_double_complex", "c_long_double_complex" ]
 blklens = [ "1", "2", "3", "4", "5", "6", "7", "8", "generic" ]
 builtin_maps = { }
 
@@ -171,20 +171,29 @@ def generate_kernels(b, darray, blklen):
                 else:
                     getattr(sys.modules[__name__], darray[x])(x + 1, b, blklen, 1)
 
+            type = b
+            if (b == "c_complex"):
+                b = "float _Complex"
+            elif (b == "c_double_complex"):
+                b = "double _Complex"
+            elif (b == "c_long_double_complex"):
+                b = "long double _Complex"
+
             if (func == "pack"):
                 if ((b == "float" or b == "double" or b == "long double") and
                     (op == "MAX" or op == "MIN")):
                     yutils.display(OUTFILE, "YAKSURI_SEQI_OP_%s_FLOAT(%s, *((const %s *) (const void *) (sbuf + %s)), *((%s *) (void *) (dbuf + idx)));\n" % (op, b, b, s, b))
                 else:
-                    yutils.display(OUTFILE, "YAKSURI_SEQI_OP_%s(*((const %s *) (const void *) (sbuf + %s)), *((%s *) (void *) (dbuf + idx)));\n" % (op, b, s, b))
+                    yutils.display(OUTFILE, "YAKSURI_SEQI_OP_%s(*((const %s *) (const void *) (sbuf + %s)), *((%s *) (void *) (dbuf + idx)));\n" % (op, b, s.replace(type,b), b))
             else:
                 if ((b == "float" or b == "double" or b == "long double") and
                     (op == "MAX" or op == "MIN")):
                     yutils.display(OUTFILE, "YAKSURI_SEQI_OP_%s_FLOAT(%s, *((const %s *) (const void *) (sbuf + idx)), *((%s *) (void *) (dbuf + %s)));\n" % (op, b, b, b, s))
                 else:
-                    yutils.display(OUTFILE, "YAKSURI_SEQI_OP_%s(*((const %s *) (const void *) (sbuf + idx)), *((%s *) (void *) (dbuf + %s)));\n" % (op, b, b, s))
+                    yutils.display(OUTFILE, "YAKSURI_SEQI_OP_%s(*((const %s *) (const void *) (sbuf + idx)), *((%s *) (void *) (dbuf + %s)));\n" % (op, b, b, s.replace(type,b)))
 
             yutils.display(OUTFILE, "idx += sizeof(%s);\n" % b)
+            b = type
             for x in range(num_paren_open):
                 yutils.display(OUTFILE, "}\n")
             num_paren_open = 0
