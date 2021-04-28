@@ -1101,6 +1101,7 @@ static int set_subreq_pack_d2d(const void *inbuf, void *outbuf, uintptr_t count,
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+    bool aligned = buf_is_aligned(outbuf, type);
 
     /* Fast path for REPLACE with aligned outbuf on the same device or different
      * devices with P2P support. Note that IPC mapping requires P2P support, thus
@@ -1108,8 +1109,12 @@ static int set_subreq_pack_d2d(const void *inbuf, void *outbuf, uintptr_t count,
     if (op == YAKSA_OP__REPLACE &&
         (request->backend.inattr.device == request->backend.outattr.device ||
          check_p2p_comm(id, reqpriv->request->backend.inattr.device,
-                        reqpriv->request->backend.outattr.device)) &&
-        buf_is_aligned(outbuf, type)) {
+                        reqpriv->request->backend.outattr.device)) && aligned) {
+        rc = singlechunk_pack(id, request->backend.inattr.device, inbuf, outbuf, count,
+                              type, info, op, subreq);
+    }
+    /* Fast path for other reduce operations with aligned buffer on the same device */
+    else if (request->backend.inattr.device == request->backend.outattr.device && aligned) {
         rc = singlechunk_pack(id, request->backend.inattr.device, inbuf, outbuf, count,
                               type, info, op, subreq);
     }
@@ -1146,10 +1151,9 @@ static int set_subreq_pack_d2m(const void *inbuf, void *outbuf, uintptr_t count,
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    /* Fast path for REPLACE with aligned outbuf on host or the same device */
-    if (op == YAKSA_OP__REPLACE && (request->backend.outattr.device == -1 ||
-                                    request->backend.inattr.device ==
-                                    request->backend.outattr.device) &&
+    /* Fast path for all reduce operations with aligned outbuf on host or the same device */
+    if ((request->backend.outattr.device == -1 ||
+         request->backend.inattr.device == request->backend.outattr.device) &&
         buf_is_aligned(outbuf, type)) {
         rc = singlechunk_pack(id, request->backend.inattr.device, inbuf, outbuf, count, type, info,
                               op, subreq);
@@ -1231,10 +1235,9 @@ static int set_subreq_pack_from_managed(const void *inbuf, void *outbuf, uintptr
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    /* Fast path for REPLACE with aligned outbuf from host or the same device. */
-    if (op == YAKSA_OP__REPLACE && (request->backend.inattr.device == -1 ||
-                                    request->backend.inattr.device ==
-                                    request->backend.outattr.device) &&
+    /* Fast path for all reduce operations with aligned outbuf from host or the same device. */
+    if ((request->backend.inattr.device == -1 ||
+         request->backend.inattr.device == request->backend.outattr.device) &&
         buf_is_aligned(outbuf, type)) {
         rc = singlechunk_pack(id, request->backend.outattr.device, inbuf, outbuf, count, type, info,
                               op, subreq);
@@ -1281,6 +1284,7 @@ static int set_subreq_unpack_d2d(const void *inbuf, void *outbuf, uintptr_t coun
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+    bool aligned = buf_is_aligned(inbuf, type);
 
     /* Fast path for REPLACE with aligned inbuf on the same device or different
      * devices with P2P support. Note that IPC mapping requires P2P support, thus
@@ -1288,7 +1292,12 @@ static int set_subreq_unpack_d2d(const void *inbuf, void *outbuf, uintptr_t coun
     if (op == YAKSA_OP__REPLACE &&
         (request->backend.inattr.device == request->backend.outattr.device ||
          check_p2p_comm(id, reqpriv->request->backend.inattr.device,
-                        reqpriv->request->backend.outattr.device)) && buf_is_aligned(inbuf, type)) {
+                        reqpriv->request->backend.outattr.device)) && aligned) {
+        rc = singlechunk_unpack(id, request->backend.inattr.device, inbuf, outbuf, count,
+                                type, info, op, subreq);
+    }
+    /* Fast path for other reduce operations with aligned buffer on the same device */
+    else if (request->backend.inattr.device == request->backend.outattr.device && aligned) {
         rc = singlechunk_unpack(id, request->backend.inattr.device, inbuf, outbuf, count,
                                 type, info, op, subreq);
     }
@@ -1325,10 +1334,9 @@ static int set_subreq_unpack_d2m(const void *inbuf, void *outbuf, uintptr_t coun
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    /* Fast path for REPLACE with aligned inbuf to host or the same device */
-    if (op == YAKSA_OP__REPLACE && (request->backend.outattr.device == -1 ||
-                                    request->backend.inattr.device ==
-                                    request->backend.outattr.device) &&
+    /* Fast path for all reduce operations with aligned inbuf to host or the same device */
+    if ((request->backend.outattr.device == -1 ||
+         request->backend.inattr.device == request->backend.outattr.device) &&
         buf_is_aligned(inbuf, type)) {
         rc = singlechunk_unpack(id, request->backend.inattr.device, inbuf, outbuf, count,
                                 type, info, op, subreq);
@@ -1404,10 +1412,9 @@ static int set_subreq_unpack_from_managed(const void *inbuf, void *outbuf, uintp
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    /* Fast path for REPLACE with aligned inbuf from host or the same device. */
-    if (op == YAKSA_OP__REPLACE && (request->backend.inattr.device == -1 ||
-                                    request->backend.inattr.device ==
-                                    request->backend.outattr.device) &&
+    /* Fast path for all reduce operations with aligned inbuf from host or the same device. */
+    if ((request->backend.inattr.device == -1 ||
+         request->backend.inattr.device == request->backend.outattr.device) &&
         buf_is_aligned(inbuf, type)) {
         rc = singlechunk_unpack(id, request->backend.outattr.device, inbuf, outbuf, count,
                                 type, info, op, subreq);
