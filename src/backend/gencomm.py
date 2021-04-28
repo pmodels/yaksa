@@ -69,10 +69,10 @@ def switcher_builtin_element(backend, OUTFILE, blklens, typelist, pupstr, key, v
     elif (t != ""):
         yutils.display(OUTFILE, "if (max_nesting_level >= %d) {\n" % nesting_level)
         if (backend == "ze"):
-                for op in type_ops[val]:
-                    yutils.display(OUTFILE, "%s->pack[YAKSA_OP__%s] = yaksuri_%si_pack_%s_%s_%s;\n" % (backend, op, backend, op, pupstr, val))
-                    yutils.display(OUTFILE, "%s->unpack[YAKSA_OP__%s] = yaksuri_%si_unpack_%s_%s_%s;\n" % (backend, op, backend, op, pupstr, val))
-                yutils.display(OUTFILE, "%s->name = \"yaksuri_%si_op_%s_%s\";\n" % (backend, backend, pupstr, val))
+            for op in type_ops[val]:
+                yutils.display(OUTFILE, "%s->pack[YAKSA_OP__%s] = yaksuri_%si_pack_%s_%s_%s;\n" % (backend, op, backend, op, pupstr, val))
+                yutils.display(OUTFILE, "%s->unpack[YAKSA_OP__%s] = yaksuri_%si_unpack_%s_%s_%s;\n" % (backend, op, backend, op, pupstr, val))
+            yutils.display(OUTFILE, "%s->name = \"yaksuri_%si_op_%s_%s\";\n" % (backend, backend, pupstr, val))
         else:
             yutils.display(OUTFILE, "%s->pack = yaksuri_%si_pack_%s_%s;\n" % (backend, backend, pupstr, val))
             yutils.display(OUTFILE, "%s->unpack = yaksuri_%si_unpack_%s_%s;\n" % (backend, backend, pupstr, val))
@@ -80,10 +80,10 @@ def switcher_builtin_element(backend, OUTFILE, blklens, typelist, pupstr, key, v
         yutils.display(OUTFILE, "}\n")
     else:
         if (backend == "ze"):
-                for op in type_ops[val]:
-                    yutils.display(OUTFILE, "%s->pack[YAKSA_OP__%s] = yaksuri_%si_pack_%s_%s;\n" % (backend, op, backend, op, val))
-                    yutils.display(OUTFILE, "%s->unpack[YAKSA_OP__%s] = yaksuri_%si_unpack_%s_%s;\n" % (backend, op, backend, op, val))
-                yutils.display(OUTFILE, "%s->name = \"yaksuri_%si_op_%s\";\n" % (backend, backend, val))
+            for op in type_ops[val]:
+                yutils.display(OUTFILE, "%s->pack[YAKSA_OP__%s] = yaksuri_%si_pack_%s_%s;\n" % (backend, op, backend, op, val))
+                yutils.display(OUTFILE, "%s->unpack[YAKSA_OP__%s] = yaksuri_%si_unpack_%s_%s;\n" % (backend, op, backend, op, val))
+            yutils.display(OUTFILE, "%s->name = \"yaksuri_%si_op_%s\";\n" % (backend, backend, val))
         else:
             yutils.display(OUTFILE, "%s->pack = yaksuri_%si_pack_%s;\n" % (backend, backend, val))
             yutils.display(OUTFILE, "%s->unpack = yaksuri_%si_unpack_%s;\n" % (backend, backend, val))
