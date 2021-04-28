@@ -1137,10 +1137,7 @@ static int set_subreq_pack_d2d(const void *inbuf, void *outbuf, uintptr_t count,
         rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
     }
 
-  fn_exit:
     return rc;
-  fn_fail:
-    goto fn_exit;
 }
 
 static int set_subreq_pack_d2m(const void *inbuf, void *outbuf, uintptr_t count,
@@ -1320,10 +1317,7 @@ static int set_subreq_unpack_d2d(const void *inbuf, void *outbuf, uintptr_t coun
         rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
     }
 
-  fn_exit:
     return rc;
-  fn_fail:
-    goto fn_exit;
 }
 
 static int set_subreq_unpack_d2m(const void *inbuf, void *outbuf, uintptr_t count,
