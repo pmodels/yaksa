@@ -1062,17 +1062,25 @@ static int set_multichunk_subreq(const void *inbuf, void *outbuf, uintptr_t coun
 /* Fast-path pack subroutine */
 static int singlechunk_pack(yaksuri_gpudriver_id_e id, int device, const void *inbuf, void *outbuf,
                             uintptr_t count, yaksi_type_s * type, yaksi_info_s * info,
-                            yaksa_op_t op, yaksuri_subreq_s ** subreq_ptr)
+                            yaksa_op_t op, yaksi_request_s * request,
+                            yaksuri_subreq_s ** subreq_ptr)
 {
     int rc = YAKSA_SUCCESS;
 
-    yaksuri_subreq_s *subreq = (yaksuri_subreq_s *) malloc(sizeof(yaksuri_subreq_s));
-    subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
     rc = ipack(id, inbuf, outbuf, count, type, info, op, device);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    rc = event_record(id, device, &subreq->u.single.event);
-    *subreq_ptr = subreq;
+    /* Try to complete immediately for blocking request to avoid overhead
+     * caused by subreq enqueue and event management */
+    if (request->is_blocking && yaksuri_global.gpudriver[id].hooks->synchronize) {
+        yaksuri_global.gpudriver[id].hooks->synchronize(device);
+    } else {
+        yaksuri_subreq_s *subreq = (yaksuri_subreq_s *) malloc(sizeof(yaksuri_subreq_s));
+        subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
+
+        rc = event_record(id, device, &subreq->u.single.event);
+        *subreq_ptr = subreq;
+    }
 
   fn_exit:
     return rc;
@@ -1083,17 +1091,25 @@ static int singlechunk_pack(yaksuri_gpudriver_id_e id, int device, const void *i
 /* Fast-path unpack subroutine */
 static int singlechunk_unpack(yaksuri_gpudriver_id_e id, int device, const void *inbuf,
                               void *outbuf, uintptr_t count, yaksi_type_s * type,
-                              yaksi_info_s * info, yaksa_op_t op, yaksuri_subreq_s ** subreq_ptr)
+                              yaksi_info_s * info, yaksa_op_t op, yaksi_request_s * request,
+                              yaksuri_subreq_s ** subreq_ptr)
 {
     int rc = YAKSA_SUCCESS;
 
-    yaksuri_subreq_s *subreq = (yaksuri_subreq_s *) malloc(sizeof(yaksuri_subreq_s));
-    subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
     rc = iunpack(id, inbuf, outbuf, count, type, info, op, device);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    rc = event_record(id, device, &subreq->u.single.event);
-    *subreq_ptr = subreq;
+    /* Try to complete immediately for blocking request to avoid overhead
+     * caused by subreq enqueue and event management */
+    if (request->is_blocking && yaksuri_global.gpudriver[id].hooks->synchronize) {
+        yaksuri_global.gpudriver[id].hooks->synchronize(device);
+    } else {
+        yaksuri_subreq_s *subreq = (yaksuri_subreq_s *) malloc(sizeof(yaksuri_subreq_s));
+        subreq->kind = YAKSURI_SUBREQ_KIND__SINGLE_CHUNK;
+
+        rc = event_record(id, device, &subreq->u.single.event);
+        *subreq_ptr = subreq;
+    }
 
   fn_exit:
     return rc;
@@ -1119,12 +1135,12 @@ static int set_subreq_pack_d2d(const void *inbuf, void *outbuf, uintptr_t count,
          check_p2p_comm(id, reqpriv->request->backend.inattr.device,
                         reqpriv->request->backend.outattr.device)) && aligned) {
         rc = singlechunk_pack(id, request->backend.inattr.device, inbuf, outbuf, count,
-                              type, info, op, subreq);
+                              type, info, op, request, subreq_ptr);
     }
     /* Fast path for other reduce operations with aligned buffer on the same device */
     else if (request->backend.inattr.device == request->backend.outattr.device && aligned) {
         rc = singlechunk_pack(id, request->backend.inattr.device, inbuf, outbuf, count,
-                              type, info, op, subreq_ptr);
+                              type, info, op, request, subreq_ptr);
     }
     /* Slow paths */
     else if (request->backend.inattr.device == request->backend.outattr.device) {
@@ -1166,7 +1182,7 @@ static int set_subreq_pack_d2m(const void *inbuf, void *outbuf, uintptr_t count,
          request->backend.inattr.device == request->backend.outattr.device) &&
         buf_is_aligned(outbuf, type)) {
         rc = singlechunk_pack(id, request->backend.inattr.device, inbuf, outbuf, count, type, info,
-                              op, subreq_ptr);
+                              op, request, subreq_ptr);
     }
     /* Slow paths */
     else if (request->backend.outattr.device == -1 ||
@@ -1202,7 +1218,7 @@ static int set_subreq_pack_d2rh(const void *inbuf, void *outbuf, uintptr_t count
     /* Fast path for REPLACE with contig type or noncontig type with large contig chunk */
     if (op == YAKSA_OP__REPLACE && (type->is_contig || type->size / type->num_contig >= threshold)) {
         rc = singlechunk_pack(id, request->backend.inattr.device, inbuf, outbuf, count,
-                              type, info, op, subreq_ptr);
+                              type, info, op, request, subreq_ptr);
     }
     /* Slow path */
     else {
@@ -1267,7 +1283,7 @@ static int set_subreq_pack_from_managed(const void *inbuf, void *outbuf, uintptr
          request->backend.inattr.device == request->backend.outattr.device) &&
         buf_is_aligned(outbuf, type)) {
         rc = singlechunk_pack(id, request->backend.outattr.device, inbuf, outbuf, count, type, info,
-                              op, subreq_ptr);
+                              op, request, subreq_ptr);
     }
     /* Slow path */
     else {
@@ -1296,7 +1312,7 @@ static int set_subreq_pack_from_rhost(const void *inbuf, void *outbuf, uintptr_t
     /* Fast path for REPLACE with contig type or noncontig type with large contig chunk */
     if (op == YAKSA_OP__REPLACE && (type->is_contig || type->size / type->num_contig >= threshold)) {
         rc = singlechunk_pack(id, request->backend.outattr.device, inbuf, outbuf, count,
-                              type, info, op, subreq_ptr);
+                              type, info, op, request, subreq_ptr);
     }
     /* Slow path */
     else {
@@ -1331,12 +1347,12 @@ static int set_subreq_unpack_d2d(const void *inbuf, void *outbuf, uintptr_t coun
          check_p2p_comm(id, reqpriv->request->backend.inattr.device,
                         reqpriv->request->backend.outattr.device)) && aligned) {
         rc = singlechunk_unpack(id, request->backend.inattr.device, inbuf, outbuf, count,
-                                type, info, op, subreq);
+                                type, info, op, request, subreq_ptr);
     }
     /* Fast path for other reduce operations with aligned buffer on the same device */
     else if (request->backend.inattr.device == request->backend.outattr.device && aligned) {
         rc = singlechunk_unpack(id, request->backend.inattr.device, inbuf, outbuf, count,
-                                type, info, op, subreq_ptr);
+                                type, info, op, request, subreq_ptr);
     }
     /* Slow paths */
     else if (request->backend.inattr.device == request->backend.outattr.device) {
@@ -1379,7 +1395,7 @@ static int set_subreq_unpack_d2m(const void *inbuf, void *outbuf, uintptr_t coun
          request->backend.inattr.device == request->backend.outattr.device) &&
         buf_is_aligned(inbuf, type)) {
         rc = singlechunk_unpack(id, request->backend.inattr.device, inbuf, outbuf, count,
-                                type, info, op, subreq_ptr);
+                                type, info, op, request, subreq_ptr);
     }
     /* Slow path */
     else {
@@ -1408,7 +1424,7 @@ static int set_subreq_unpack_d2rh(const void *inbuf, void *outbuf, uintptr_t cou
     /* Fast path for REPLACE with contig type or noncontig type with large contig chunk */
     if (op == YAKSA_OP__REPLACE && (type->is_contig || type->size / type->num_contig >= threshold)) {
         rc = singlechunk_unpack(id, request->backend.inattr.device, inbuf, outbuf, count,
-                                type, info, op, subreq_ptr);
+                                type, info, op, request, subreq_ptr);
     }
     /* Slow path */
     else {
@@ -1473,7 +1489,7 @@ static int set_subreq_unpack_from_managed(const void *inbuf, void *outbuf, uintp
          request->backend.inattr.device == request->backend.outattr.device) &&
         buf_is_aligned(inbuf, type)) {
         rc = singlechunk_unpack(id, request->backend.outattr.device, inbuf, outbuf, count,
-                                type, info, op, subreq_ptr);
+                                type, info, op, request, subreq_ptr);
     }
     /* Slow path */
     else {
@@ -1502,7 +1518,7 @@ static int set_subreq_unpack_from_rhost(const void *inbuf, void *outbuf, uintptr
     /* Fast path for REPLACE with contig type or noncontig type with large contig chunk */
     if (op == YAKSA_OP__REPLACE && (type->is_contig || type->size / type->num_contig >= threshold)) {
         rc = singlechunk_unpack(id, request->backend.outattr.device, inbuf, outbuf, count,
-                                type, info, op, subreq_ptr);
+                                type, info, op, request, subreq_ptr);
     }
     /* Slow path */
     else {
