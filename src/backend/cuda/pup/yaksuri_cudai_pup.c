@@ -210,6 +210,20 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
     goto fn_exit;
 }
 
+int yaksuri_cudai_synchronize(int target)
+{
+    int rc = YAKSA_SUCCESS;
+    cudaError_t cerr;
+
+    cerr = cudaStreamSynchronize(yaksuri_cudai_global.stream[target]);
+    YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
+
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
 int yaksuri_cudai_flush_all(void)
 {
     return YAKSA_SUCCESS;
