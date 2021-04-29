@@ -32,7 +32,7 @@ int yaksa_ipack(const void *inbuf, uintptr_t incount, yaksa_type_t type, uintptr
     }
 
     yaksi_request_s *yaksi_request;
-    rc = yaksi_request_create(&yaksi_request);
+    rc = yaksi_request_create(&yaksi_request, false /* is_blocking */);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     yaksi_info_s *yaksi_info;
