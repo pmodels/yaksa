@@ -19,13 +19,12 @@ static inline int find_device_num(ze_device_handle_t device)
         }
     if (device_num == -1) {
         /* subdevice */
-        ze_device_properties_t subdeviceProps;
-        zeDeviceGetProperties(device, &subdeviceProps);
         for (int i = 0; i < yaksuri_zei_global.ndevices; i++) {
             yaksuri_zei_device_state_s *device_state = yaksuri_zei_global.device_states + i;
-            if (subdeviceProps.deviceId == device_state->deviceId) {
-                device_num = i;
-                break;
+            for (int j = 0; j < device_state->nsubdevices; j++) {
+                if (device == device_state->subdevices[j]) {
+                    return i;
+                }
             }
         }
     }

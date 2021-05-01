@@ -182,26 +182,6 @@ int yaksuri_ze_init_hook(yaksur_gpudriver_hooks_s ** hooks)
     printf("numThreadsPerEU: %d\n", deviceProperties.numThreadsPerEU);
 #endif
 
-    /* discover sub-devices */
-    yaksuri_zei_global.subdevices =
-        (ze_device_handle_t **) calloc(yaksuri_zei_global.ndevices, sizeof(ze_device_handle_t *));
-    yaksuri_zei_global.nsubdevices = 0;
-    for (int i = 0; i < yaksuri_zei_global.ndevices; i++) {
-        uint32_t subcount = 0;
-        zerr = zeDeviceGetSubDevices(yaksuri_zei_global.device[i], &subcount, NULL);
-        YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
-        if (yaksuri_zei_global.nsubdevices == 0)
-            yaksuri_zei_global.nsubdevices = subcount;
-        if (subcount <= 1)
-            break;
-        yaksuri_zei_global.subdevices[i] =
-            (ze_device_handle_t *) malloc(sizeof(ze_device_handle_t) * subcount);
-        zerr =
-            zeDeviceGetSubDevices(yaksuri_zei_global.device[i], &subcount,
-                                  yaksuri_zei_global.subdevices[i]);
-        YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
-    }
-
     /* device state */
     yaksuri_zei_global.device_states =
         (yaksuri_zei_device_state_s *) calloc(yaksuri_zei_global.ndevices,
@@ -218,6 +198,23 @@ int yaksuri_ze_init_hook(yaksur_gpudriver_hooks_s ** hooks)
         zerr = zeDeviceGetProperties(yaksuri_zei_global.device[i], &deviceProperties);
         YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
         device_state->deviceId = deviceProperties.deviceId;
+
+        /* discover sub-devices */
+        uint32_t subcount = 0;
+        zerr = zeDeviceGetSubDevices(yaksuri_zei_global.device[i], &subcount, NULL);
+        YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
+        if (subcount == 1)
+            subcount = 0;
+        device_state->nsubdevices = subcount;
+        if (subcount > 1) {
+            device_state->subdevices =
+                (ze_device_handle_t *) malloc(sizeof(ze_device_handle_t) * subcount);
+            zerr =
+                zeDeviceGetSubDevices(yaksuri_zei_global.device[i], &subcount,
+                                      device_state->subdevices);
+            YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
+        }
+
         /* create one event pool for each device */
         zerr = zeEventPoolCreate(yaksuri_zei_global.context, &pool_desc, 1,
                                  &yaksuri_zei_global.device[i], &device_state->ep);
