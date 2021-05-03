@@ -123,17 +123,9 @@ static int iunpack(yaksuri_gpudriver_id_e id, const void *inbuf, void *outbuf, u
     goto fn_exit;
 }
 
-static int check_p2p_comm(yaksuri_gpudriver_id_e id, int indev, int outdev, bool * is_enabled)
+static bool check_p2p_comm(yaksuri_gpudriver_id_e id, int indev, int outdev)
 {
-    int rc = YAKSA_SUCCESS;
-
-    rc = yaksuri_global.gpudriver[id].hooks->check_p2p_comm(indev, outdev, is_enabled);
-    YAKSU_ERR_CHECK(rc, fn_fail);
-
-  fn_exit:
-    return rc;
-  fn_fail:
-    goto fn_exit;
+    return yaksuri_global.gpudriver[id].hooks->check_p2p_comm(indev, outdev);
 }
 
 static int event_record(yaksuri_gpudriver_id_e id, int device, void **event)
@@ -1109,10 +1101,20 @@ static int set_subreq_pack_d2d(const void *inbuf, void *outbuf, uintptr_t count,
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+    bool aligned = buf_is_aligned(outbuf, type);
 
-    /* Fast path for REPLACE with aligned outbuf on the same device */
-    if (op == YAKSA_OP__REPLACE && request->backend.inattr.device == request->backend.outattr.device
-        && buf_is_aligned(outbuf, type)) {
+    /* Fast path for REPLACE with aligned outbuf on the same device or different
+     * devices with P2P support. Note that IPC mapping requires P2P support, thus
+     * we don't handle the IPC case explicitly. */
+    if (op == YAKSA_OP__REPLACE &&
+        (request->backend.inattr.device == request->backend.outattr.device ||
+         check_p2p_comm(id, reqpriv->request->backend.inattr.device,
+                        reqpriv->request->backend.outattr.device)) && aligned) {
+        rc = singlechunk_pack(id, request->backend.inattr.device, inbuf, outbuf, count,
+                              type, info, op, subreq);
+    }
+    /* Fast path for other reduce operations with aligned buffer on the same device */
+    else if (request->backend.inattr.device == request->backend.outattr.device && aligned) {
         rc = singlechunk_pack(id, request->backend.inattr.device, inbuf, outbuf, count,
                               type, info, op, subreq);
     }
@@ -1122,10 +1124,8 @@ static int set_subreq_pack_d2d(const void *inbuf, void *outbuf, uintptr_t count,
         subreq->u.multiple.release = simple_release;
         rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
     } else {
-        bool is_enabled;
-        rc = check_p2p_comm(id, reqpriv->request->backend.inattr.device,
-                            reqpriv->request->backend.outattr.device, &is_enabled);
-        YAKSU_ERR_CHECK(rc, fn_fail);
+        bool is_enabled = check_p2p_comm(id, reqpriv->request->backend.inattr.device,
+                                         reqpriv->request->backend.outattr.device);
 
         if (is_enabled) {
             subreq->u.multiple.acquire = pack_d2d_p2p_acquire;
@@ -1137,10 +1137,7 @@ static int set_subreq_pack_d2d(const void *inbuf, void *outbuf, uintptr_t count,
         rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
     }
 
-  fn_exit:
     return rc;
-  fn_fail:
-    goto fn_exit;
 }
 
 static int set_subreq_pack_d2m(const void *inbuf, void *outbuf, uintptr_t count,
@@ -1151,10 +1148,9 @@ static int set_subreq_pack_d2m(const void *inbuf, void *outbuf, uintptr_t count,
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    /* Fast path for REPLACE with aligned outbuf on host or the same device */
-    if (op == YAKSA_OP__REPLACE && (request->backend.outattr.device == -1 ||
-                                    request->backend.inattr.device ==
-                                    request->backend.outattr.device) &&
+    /* Fast path for all reduce operations with aligned outbuf on host or the same device */
+    if ((request->backend.outattr.device == -1 ||
+         request->backend.inattr.device == request->backend.outattr.device) &&
         buf_is_aligned(outbuf, type)) {
         rc = singlechunk_pack(id, request->backend.inattr.device, inbuf, outbuf, count, type, info,
                               op, subreq);
@@ -1236,10 +1232,9 @@ static int set_subreq_pack_from_managed(const void *inbuf, void *outbuf, uintptr
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    /* Fast path for REPLACE with aligned outbuf from host or the same device. */
-    if (op == YAKSA_OP__REPLACE && (request->backend.inattr.device == -1 ||
-                                    request->backend.inattr.device ==
-                                    request->backend.outattr.device) &&
+    /* Fast path for all reduce operations with aligned outbuf from host or the same device. */
+    if ((request->backend.inattr.device == -1 ||
+         request->backend.inattr.device == request->backend.outattr.device) &&
         buf_is_aligned(outbuf, type)) {
         rc = singlechunk_pack(id, request->backend.outattr.device, inbuf, outbuf, count, type, info,
                               op, subreq);
@@ -1286,10 +1281,20 @@ static int set_subreq_unpack_d2d(const void *inbuf, void *outbuf, uintptr_t coun
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+    bool aligned = buf_is_aligned(inbuf, type);
 
-    /* Fast path for REPLACE with aligned inbuf on the same device */
-    if (op == YAKSA_OP__REPLACE && request->backend.inattr.device == request->backend.outattr.device
-        && buf_is_aligned(inbuf, type)) {
+    /* Fast path for REPLACE with aligned inbuf on the same device or different
+     * devices with P2P support. Note that IPC mapping requires P2P support, thus
+     * we don't handle the IPC case explicitly. */
+    if (op == YAKSA_OP__REPLACE &&
+        (request->backend.inattr.device == request->backend.outattr.device ||
+         check_p2p_comm(id, reqpriv->request->backend.inattr.device,
+                        reqpriv->request->backend.outattr.device)) && aligned) {
+        rc = singlechunk_unpack(id, request->backend.inattr.device, inbuf, outbuf, count,
+                                type, info, op, subreq);
+    }
+    /* Fast path for other reduce operations with aligned buffer on the same device */
+    else if (request->backend.inattr.device == request->backend.outattr.device && aligned) {
         rc = singlechunk_unpack(id, request->backend.inattr.device, inbuf, outbuf, count,
                                 type, info, op, subreq);
     }
@@ -1299,10 +1304,8 @@ static int set_subreq_unpack_d2d(const void *inbuf, void *outbuf, uintptr_t coun
         subreq->u.multiple.release = simple_release;
         rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
     } else {
-        bool is_enabled;
-        rc = check_p2p_comm(id, reqpriv->request->backend.inattr.device,
-                            reqpriv->request->backend.outattr.device, &is_enabled);
-        YAKSU_ERR_CHECK(rc, fn_fail);
+        bool is_enabled = check_p2p_comm(id, reqpriv->request->backend.inattr.device,
+                                         reqpriv->request->backend.outattr.device);
 
         if (is_enabled) {
             subreq->u.multiple.acquire = unpack_d2d_p2p_acquire;
@@ -1314,10 +1317,7 @@ static int set_subreq_unpack_d2d(const void *inbuf, void *outbuf, uintptr_t coun
         rc = set_multichunk_subreq(inbuf, outbuf, count, type, op, subreq);
     }
 
-  fn_exit:
     return rc;
-  fn_fail:
-    goto fn_exit;
 }
 
 static int set_subreq_unpack_d2m(const void *inbuf, void *outbuf, uintptr_t count,
@@ -1328,10 +1328,9 @@ static int set_subreq_unpack_d2m(const void *inbuf, void *outbuf, uintptr_t coun
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    /* Fast path for REPLACE with aligned inbuf to host or the same device */
-    if (op == YAKSA_OP__REPLACE && (request->backend.outattr.device == -1 ||
-                                    request->backend.inattr.device ==
-                                    request->backend.outattr.device) &&
+    /* Fast path for all reduce operations with aligned inbuf to host or the same device */
+    if ((request->backend.outattr.device == -1 ||
+         request->backend.inattr.device == request->backend.outattr.device) &&
         buf_is_aligned(inbuf, type)) {
         rc = singlechunk_unpack(id, request->backend.inattr.device, inbuf, outbuf, count,
                                 type, info, op, subreq);
@@ -1407,10 +1406,9 @@ static int set_subreq_unpack_from_managed(const void *inbuf, void *outbuf, uintp
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
 
-    /* Fast path for REPLACE with aligned inbuf from host or the same device. */
-    if (op == YAKSA_OP__REPLACE && (request->backend.inattr.device == -1 ||
-                                    request->backend.inattr.device ==
-                                    request->backend.outattr.device) &&
+    /* Fast path for all reduce operations with aligned inbuf from host or the same device. */
+    if ((request->backend.inattr.device == -1 ||
+         request->backend.inattr.device == request->backend.outattr.device) &&
         buf_is_aligned(inbuf, type)) {
         rc = singlechunk_unpack(id, request->backend.outattr.device, inbuf, outbuf, count,
                                 type, info, op, subreq);
