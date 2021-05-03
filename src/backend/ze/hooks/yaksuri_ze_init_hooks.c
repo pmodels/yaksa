@@ -180,7 +180,7 @@ int yaksuri_ze_init_hook(yaksur_gpudriver_hooks_s ** hooks)
     zerr = zeDeviceGetProperties(yaksuri_zei_global.device[0], &deviceProperties);
     assert(zerr == ZE_RESULT_SUCCESS);
 
-    printf("maxHardwareContexts: %d\n", deviceProperties.maxHardwareContexts);
+    printf("maxHardwareContexts: %u\n", deviceProperties.maxHardwareContexts);
     printf("maxMemAllocSize: %ld\n", deviceProperties.maxMemAllocSize);
     printf("numThreadsPerEU: %d\n", deviceProperties.numThreadsPerEU);
 #endif
@@ -217,6 +217,10 @@ int yaksuri_ze_init_hook(yaksur_gpudriver_hooks_s ** hooks)
     for (int i = 0; i < yaksuri_zei_global.ndevices; i++) {
         yaksuri_zei_device_state_s *device_state = yaksuri_zei_global.device_states + i;
         device_state->dev_id = i;
+        ze_device_properties_t deviceProperties;
+        zerr = zeDeviceGetProperties(yaksuri_zei_global.device[i], &deviceProperties);
+        YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
+        device_state->deviceId = deviceProperties.deviceId;
         /* create one event pool for each device */
         zerr = zeEventPoolCreate(yaksuri_zei_global.context, &pool_desc, 1,
                                  &yaksuri_zei_global.device[i], &device_state->ep);

@@ -73,6 +73,7 @@ int iters = -1;
 int max_segments = -1;
 int pack_order = PACK_ORDER__UNSET;
 int overlap = -1;
+int use_subdevices = 0;
 DTP_pool_s *dtp;
 
 #define MAX_DEVID_LIST   (1024)
@@ -516,6 +517,8 @@ int main(int argc, char **argv)
             }
         } else if (!strcmp(*argv, "-verbose")) {
             verbose = 1;
+        } else if (!strcmp(*argv, "-use-tiles")) {
+            use_subdevices = 1;
         } else if (!strcmp(*argv, "-num-threads")) {
             --argc;
             ++argv;
@@ -538,6 +541,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "   -verbose     verbose output\n");
         fprintf(stderr, "   -num-threads number of threads to spawn\n");
         fprintf(stderr, "   -oplist      oplist type (int, float, complex)\n");
+        fprintf(stderr, "   -use-tiles   allocate buffers on tiles (ZE only)\n");
         exit(1);
     }
 

@@ -15,6 +15,11 @@ static yaksuri_zei_md_s *type_to_md(yaksi_type_s * type, int dev_id)
 {
     yaksuri_zei_type_s *ze = type->backend.ze.priv;
 
+#if ZE_MD_HOST
+    if (ze->md[dev_id] == NULL) {
+        ze->md[dev_id] = ze->md[0];
+    }
+#endif
     return ze->md[dev_id];
 }
 
