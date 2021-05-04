@@ -99,7 +99,9 @@ int yaksi_type_create_hindexed_block(intptr_t count, intptr_t blocklength,
         outtype->u.blkhindx.array_of_displs[i] = array_of_displs[i];
     outtype->u.blkhindx.child = intype;
 
-    yaksur_type_create_hook(outtype);
+    rc = yaksur_type_create_hook(outtype);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
     *newtype = outtype;
 
   fn_exit:

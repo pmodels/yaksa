@@ -118,7 +118,8 @@ int yaksi_type_create_subarray(int ndims, const intptr_t * array_of_sizes,
 
     outtype->num_contig = outtype->u.subarray.primary->num_contig;
 
-    yaksur_type_create_hook(outtype);
+    rc = yaksur_type_create_hook(outtype);
+    YAKSU_ERR_CHECK(rc, fn_fail);
     *newtype = outtype;
 
   fn_exit:

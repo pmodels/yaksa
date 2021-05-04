@@ -72,7 +72,9 @@ int yaksi_type_create_hvector(intptr_t count, intptr_t blocklength, intptr_t str
     outtype->u.hvector.stride = stride;
     outtype->u.hvector.child = intype;
 
-    yaksur_type_create_hook(outtype);
+    rc = yaksur_type_create_hook(outtype);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
     *newtype = outtype;
 
   fn_exit:

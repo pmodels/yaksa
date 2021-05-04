@@ -140,7 +140,8 @@ int yaksi_type_create_struct(intptr_t count, const intptr_t * array_of_blockleng
         outtype->u.str.array_of_types[i] = array_of_intypes[i];
     }
 
-    yaksur_type_create_hook(outtype);
+    rc = yaksur_type_create_hook(outtype);
+    YAKSU_ERR_CHECK(rc, fn_fail);
     *newtype = outtype;
 
   fn_exit:
