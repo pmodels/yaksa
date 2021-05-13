@@ -7,9 +7,9 @@
 #include "yaksu.h"
 #include <assert.h>
 
-int yaksa_ipack(const void *inbuf, uintptr_t incount, yaksa_type_t type, uintptr_t inoffset,
-                void *outbuf, uintptr_t max_pack_bytes, uintptr_t * actual_pack_bytes,
-                yaksa_info_t info, yaksa_op_t op, yaksa_request_t * request)
+int yaksa_pack(const void *inbuf, uintptr_t incount, yaksa_type_t type, uintptr_t inoffset,
+               void *outbuf, uintptr_t max_pack_bytes, uintptr_t * actual_pack_bytes,
+               yaksa_info_t info, yaksa_op_t op)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -17,7 +17,6 @@ int yaksa_ipack(const void *inbuf, uintptr_t incount, yaksa_type_t type, uintptr
 
     if (incount == 0) {
         *actual_pack_bytes = 0;
-        *request = YAKSA_REQUEST__NULL;
         goto fn_exit;
     }
 
@@ -27,12 +26,12 @@ int yaksa_ipack(const void *inbuf, uintptr_t incount, yaksa_type_t type, uintptr
 
     if (yaksi_type->size == 0) {
         *actual_pack_bytes = 0;
-        *request = YAKSA_REQUEST__NULL;
         goto fn_exit;
     }
 
     yaksi_request_s *yaksi_request;
-    rc = yaksi_request_create(&yaksi_request, false /* is_blocking */);
+    yaksi_request = NULL;
+    rc = yaksi_request_create(&yaksi_request, true /* is_blocking */);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     yaksi_info_s *yaksi_info;
@@ -42,13 +41,12 @@ int yaksa_ipack(const void *inbuf, uintptr_t incount, yaksa_type_t type, uintptr
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     if (yaksu_atomic_load(&yaksi_request->cc)) {
-        *request = yaksi_request->id;
-    } else {
-        rc = yaksi_request_free(yaksi_request);
+        rc = yaksur_request_wait(yaksi_request);
         YAKSU_ERR_CHECK(rc, fn_fail);
-
-        *request = YAKSA_REQUEST__NULL;
     }
+
+    rc = yaksi_request_free(yaksi_request);
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
   fn_exit:
     return rc;

@@ -74,6 +74,7 @@ int max_segments = -1;
 int pack_order = PACK_ORDER__UNSET;
 int overlap = -1;
 int use_subdevices = 0;
+int blocking = 0;
 DTP_pool_s *dtp;
 
 #define MAX_DEVID_LIST   (1024)
@@ -245,13 +246,19 @@ void *runtest(void *arg)
          * their contents are equivalent -- this is useful for
          * correctness in the accumulate operations */
         uintptr_t actual_pack_bytes;
-        rc = yaksa_ipack(dbuf_h + dobj.DTP_buf_offset, dobj.DTP_type_count, dobj.DTP_datatype,
-                         0, tbuf_h, tbufsize, &actual_pack_bytes, NULL, YAKSA_OP__REPLACE,
-                         &request);
-        assert(rc == YAKSA_SUCCESS);
+        if (blocking) {
+            rc = yaksa_pack(dbuf_h + dobj.DTP_buf_offset, dobj.DTP_type_count, dobj.DTP_datatype,
+                            0, tbuf_h, tbufsize, &actual_pack_bytes, NULL, YAKSA_OP__REPLACE);
+            assert(rc == YAKSA_SUCCESS);
+        } else {
+            rc = yaksa_ipack(dbuf_h + dobj.DTP_buf_offset, dobj.DTP_type_count, dobj.DTP_datatype,
+                             0, tbuf_h, tbufsize, &actual_pack_bytes, NULL, YAKSA_OP__REPLACE,
+                             &request);
+            assert(rc == YAKSA_SUCCESS);
 
-        rc = yaksa_request_wait(request);
-        assert(rc == YAKSA_SUCCESS);
+            rc = yaksa_request_wait(request);
+            assert(rc == YAKSA_SUCCESS);
+        }
 
         pack_copy_content(sbuf_h, sbuf_d, sobj.DTP_bufsize, sbuf_memtype);
         pack_copy_content(dbuf_h, dbuf_d, dobj.DTP_bufsize, dbuf_memtype);
@@ -339,29 +346,47 @@ void *runtest(void *arg)
         for (int j = 0; j < segments; j++) {
             uintptr_t actual_pack_bytes;
 
-            rc = yaksa_ipack(sbuf_d + sobj.DTP_buf_offset, sobj.DTP_type_count, sobj.DTP_datatype,
-                             segment_starts[j], (char *) tbuf_d + segment_starts[j],
-                             segment_lengths[j], &actual_pack_bytes, pack_info, pack_op, &request);
-            assert(rc == YAKSA_SUCCESS);
-            assert(actual_pack_bytes <= segment_lengths[j]);
+            if (blocking) {
+                rc = yaksa_pack(sbuf_d + sobj.DTP_buf_offset, sobj.DTP_type_count,
+                                sobj.DTP_datatype, segment_starts[j],
+                                (char *) tbuf_d + segment_starts[j], segment_lengths[j],
+                                &actual_pack_bytes, pack_info, pack_op);
+                assert(rc == YAKSA_SUCCESS);
+            } else {
+                rc = yaksa_ipack(sbuf_d + sobj.DTP_buf_offset, sobj.DTP_type_count,
+                                 sobj.DTP_datatype, segment_starts[j],
+                                 (char *) tbuf_d + segment_starts[j], segment_lengths[j],
+                                 &actual_pack_bytes, pack_info, pack_op, &request);
+                assert(rc == YAKSA_SUCCESS);
 
+                rc = yaksa_request_wait(request);
+                assert(rc == YAKSA_SUCCESS);
+            }
+
+            assert(actual_pack_bytes <= segment_lengths[j]);
             if (j == segments - 1) {
                 DTP_obj_free(sobj);
             }
 
-            rc = yaksa_request_wait(request);
-            assert(rc == YAKSA_SUCCESS);
-
             uintptr_t actual_unpack_bytes;
-            rc = yaksa_iunpack((char *) tbuf_d + segment_starts[j], actual_pack_bytes,
-                               dbuf_d + dobj.DTP_buf_offset, dobj.DTP_type_count, dobj.DTP_datatype,
-                               segment_starts[j], &actual_unpack_bytes, unpack_info, unpack_op,
-                               &request);
-            assert(rc == YAKSA_SUCCESS);
-            assert(actual_pack_bytes == actual_unpack_bytes);
+            if (blocking) {
+                rc = yaksa_unpack((char *) tbuf_d + segment_starts[j], actual_pack_bytes,
+                                  dbuf_d + dobj.DTP_buf_offset, dobj.DTP_type_count,
+                                  dobj.DTP_datatype, segment_starts[j], &actual_unpack_bytes,
+                                  unpack_info, unpack_op);
+                assert(rc == YAKSA_SUCCESS);
+            } else {
+                rc = yaksa_iunpack((char *) tbuf_d + segment_starts[j], actual_pack_bytes,
+                                   dbuf_d + dobj.DTP_buf_offset, dobj.DTP_type_count,
+                                   dobj.DTP_datatype, segment_starts[j], &actual_unpack_bytes,
+                                   unpack_info, unpack_op, &request);
+                assert(rc == YAKSA_SUCCESS);
 
-            rc = yaksa_request_wait(request);
-            assert(rc == YAKSA_SUCCESS);
+                rc = yaksa_request_wait(request);
+                assert(rc == YAKSA_SUCCESS);
+            }
+
+            assert(actual_pack_bytes == actual_unpack_bytes);
         }
 
         if (pack_info) {
@@ -515,6 +540,8 @@ int main(int argc, char **argv)
                 fprintf(stderr, "unknown overlap type %s\n", *argv);
                 exit(1);
             }
+        } else if (!strcmp(*argv, "-blocking")) {
+            blocking = 1;
         } else if (!strcmp(*argv, "-verbose")) {
             verbose = 1;
         } else if (!strcmp(*argv, "-use-tiles")) {
@@ -538,6 +565,8 @@ int main(int argc, char **argv)
         fprintf(stderr, "   -segments    number of segments to chop the packing into\n");
         fprintf(stderr, "   -ordering  packing order of segments (normal, reverse, random)\n");
         fprintf(stderr, "   -overlap     should packing overlap (none, regular, irregular)\n");
+        fprintf(stderr,
+                "   -blocking    test blocking pack/unpack (default test nonblocking pack/unpack)\n");
         fprintf(stderr, "   -verbose     verbose output\n");
         fprintf(stderr, "   -num-threads number of threads to spawn\n");
         fprintf(stderr, "   -oplist      oplist type (int, float, complex)\n");

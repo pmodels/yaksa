@@ -148,6 +148,7 @@ typedef struct yaksi_type_s {
 typedef struct yaksi_request_s {
     yaksu_handle_t id;
     yaksu_atomic_int cc;        /* completion counter */
+    bool is_blocking;           /* ipack/iunpack are nonblocking; pack/unpack are blocking */
 
     /* give some private space for the backend to store content */
     yaksur_request_s backend;
@@ -264,7 +265,7 @@ int yaksi_type_handle_dealloc(yaksa_type_t handle, yaksi_type_s ** type);
 int yaksi_type_get(yaksa_type_t type, yaksi_type_s ** yaksi_type);
 
 /* request pool */
-int yaksi_request_create(yaksi_request_s ** request);
+int yaksi_request_create(yaksi_request_s ** request, bool is_blocking);
 int yaksi_request_free(yaksi_request_s * request);
 int yaksi_request_get(yaksa_request_t request, yaksi_request_s ** yaksi_request);
 

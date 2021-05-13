@@ -84,6 +84,7 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
                         yaksi_info_s * info, yaksa_op_t op, int target);
 int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
                           yaksi_info_s * info, yaksa_op_t op, int target);
+int yaksuri_cudai_synchronize(int target);
 int yaksuri_cudai_flush_all(void);
 int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, yaksa_op_t op, bool * is_supported);
 uintptr_t yaksuri_cudai_get_iov_pack_threshold(yaksi_info_s * info);

@@ -266,7 +266,7 @@ int yaksa_init(yaksa_info_t info)
 
     /* allocate the NULL request */
     struct yaksi_request_s *request;
-    rc = yaksi_request_create(&request);
+    rc = yaksi_request_create(&request, false /* is_blocking */);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     assert(request->id == YAKSA_REQUEST__NULL);

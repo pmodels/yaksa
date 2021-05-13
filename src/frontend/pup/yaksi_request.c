@@ -7,7 +7,7 @@
 #include "yaksu.h"
 #include <assert.h>
 
-int yaksi_request_create(yaksi_request_s ** request)
+int yaksi_request_create(yaksi_request_s ** request, bool is_blocking)
 {
     int rc = YAKSA_SUCCESS;
     yaksi_request_s *req;
@@ -21,6 +21,7 @@ int yaksi_request_create(yaksi_request_s ** request)
     assert(req->id < ((yaksa_request_t) 1 << YAKSI_REQUEST_OBJECT_ID_BITS));
 
     yaksu_atomic_store(&req->cc, 0);
+    req->is_blocking = is_blocking;
 
     rc = yaksur_request_create_hook(req);
     YAKSU_ERR_CHECK(rc, fn_fail);
