@@ -26,12 +26,12 @@ int pack_get_ndevices(void)
 #endif
 }
 
-void pack_init_devices(void)
+void pack_init_devices(int num_threads)
 {
 #ifdef HAVE_CUDA
-    pack_cuda_init_devices();
+    pack_cuda_init_devices(num_threads);
 #elif defined(HAVE_ZE)
-    pack_ze_init_devices();
+    pack_ze_init_devices(num_threads);
 #endif
 }
 
@@ -89,11 +89,11 @@ void pack_get_ptr_attr(const void *inbuf, void *outbuf, yaksa_info_t * info, int
 #endif
 }
 
-void pack_copy_content(const void *sbuf, void *dbuf, size_t size, mem_type_e type)
+void pack_copy_content(int tid, const void *sbuf, void *dbuf, size_t size, mem_type_e type)
 {
 #ifdef HAVE_CUDA
-    pack_cuda_copy_content(sbuf, dbuf, size, type);
+    pack_cuda_copy_content(tid, sbuf, dbuf, size, type);
 #elif defined(HAVE_ZE)
-    pack_ze_copy_content(sbuf, dbuf, size, type);
+    pack_ze_copy_content(tid, sbuf, dbuf, size, type);
 #endif
 }

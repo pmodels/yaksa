@@ -24,13 +24,18 @@ static ze_device_handle_t *global_devices = NULL;
 static ze_context_handle_t ze_context;
 static uint32_t device_count = 0;
 
+static ze_command_list_handle_t **cmdList;
+static ze_command_queue_handle_t **cmdQueue;
+static int n_threads = 0;
+
+
 int pack_ze_get_ndevices(void)
 {
     assert(device_count != 0);
     return (int) device_count;
 }
 
-void pack_ze_init_devices(void)
+void pack_ze_init_devices(int num_threads)
 {
     ze_result_t ret;
     ze_init_flag_t flags = ZE_INIT_FLAG_GPU_ONLY;
@@ -83,6 +88,66 @@ void pack_ze_init_devices(void)
     ze_context_desc_t contextDesc = { };
     ret = zeContextCreate(global_ze_driver_handle, &contextDesc, &ze_context);
     assert(ret == ZE_RESULT_SUCCESS);
+
+    n_threads = num_threads;
+    cmdList =
+        (ze_command_list_handle_t **) malloc(device_count * sizeof(ze_command_list_handle_t *));
+    cmdQueue =
+        (ze_command_queue_handle_t **) malloc(device_count * sizeof(ze_command_queue_handle_t *));
+
+    for (int i = 0; i < device_count; i++) {
+        int j;
+        cmdList[i] =
+            (ze_command_list_handle_t *) malloc(sizeof(ze_command_list_handle_t) * num_threads);
+        cmdQueue[i] =
+            (ze_command_queue_handle_t *) malloc(sizeof(ze_command_queue_handle_t) * num_threads);
+        ze_command_list_desc_t cmdListDesc = {
+            .stype = ZE_STRUCTURE_TYPE_COMMAND_LIST_DESC,
+            .pNext = NULL,
+            .commandQueueGroupOrdinal = 0,
+            .flags = 0,
+        };
+
+        ze_command_queue_desc_t cmdQueueDesc = {
+            .stype = ZE_STRUCTURE_TYPE_COMMAND_QUEUE_DESC,
+            .pNext = NULL,
+            .index = 0,
+            .flags = 0,
+            .ordinal = 0,
+            .mode = ZE_COMMAND_QUEUE_MODE_SYNCHRONOUS,
+            .priority = ZE_COMMAND_QUEUE_PRIORITY_NORMAL,
+        };
+
+        int numQueueGroups = 0;
+        ret = zeDeviceGetCommandQueueGroupProperties(global_devices[i], &numQueueGroups, NULL);
+        assert(ret == ZE_RESULT_SUCCESS && numQueueGroups);
+        ze_command_queue_group_properties_t *queueProperties =
+            (ze_command_queue_group_properties_t *)
+            calloc(numQueueGroups, sizeof(ze_command_queue_group_properties_t));
+        ret =
+            zeDeviceGetCommandQueueGroupProperties(global_devices[i], &numQueueGroups,
+                                                   queueProperties);
+        for (j = 0; j < numQueueGroups; j++) {
+            if (queueProperties[j].flags & ZE_COMMAND_QUEUE_GROUP_PROPERTY_FLAG_COMPUTE) {
+                cmdQueueDesc.ordinal = j;
+                break;
+            }
+        }
+        assert(j != numQueueGroups);
+        free(queueProperties);
+
+        cmdListDesc.commandQueueGroupOrdinal = cmdQueueDesc.ordinal;
+
+        for (j = 0; j < num_threads; j++) {
+            ret = zeCommandListCreate(ze_context, global_devices[i], &cmdListDesc, &cmdList[i][j]);
+            assert(ret == ZE_RESULT_SUCCESS);
+
+            ret =
+                zeCommandQueueCreate(ze_context, global_devices[i], &cmdQueueDesc, &cmdQueue[i][j]);
+            assert(ret == ZE_RESULT_SUCCESS);
+        }
+    }
+
   fn_exit:
     free(all_drivers);
     return;
@@ -93,6 +158,19 @@ void pack_ze_init_devices(void)
 
 void pack_ze_finalize_devices()
 {
+    ze_result_t ret;
+    for (int i = 0; i < device_count; i++) {
+        for (int j = 0; j < n_threads; j++) {
+            ret = zeCommandListDestroy(cmdList[i][j]);
+            assert(ret == ZE_RESULT_SUCCESS);
+            ret = zeCommandQueueDestroy(cmdQueue[i][j]);
+            assert(ret == ZE_RESULT_SUCCESS);
+        }
+        free(cmdList[i]);
+        free(cmdQueue[i]);
+    }
+    free(cmdList);
+    free(cmdQueue);
     zeContextDestroy(ze_context);
     free(global_devices);
 }
@@ -211,7 +289,7 @@ void pack_ze_get_ptr_attr(const void *inbuf, void *outbuf, yaksa_info_t * info, 
         *info = NULL;
 }
 
-void pack_ze_copy_content(const void *sbuf, void *dbuf, size_t size, mem_type_e type)
+void pack_ze_copy_content(int tid, const void *sbuf, void *dbuf, size_t size, mem_type_e type)
 {
     int i;
     if (type == MEM_TYPE__DEVICE) {
@@ -222,13 +300,12 @@ void pack_ze_copy_content(const void *sbuf, void *dbuf, size_t size, mem_type_e 
             ze_memory_allocation_properties_t prop;
             ze_device_handle_t device;
         } s_attr, d_attr;
-        memset(&s_attr.prop, 0, sizeof(ze_memory_allocation_properties_t));
-        memset(&d_attr.prop, 0, sizeof(ze_memory_allocation_properties_t));
+        memset(&s_attr, 0, sizeof(s_attr));
+        memset(&d_attr, 0, sizeof(d_attr));
         ret = zeMemGetAllocProperties(ze_context, sbuf, &s_attr.prop, &s_attr.device);
         assert(ret == ZE_RESULT_SUCCESS);
         ret = zeMemGetAllocProperties(ze_context, dbuf, &d_attr.prop, &d_attr.device);
         assert(ret == ZE_RESULT_SUCCESS);
-        /* one buffer is not device buffer */
         assert(s_attr.device == NULL || d_attr.device == NULL);
         if (s_attr.device) {
             device = s_attr.device;
@@ -237,54 +314,21 @@ void pack_ze_copy_content(const void *sbuf, void *dbuf, size_t size, mem_type_e 
         }
         assert(device);
 
-        ze_command_list_handle_t cmdList;
-        ze_command_list_desc_t cmdListDesc = { ZE_STRUCTURE_TYPE_COMMAND_LIST_DESC, NULL };
-
-        ret = zeCommandListCreate(ze_context, device, &cmdListDesc, &cmdList);
-        assert(ret == ZE_RESULT_SUCCESS);
-
-        ze_command_queue_handle_t cmdQueue;
-        ze_command_queue_desc_t cmdQueueDesc = {
-            .stype = ZE_STRUCTURE_TYPE_COMMAND_QUEUE_DESC,
-            .pNext = NULL,
-            .index = 0,
-            .flags = 0,
-            .ordinal = 0,
-            .mode = ZE_COMMAND_QUEUE_MODE_ASYNCHRONOUS,
-            .priority = ZE_COMMAND_QUEUE_PRIORITY_NORMAL,
-        };
-
-        int numQueueGroups = 0;
-        ret = zeDeviceGetCommandQueueGroupProperties(device, &numQueueGroups, NULL);
-        assert(ret == ZE_RESULT_SUCCESS && numQueueGroups);
-        ze_command_queue_group_properties_t *queueProperties =
-            (ze_command_queue_group_properties_t *)
-            malloc(sizeof(ze_command_queue_group_properties_t) * numQueueGroups);
-        ret = zeDeviceGetCommandQueueGroupProperties(device, &numQueueGroups, queueProperties);
-        for (i = 0; i < numQueueGroups; i++) {
-            if (queueProperties[i].flags & ZE_COMMAND_QUEUE_GROUP_PROPERTY_FLAG_COMPUTE) {
-                cmdQueueDesc.ordinal = i;
+        int dev_id;
+        for (dev_id = 0; dev_id < device_count; dev_id++) {
+            if (device == global_devices[dev_id])
                 break;
-            }
         }
-        assert(i != numQueueGroups);
+        assert(dev_id < device_count);
 
-        ret = zeCommandQueueCreate(ze_context, device, &cmdQueueDesc, &cmdQueue);
+        ret = zeCommandListReset(cmdList[dev_id][tid]);
+        ret = zeCommandListAppendMemoryCopy(cmdList[dev_id][tid], dbuf, sbuf, size, NULL, 0, NULL);
         assert(ret == ZE_RESULT_SUCCESS);
-
-        ret = zeCommandListAppendMemoryCopy(cmdList, dbuf, sbuf, size, NULL, 0, NULL);
+        ret = zeCommandListClose(cmdList[dev_id][tid]);
         assert(ret == ZE_RESULT_SUCCESS);
-        ret = zeCommandListClose(cmdList);
-        assert(ret == ZE_RESULT_SUCCESS);
-        ret = zeCommandQueueExecuteCommandLists(cmdQueue, 1, &cmdList, NULL);
-        assert(ret == ZE_RESULT_SUCCESS);
-
-        ret = zeCommandQueueSynchronize(cmdQueue, UINT32_MAX);
-        assert(ret == ZE_RESULT_SUCCESS);
-
-        ret = zeCommandListDestroy(cmdList);
-        assert(ret == ZE_RESULT_SUCCESS);
-        ret = zeCommandQueueDestroy(cmdQueue);
+        ret =
+            zeCommandQueueExecuteCommandLists(cmdQueue[dev_id][tid], 1, &cmdList[dev_id][tid],
+                                              NULL);
         assert(ret == ZE_RESULT_SUCCESS);
     }
 }

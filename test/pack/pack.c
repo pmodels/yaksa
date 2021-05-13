@@ -260,9 +260,9 @@ void *runtest(void *arg)
             assert(rc == YAKSA_SUCCESS);
         }
 
-        pack_copy_content(sbuf_h, sbuf_d, sobj.DTP_bufsize, sbuf_memtype);
-        pack_copy_content(dbuf_h, dbuf_d, dobj.DTP_bufsize, dbuf_memtype);
-        pack_copy_content(tbuf_h, tbuf_d, tbufsize, tbuf_memtype);
+        pack_copy_content(tid, sbuf_h, sbuf_d, sobj.DTP_bufsize, sbuf_memtype);
+        pack_copy_content(tid, dbuf_h, dbuf_d, dobj.DTP_bufsize, dbuf_memtype);
+        pack_copy_content(tid, tbuf_h, tbuf_d, tbufsize, tbuf_memtype);
 
 
         /* the source and destination objects should have the same
@@ -399,7 +399,7 @@ void *runtest(void *arg)
             assert(rc == YAKSA_SUCCESS);
         }
 
-        pack_copy_content(dbuf_d, dbuf_h, dobj.DTP_bufsize, dbuf_memtype);
+        pack_copy_content(tid, dbuf_d, dbuf_h, dobj.DTP_bufsize, dbuf_memtype);
 
         switch (op) {
             case YAKSA_OP__REPLACE:
@@ -575,7 +575,7 @@ int main(int argc, char **argv)
     }
 
     yaksa_init(NULL);
-    pack_init_devices();
+    pack_init_devices(num_threads);
 
     dtp = (DTP_pool_s *) malloc(num_threads * sizeof(DTP_pool_s));
     for (uintptr_t i = 0; i < num_threads; i++) {
