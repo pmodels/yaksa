@@ -50,6 +50,7 @@ missing
 /test/iov/testlist.threads.gen
 /test/pack/testlist.gen
 /test/pack/testlist.threads.gen
+/test/pack/testlist.blocking.gen
 /test/simple/testlist.gen
 /README
 
