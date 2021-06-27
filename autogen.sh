@@ -49,7 +49,7 @@ done
 ########################################################################
 
 # backend pup functions
-for x in seq cuda ze ; do
+for x in seq cuda ze hip ; do
     echo_n "generating backend pup functions for ${x}... "
     ./src/backend/${x}/genpup.py ${genpup_args}
     if test "$?" = "0" ; then
