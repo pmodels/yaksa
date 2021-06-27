@@ -23,7 +23,8 @@ test_pack_pack_CPPFLAGS = $(test_cppflags)
 
 common_files = test/pack/pack-common.c \
 	test/pack/pack-cuda.c   \
-	test/pack/pack-ze.c
+	test/pack/pack-ze.c     \
+	test/pack/pack-hip.c
 
 test_pack_pack_SOURCES = test/pack/pack.c ${common_files}
 
