@@ -75,7 +75,7 @@ int yaksi_type_create_hindexed_block(intptr_t count, intptr_t blocklength,
     if (intype->is_contig && ((outtype->ub - outtype->lb) == outtype->size)) {
         outtype->is_contig = true;
         for (int i = 1; i < count; i++) {
-            if (array_of_displs[i] <= array_of_displs[i - 1]) {
+            if (array_of_displs[i] != array_of_displs[i - 1] + intype->extent * blocklength) {
                 outtype->is_contig = false;
                 break;
             }
