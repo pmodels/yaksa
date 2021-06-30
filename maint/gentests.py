@@ -7,6 +7,10 @@
 import sys
 import os
 
+skip_test_complex = False
+for a in sys.argv[1:]:
+    if a == "-skip-test-complex":
+        skip_test_complex = True
 
 ##### global settings
 counts = [ 17, 1075, 65536 ]
@@ -15,7 +19,10 @@ iters = {
     1075: 128,
     65536: 32,
 }
-types = [ "int", "short_int", "int:3+float:2", "int:3+double:2", "c_complex", "c_double_complex" ]
+types = [ "int", "short_int", "int:3+float:2", "int:3+double:2"]
+if not skip_test_complex:
+    types.extend(["c_complex", "c_double_complex"])
+
 oplist = {
     "int": "int",
     "short_int": "int",
