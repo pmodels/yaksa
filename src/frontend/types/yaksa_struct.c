@@ -42,7 +42,11 @@ int yaksi_type_create_struct(intptr_t count, const intptr_t * array_of_blockleng
     }
 
     int is_set;
+    intptr_t last_ub;
+    int is_noncontig;
     is_set = 0;
+    last_ub = 0;
+    is_noncontig = 0;
     outtype->alignment = 0;
     for (intptr_t idx = 0; idx < count; idx++) {
         if (array_of_blocklengths[idx] == 0)
@@ -61,6 +65,12 @@ int yaksi_type_create_struct(intptr_t count, const intptr_t * array_of_blockleng
 
         intptr_t true_lb = lb - array_of_intypes[idx]->lb + array_of_intypes[idx]->true_lb;
         intptr_t true_ub = ub - array_of_intypes[idx]->ub + array_of_intypes[idx]->true_ub;
+
+        if (idx > 0 && true_lb != last_ub) {
+            is_noncontig = 1;
+        }
+        last_ub = true_ub;
+
         int tree_depth = array_of_intypes[idx]->tree_depth;
         if (outtype->alignment < array_of_intypes[idx]->alignment)
             outtype->alignment = array_of_intypes[idx]->alignment;
@@ -94,31 +104,13 @@ int yaksi_type_create_struct(intptr_t count, const intptr_t * array_of_blockleng
     outtype->extent = outtype->ub - outtype->lb;
 
     /* detect if the outtype is contiguous */
-    if ((outtype->ub - outtype->lb) == outtype->size) {
+    if (!is_noncontig && (outtype->ub - outtype->lb) == outtype->size) {
         outtype->is_contig = true;
 
         for (intptr_t i = 0; i < count; i++) {
             if (array_of_intypes[i]->is_contig == false) {
                 outtype->is_contig = false;
                 break;
-            }
-        }
-
-        intptr_t left = 0;
-        while (array_of_blocklengths[left] == 0)
-            left++;
-        intptr_t right = left + 1;
-        while (right < count && array_of_blocklengths[right] == 0)
-            right++;
-        while (right < count) {
-            if (array_of_displs[right] <= array_of_displs[left]) {
-                outtype->is_contig = false;
-                break;
-            } else {
-                left = right;
-                right++;
-                while (right < count && array_of_blocklengths[right] == 0)
-                    right++;
             }
         }
     } else {

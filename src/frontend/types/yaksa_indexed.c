@@ -44,7 +44,11 @@ int yaksi_type_create_hindexed(intptr_t count, const intptr_t * array_of_blockle
     outtype->alignment = intype->alignment;
 
     int is_set;
+    intptr_t last_ub;
+    int is_noncontig;
     is_set = 0;
+    last_ub = 0;
+    is_noncontig = 0;
     for (intptr_t idx = 0; idx < count; idx++) {
         if (array_of_blocklengths[idx] == 0)
             continue;
@@ -59,6 +63,11 @@ int yaksi_type_create_hindexed(intptr_t count, const intptr_t * array_of_blockle
                 intype->extent * (array_of_blocklengths[idx] - 1);
             ub = array_of_displs[idx] + intype->ub;
         }
+
+        if (idx > 0 && lb != last_ub) {
+            is_noncontig = 1;
+        }
+        last_ub = ub;
 
         intptr_t true_lb = lb - intype->lb + intype->true_lb;
         intptr_t true_ub = ub - intype->ub + intype->true_ub;
@@ -90,26 +99,8 @@ int yaksi_type_create_hindexed(intptr_t count, const intptr_t * array_of_blockle
     outtype->u.hindexed.child = intype;
 
     /* detect if the outtype is contiguous */
-    if (intype->is_contig && ((outtype->ub - outtype->lb) == outtype->size)) {
+    if (!is_noncontig && intype->is_contig && (outtype->ub - outtype->lb) == outtype->size) {
         outtype->is_contig = true;
-
-        int left = 0;
-        while (array_of_blocklengths[left] == 0)
-            left++;
-        int right = left + 1;
-        while (right < count && array_of_blocklengths[right] == 0)
-            right++;
-        while (right < count) {
-            if (array_of_displs[right] <= array_of_displs[left]) {
-                outtype->is_contig = false;
-                break;
-            } else {
-                left = right;
-                right++;
-                while (right < count && array_of_blocklengths[right] == 0)
-                    right++;
-            }
-        }
     } else {
         outtype->is_contig = false;
     }
