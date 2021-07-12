@@ -82,10 +82,12 @@ uintptr_t yaksuri_cudai_get_iov_unpack_threshold(yaksi_info_s * info)
     return iov_unpack_threshold;
 }
 
-int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                        yaksi_info_s * info, yaksa_op_t op, int target)
+int yaksuri_cudai_ipack_with_stream(const void *inbuf, void *outbuf, uintptr_t count,
+                                    yaksi_type_s * type, yaksi_info_s * info, yaksa_op_t op,
+                                    int target, void *stream_p)
 {
     int rc = YAKSA_SUCCESS;
+    cudaStream_t stream = *(cudaStream_t *) stream_p;
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
     cudaError_t cerr;
 
@@ -97,7 +99,7 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
          * source buffer's GPU */
         cerr =
             cudaMemcpyAsync(outbuf, (const char *) inbuf + type->true_lb, count * type->size,
-                            cudaMemcpyDefault, yaksuri_cudai_global.stream[target]);
+                            cudaMemcpyDefault, stream);
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
     } else if (op == YAKSA_OP__REPLACE && type->size / type->num_contig >= iov_pack_threshold) {
         struct iovec iov[MAX_IOV_LENGTH];
@@ -110,8 +112,7 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             for (uintptr_t i = 0; i < actual_iov_len; i++) {
-                cudaMemcpyAsync(dbuf, iov[i].iov_base, iov[i].iov_len, cudaMemcpyDefault,
-                                yaksuri_cudai_global.stream[target]);
+                cudaMemcpyAsync(dbuf, iov[i].iov_base, iov[i].iov_len, cudaMemcpyDefault, stream);
                 dbuf += iov[i].iov_len;
             }
 
@@ -134,7 +135,7 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
         cuda_type->pack(inbuf, outbuf, count, op, cuda_type->md, n_threads, n_blocks_x, n_blocks_y,
-                        n_blocks_z, target);
+                        n_blocks_z, stream);
 
         cerr = cudaSetDevice(cur_device);
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
@@ -146,10 +147,12 @@ int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
     goto fn_exit;
 }
 
-int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
-                          yaksi_info_s * info, yaksa_op_t op, int target)
+int yaksuri_cudai_iunpack_with_stream(const void *inbuf, void *outbuf, uintptr_t count,
+                                      yaksi_type_s * type, yaksi_info_s * info, yaksa_op_t op,
+                                      int target, void *stream_p)
 {
     int rc = YAKSA_SUCCESS;
+    cudaStream_t stream = *(cudaStream_t *) stream_p;
     yaksuri_cudai_type_s *cuda_type = (yaksuri_cudai_type_s *) type->backend.cuda.priv;
     cudaError_t cerr;
 
@@ -161,7 +164,7 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
          * source buffer's GPU */
         cerr =
             cudaMemcpyAsync((char *) outbuf + type->true_lb, inbuf, count * type->size,
-                            cudaMemcpyDefault, yaksuri_cudai_global.stream[target]);
+                            cudaMemcpyDefault, stream);
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
     } else if (op == YAKSA_OP__REPLACE && type->size / type->num_contig >= iov_unpack_threshold) {
         struct iovec iov[MAX_IOV_LENGTH];
@@ -174,8 +177,7 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             for (uintptr_t i = 0; i < actual_iov_len; i++) {
-                cudaMemcpyAsync(iov[i].iov_base, sbuf, iov[i].iov_len, cudaMemcpyDefault,
-                                yaksuri_cudai_global.stream[target]);
+                cudaMemcpyAsync(iov[i].iov_base, sbuf, iov[i].iov_len, cudaMemcpyDefault, stream);
                 sbuf += iov[i].iov_len;
             }
 
@@ -198,7 +200,7 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
         cuda_type->unpack(inbuf, outbuf, count, op, cuda_type->md, n_threads, n_blocks_x,
-                          n_blocks_y, n_blocks_z, target);
+                          n_blocks_y, n_blocks_z, stream);
 
         cerr = cudaSetDevice(cur_device);
         YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
@@ -208,6 +210,20 @@ int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaks
     return rc;
   fn_fail:
     goto fn_exit;
+}
+
+int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
+                        yaksi_info_s * info, yaksa_op_t op, int target)
+{
+    return yaksuri_cudai_ipack_with_stream(inbuf, outbuf, count, type, info, op, target,
+                                           &yaksuri_cudai_global.stream[target]);
+}
+
+int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
+                          yaksi_info_s * info, yaksa_op_t op, int target)
+{
+    return yaksuri_cudai_iunpack_with_stream(inbuf, outbuf, count, type, info, op, target,
+                                             &yaksuri_cudai_global.stream[target]);
 }
 
 int yaksuri_cudai_synchronize(int target)
