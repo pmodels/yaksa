@@ -1072,7 +1072,8 @@ static int singlechunk_pack(yaksuri_gpudriver_id_e id, int device, const void *i
 
     /* Try to complete immediately for blocking request to avoid overhead
      * caused by subreq enqueue and event management */
-    if (request->is_blocking && yaksuri_global.gpudriver[id].hooks->synchronize) {
+    if (request->kind == YAKSI_REQUEST_KIND__BLOCKING &&
+        yaksuri_global.gpudriver[id].hooks->synchronize) {
         yaksuri_global.gpudriver[id].hooks->synchronize(device);
     } else {
         yaksuri_subreq_s *subreq = (yaksuri_subreq_s *) malloc(sizeof(yaksuri_subreq_s));
@@ -1101,7 +1102,8 @@ static int singlechunk_unpack(yaksuri_gpudriver_id_e id, int device, const void 
 
     /* Try to complete immediately for blocking request to avoid overhead
      * caused by subreq enqueue and event management */
-    if (request->is_blocking && yaksuri_global.gpudriver[id].hooks->synchronize) {
+    if (request->kind == YAKSI_REQUEST_KIND__BLOCKING &&
+        yaksuri_global.gpudriver[id].hooks->synchronize) {
         yaksuri_global.gpudriver[id].hooks->synchronize(device);
     } else {
         yaksuri_subreq_s *subreq = (yaksuri_subreq_s *) malloc(sizeof(yaksuri_subreq_s));

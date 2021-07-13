@@ -145,11 +145,18 @@ typedef struct yaksi_type_s {
     yaksur_type_s backend;
 } yaksi_type_s;
 
+#define YAKSI_REQUEST_KIND__NONBLOCKING 0
+#define YAKSI_REQUEST_KIND__BLOCKING    1
+#define YAKSI_REQUEST_KIND__CUDA_STREAM 2
+
 typedef struct yaksi_request_s {
     yaksu_handle_t id;
     yaksu_atomic_int cc;        /* completion counter */
-    bool is_blocking;           /* ipack/iunpack are nonblocking; pack/unpack are blocking */
-
+    /* kind takes value of YAKSI_REQUEST_KIND__{NONBLOCKING, BLOCKING, CUDA_STREAM}
+     * ipack/iunpack are nonblocking; pack/unpack are blocking;
+     * pack_stream/unpack_stream sets stream */
+    int kind;
+    void *stream;               /* for CUDA, it's pointer to cudaStream_t */
     /* give some private space for the backend to store content */
     yaksur_request_s backend;
 
@@ -265,8 +272,10 @@ int yaksi_type_handle_dealloc(yaksa_type_t handle, yaksi_type_s ** type);
 int yaksi_type_get(yaksa_type_t type, yaksi_type_s ** yaksi_type);
 
 /* request pool */
-int yaksi_request_create(yaksi_request_s ** request, bool is_blocking);
+int yaksi_request_create(yaksi_request_s ** request);
 int yaksi_request_free(yaksi_request_s * request);
 int yaksi_request_get(yaksa_request_t request, yaksi_request_s ** yaksi_request);
+void yaksi_request_set_blocking(yaksi_request_s * request);
+void yaksi_request_set_stream(yaksi_request_s * request, void *stream);
 
 #endif /* YAKSI_H_INCLUDED */
