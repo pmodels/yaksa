@@ -303,6 +303,8 @@ int yaksur_info_keyval_append(yaksi_info_s * info, const char *key, const void *
             infopriv->gpudriver_id = YAKSURI_GPUDRIVER_ID__CUDA;
         } else if (!strncmp(val, "ze", vallen)) {
             infopriv->gpudriver_id = YAKSURI_GPUDRIVER_ID__ZE;
+        } else if (!strncmp(val, "nogpu", vallen)) {
+            infopriv->gpudriver_id = YAKSURI_GPUDRIVER_ID__LAST;
         } else {
             assert(0);
         }
