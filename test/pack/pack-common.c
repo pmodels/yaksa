@@ -97,3 +97,36 @@ void pack_copy_content(int tid, const void *sbuf, void *dbuf, size_t size, mem_t
     pack_ze_copy_content(tid, sbuf, dbuf, size, type);
 #endif
 }
+
+void *pack_create_stream(void)
+{
+#ifdef HAVE_CUDA
+    return pack_cuda_create_stream();
+#elif defined(HAVE_ZE)
+    return pack_ze_create_stream();
+#else
+    assert(0 && "yaksa_pack_stream/yaksa_unpack_stream not supported");
+#endif
+}
+
+void pack_destroy_stream(void *stream)
+{
+#ifdef HAVE_CUDA
+    pack_cuda_destroy_stream(stream);
+#elif defined(HAVE_ZE)
+    pack_ze_destroy_stream(stream);
+#else
+    assert(0 && "yaksa_pack_stream/yaksa_unpack_stream not supported");
+#endif
+}
+
+void pack_stream_synchronize(void *stream)
+{
+#ifdef HAVE_CUDA
+    pack_cuda_stream_synchronize(stream);
+#elif defined(HAVE_ZE)
+    pack_ze_stream_synchronize(stream);
+#else
+    assert(0 && "yaksa_pack_stream/yaksa_unpack_stream not supported");
+#endif
+}
