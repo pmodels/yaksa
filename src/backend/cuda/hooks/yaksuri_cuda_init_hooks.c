@@ -203,6 +203,7 @@ int yaksuri_cuda_init_hook(yaksur_gpudriver_hooks_s ** hooks)
     (*hooks)->event_record = yaksuri_cudai_event_record;
     (*hooks)->event_query = yaksuri_cudai_event_query;
     (*hooks)->add_dependency = yaksuri_cudai_add_dependency;
+    (*hooks)->launch_hostfn = yaksuri_cudai_launch_hostfn;
     (*hooks)->type_create = yaksuri_cudai_type_create_hook;
     (*hooks)->type_free = yaksuri_cudai_type_free_hook;
     (*hooks)->info_create = yaksuri_cudai_info_create_hook;
