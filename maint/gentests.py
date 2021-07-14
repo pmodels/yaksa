@@ -145,6 +145,8 @@ if __name__ == '__main__':
                        " -num-threads 4")
     gen_pack_iov_tests("pack", "test/pack/testlist.blocking.gen", True, \
                        " -blocking")
+    gen_pack_iov_tests("pack", "test/pack/testlist.stream.gen", True, \
+                       " -stream")
 
     gen_pack_iov_tests("iov", "test/iov/testlist.gen", False)
     gen_pack_iov_tests("iov", "test/iov/testlist.threads.gen", False, " -num-threads 4")
