@@ -14,7 +14,7 @@ else
 include $(top_srcdir)/src/backend/hip/stub/Makefile.mk
 endif !BUILD_HIP_BACKEND
 
-.cu.lo:
+.hip.lo:
 	@if $(AM_V_P) ; then \
 		$(top_srcdir)/src/backend/hip/hiplt.sh --verbose $@ \
 			$(HIPCC) $(AM_CPPFLAGS) -g $(HIP_GENCODE) -c $< ; \

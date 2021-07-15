@@ -241,7 +241,7 @@ if __name__ == '__main__':
 
     ##### generate the core pack/unpack kernels (zero levels)
     for b in builtin_types:
-        filename = "src/backend/hip/pup/yaksuri_hipi_pup_%s.cu" % b.replace(" ","_")
+        filename = "src/backend/hip/pup/yaksuri_hipi_pup_%s.hip" % b.replace(" ","_")
         yutils.copyright_c(filename)
         OUTFILE = open(filename, "a")
         yutils.display(OUTFILE, "#include <string.h>\n")
@@ -264,7 +264,7 @@ if __name__ == '__main__':
     ##### generate the core pack/unpack kernels (single level)
     for b in builtin_types:
         for d in gencomm.derived_types:
-            filename = "src/backend/hip/pup/yaksuri_hipi_pup_%s_%s.cu" % (d, b.replace(" ","_"))
+            filename = "src/backend/hip/pup/yaksuri_hipi_pup_%s_%s.hip" % (d, b.replace(" ","_"))
             yutils.copyright_c(filename)
             OUTFILE = open(filename, "a")
             yutils.display(OUTFILE, "#include <string.h>\n")
@@ -292,7 +292,7 @@ if __name__ == '__main__':
     for b in builtin_types:
         for d1 in gencomm.derived_types:
             for d2 in gencomm.derived_types:
-                filename = "src/backend/hip/pup/yaksuri_hipi_pup_%s_%s_%s.cu" % (d1, d2, b.replace(" ","_"))
+                filename = "src/backend/hip/pup/yaksuri_hipi_pup_%s_%s_%s.hip" % (d1, d2, b.replace(" ","_"))
                 yutils.copyright_c(filename)
                 OUTFILE = open(filename, "a")
                 yutils.display(OUTFILE, "#include <string.h>\n")
@@ -412,12 +412,12 @@ if __name__ == '__main__':
     OUTFILE = open(filename, "a")
     yutils.display(OUTFILE, "libyaksa_la_SOURCES += \\\n")
     for b in builtin_types:
-        yutils.display(OUTFILE, "\tsrc/backend/hip/pup/yaksuri_hipi_pup_%s.cu \\\n" % b.replace(" ","_"))
+        yutils.display(OUTFILE, "\tsrc/backend/hip/pup/yaksuri_hipi_pup_%s.hip \\\n" % b.replace(" ","_"))
         for d1 in gencomm.derived_types:
-            yutils.display(OUTFILE, "\tsrc/backend/hip/pup/yaksuri_hipi_pup_%s_%s.cu \\\n" % \
+            yutils.display(OUTFILE, "\tsrc/backend/hip/pup/yaksuri_hipi_pup_%s_%s.hip \\\n" % \
                            (d1, b.replace(" ","_")))
             for d2 in gencomm.derived_types:
-                yutils.display(OUTFILE, "\tsrc/backend/hip/pup/yaksuri_hipi_pup_%s_%s_%s.cu \\\n" % \
+                yutils.display(OUTFILE, "\tsrc/backend/hip/pup/yaksuri_hipi_pup_%s_%s_%s.hip \\\n" % \
                                (d1, d2, b.replace(" ","_")))
     yutils.display(OUTFILE, "\tsrc/backend/hip/pup/yaksuri_hipi_pup.c\n")
     yutils.display(OUTFILE, "\n")
