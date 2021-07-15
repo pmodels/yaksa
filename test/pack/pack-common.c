@@ -21,6 +21,8 @@ int pack_get_ndevices(void)
     return pack_cuda_get_ndevices();
 #elif defined(HAVE_ZE)
     return pack_ze_get_ndevices();
+#elif defined(HAVE_HIP)
+    return pack_hip_get_ndevices();
 #else
     return 0;
 #endif
@@ -32,6 +34,8 @@ void pack_init_devices(void)
     pack_cuda_init_devices();
 #elif defined(HAVE_ZE)
     pack_ze_init_devices();
+#elif defined(HAVE_HIP)
+    pack_hip_init_devices();
 #endif
 }
 
@@ -41,6 +45,8 @@ void pack_finalize_devices()
     pack_cuda_finalize_devices();
 #elif defined(HAVE_ZE)
     pack_ze_finalize_devices();
+#elif defined(HAVE_HIP)
+    pack_hip_finalize_devices();
 #endif
 }
 
@@ -55,6 +61,8 @@ void pack_alloc_mem(int device_id, size_t size, mem_type_e type, void **hostbuf,
         pack_cuda_alloc_mem(device_id, size, type, hostbuf, devicebuf);
 #elif defined(HAVE_ZE)
         pack_ze_alloc_mem(device_id, size, type, hostbuf, devicebuf);
+#elif defined(HAVE_HIP)
+        pack_hip_alloc_mem(device_id, size, type, hostbuf, devicebuf);
 #else
         fprintf(stderr, "ERROR: no GPU device is supported\n");
         exit(1);
@@ -71,6 +79,8 @@ void pack_free_mem(mem_type_e type, void *hostbuf, void *devicebuf)
         pack_cuda_free_mem(type, hostbuf, devicebuf);
 #elif defined(HAVE_ZE)
         pack_ze_free_mem(type, hostbuf, devicebuf);
+#elif defined(HAVE_HIP)
+        pack_hip_free_mem(type, hostbuf, devicebuf);
 #else
         fprintf(stderr, "ERROR: no GPU device is supported\n");
         exit(1);
@@ -84,6 +94,8 @@ void pack_get_ptr_attr(const void *inbuf, void *outbuf, yaksa_info_t * info, int
     pack_cuda_get_ptr_attr(inbuf, outbuf, info, iter);
 #elif defined(HAVE_ZE)
     pack_ze_get_ptr_attr(inbuf, outbuf, info, iter);
+#elif defined(HAVE_HIP)
+    pack_hip_get_ptr_attr(inbuf, outbuf, info, iter);
 #else
     *info = NULL;
 #endif
@@ -95,5 +107,7 @@ void pack_copy_content(const void *sbuf, void *dbuf, size_t size, mem_type_e typ
     pack_cuda_copy_content(sbuf, dbuf, size, type);
 #elif defined(HAVE_ZE)
     pack_ze_copy_content(sbuf, dbuf, size, type);
+#elif defined(HAVE_HIP)
+    pack_hip_copy_content(sbuf, dbuf, size, type);
 #endif
 }
