@@ -281,35 +281,127 @@ static int simple_release(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subreq
 }
 
 /* Stream callback versions of alloc_chunk and simple_release */
+/* Assumption: for each stream, only one set of tempbufs need be active at a
+ * time */
+struct stream_buf {
+    yaksuri_gpudriver_id_e id;
+    void *stream;
+    int device;
+    void *buf;
+    yaksu_buffer_pool_s pool;
+    bool is_free;
+};
+
+struct stream_buf *stream_buf_list = NULL;
+int stream_buf_list_count = 0;
+int stream_buf_list_capacity = 0;
+
+static int stream_buf_list_grow(void)
+{
+    int rc = YAKSA_SUCCESS;
+    if (stream_buf_list_capacity == 0) {
+        stream_buf_list = malloc(10 * sizeof(struct stream_buf));
+        if (stream_buf_list == NULL) {
+            rc = YAKSA_ERR__OUT_OF_MEM;
+            goto fn_fail;
+        }
+        stream_buf_list_capacity = 10;
+    } else {
+        int new_capacity = stream_buf_list_capacity * 2;
+        void *new_list = realloc(stream_buf_list, new_capacity * sizeof(struct stream_buf));
+        if (new_list == NULL) {
+            rc = YAKSA_ERR__OUT_OF_MEM;
+            goto fn_fail;
+        }
+        stream_buf_list = new_list;
+        stream_buf_list_capacity = new_capacity;
+    }
+  fn_exit:
+    return rc;
+  fn_fail:
+    goto fn_exit;
+}
+
+static void stream_buf_list_free(void)
+{
+    if (stream_buf_list_capacity > 0) {
+        for (int i = 0; i < stream_buf_list_count; i++) {
+            int rc = yaksu_buffer_pool_elem_free(stream_buf_list[i].pool, stream_buf_list[i].buf);
+            assert(rc == YAKSA_SUCCESS);
+        }
+        free(stream_buf_list);
+        stream_buf_list_count = 0;
+        stream_buf_list_capacity = 0;
+    }
+}
+
+/* NOTE: we could use a hash to optimize; however, practically we don't expect
+ * the list to get long and the alloction is off the critical path anyway */
+/* Return index to stream_buf_list.
+ * Return -1 on error */
+int alloc_stream_buf(yaksuri_gpudriver_id_e id, int device, void *stream)
+{
+    int rc = YAKSA_SUCCESS;
+
+    /* first check for existing allocations */
+    if (stream_buf_list_count > 0) {
+        for (int i = 0; i < stream_buf_list_count; i++) {
+            if (stream_buf_list[i].is_free && stream_buf_list[i].id == id &&
+                stream_buf_list[i].device == device && stream_buf_list[i].stream == stream) {
+                stream_buf_list[i].is_free = false;
+                return i;
+            }
+        }
+    }
+    /* potentially grow the capacity */
+    if (stream_buf_list_count == stream_buf_list_capacity) {
+        int rc = stream_buf_list_grow();
+        YAKSU_ERR_CHECK(rc, fn_fail);
+    }
+    /* get a new buffer */
+    void *buf;
+    yaksu_buffer_pool_s pool;
+    if (device >= 0) {
+        pool = yaksuri_global.gpudriver[id].device[device];
+    } else {
+        pool = yaksuri_global.gpudriver[id].host;
+    }
+    rc = yaksu_buffer_pool_elem_alloc(pool, &buf);
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
+    int idx = stream_buf_list_count++;
+    stream_buf_list[idx].buf = buf;
+    stream_buf_list[idx].pool = pool;
+    stream_buf_list[idx].id = id;
+    stream_buf_list[idx].stream = stream;
+    stream_buf_list[idx].device = device;
+    stream_buf_list[idx].is_free = false;
+
+    return idx;
+  fn_fail:
+    return -1;
+}
+
+void *get_stream_buf(int idx)
+{
+    return stream_buf_list[idx].buf;
+}
+
+static void free_stream_buf(int idx)
+{
+    stream_buf_list[idx].is_free = true;
+}
+
 static int alloc_tmpbufs(yaksuri_gpudriver_id_e id,
-                         yaksuri_tmpbuf_s * tmpbufs, int num_tmpbufs, int *devices)
+                         int *tmpbufs, int num_tmpbufs, int *devices, void *stream)
 {
     int rc = YAKSA_SUCCESS;
 
     for (int i = 0; i < num_tmpbufs; i++) {
-        void *buf;
-        if (devices[i] >= 0) {
-            rc = yaksu_buffer_pool_elem_alloc(yaksuri_global.gpudriver[id].device[devices[i]],
-                                              &buf);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        } else {
-            rc = yaksu_buffer_pool_elem_alloc(yaksuri_global.gpudriver[id].host, &buf);
-            YAKSU_ERR_CHECK(rc, fn_fail);
-        }
-
-        if (buf == NULL) {
-            for (int j = 0; j < i; j++) {
-                rc = yaksu_buffer_pool_elem_free(tmpbufs[j].pool, tmpbufs[j].buf);
-                YAKSU_ERR_CHECK(rc, fn_fail);
-            }
-            goto fn_exit;
-        } else {
-            tmpbufs[i].buf = buf;
-            if (devices[i] >= 0) {
-                tmpbufs[i].pool = yaksuri_global.gpudriver[id].device[devices[i]];
-            } else {
-                tmpbufs[i].pool = yaksuri_global.gpudriver[id].host;
-            }
+        tmpbufs[i] = alloc_stream_buf(id, devices[i], stream);
+        if (tmpbufs[i] < 0) {
+            rc = YAKSA_ERR__OUT_OF_MEM;
+            goto fn_fail;
         }
     }
 
@@ -322,7 +414,7 @@ static int alloc_tmpbufs(yaksuri_gpudriver_id_e id,
 /* data used by stream callbacks */
 struct callback_chunk {
     int err;
-    yaksuri_tmpbuf_s tmpbufs[YAKSURI_SUBREQ_CHUNK_MAX_TMPBUFS];
+    int tmpbufs[YAKSURI_SUBREQ_CHUNK_MAX_TMPBUFS];      /* indexes to stream_buf_list */
     int num_tmpbufs;
     /* following only needed by per-chunk callbacks */
     const void *inbuf;
@@ -335,21 +427,23 @@ struct callback_chunk {
     intptr_t count_offset;
 };
 
-static void tmpbufs_stream_release(void *data)
+/* called when we schedule chunk_free_stream_cb. This allows next stream
+ * operation to reuse the tmpbufs. */
+static void tmpbufs_stream_release(struct callback_chunk *chunk)
 {
-    int rc = YAKSA_SUCCESS;
-    struct callback_chunk *chunk = data;
-
     for (int i = 0; i < chunk->num_tmpbufs; i++) {
-        rc = yaksu_buffer_pool_elem_free(chunk->tmpbufs[i].pool, chunk->tmpbufs[i].buf);
-        YAKSU_ERR_CHECK(rc, fn_fail);
+        free_stream_buf(chunk->tmpbufs[i]);
     }
-
-    yaksi_type_free(chunk->type);
-    free(data);
 
   fn_fail:
     return;
+}
+
+static void chunk_free_stream_cb(void *data)
+{
+    struct callback_chunk *chunk = data;
+    yaksi_type_free(chunk->type);
+    free(data);
 }
 
 /* Subroutines for multi-chunk pack
@@ -1210,13 +1304,17 @@ static int pack_d2d_p2p_stream(yaksuri_request_s * reqpriv, const void *inbuf, v
     } else {
         chunk->num_tmpbufs = 3;
     }
-    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices);
+    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices, stream);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     void *src_d_buf, *dst_d_buf, *dst_d_buf2;
-    src_d_buf = chunk->tmpbufs[0].buf;
-    dst_d_buf = chunk->tmpbufs[1].buf;
-    dst_d_buf2 = chunk->tmpbufs[2].buf;
+    src_d_buf = get_stream_buf(chunk->tmpbufs[0]);
+    if (chunk->num_tmpbufs > 1) {
+        dst_d_buf = get_stream_buf(chunk->tmpbufs[1]);
+    }
+    if (chunk->num_tmpbufs > 2) {
+        dst_d_buf2 = get_stream_buf(chunk->tmpbufs[2]);
+    }
 
     intptr_t count_per_chunk, count_offset;
     count_per_chunk = YAKSURI_TMPBUF_EL_SIZE / type->size;
@@ -1261,7 +1359,8 @@ static int pack_d2d_p2p_stream(yaksuri_request_s * reqpriv, const void *inbuf, v
         }
         count_offset += chunk_count;
     }
-    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, tmpbufs_stream_release, chunk);
+    tmpbufs_stream_release(chunk);
+    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, chunk_free_stream_cb, chunk);
 
   fn_exit:
     return rc;
@@ -1295,14 +1394,18 @@ static int pack_d2d_nop2p_stream(yaksuri_request_s * reqpriv, const void *inbuf,
     } else {
         chunk->num_tmpbufs = 4;
     }
-    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices);
+    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices, stream);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     void *src_d_buf, *rh_buf, *dst_d_buf, *dst_d_buf2;
-    src_d_buf = chunk->tmpbufs[0].buf;
-    rh_buf = chunk->tmpbufs[1].buf;
-    dst_d_buf = chunk->tmpbufs[2].buf;
-    dst_d_buf2 = chunk->tmpbufs[3].buf;
+    src_d_buf = get_stream_buf(chunk->tmpbufs[0]);
+    rh_buf = get_stream_buf(chunk->tmpbufs[1]);
+    if (chunk->num_tmpbufs > 2) {
+        dst_d_buf = get_stream_buf(chunk->tmpbufs[2]);
+    }
+    if (chunk->num_tmpbufs > 3) {
+        dst_d_buf2 = get_stream_buf(chunk->tmpbufs[3]);
+    }
 
     intptr_t count_per_chunk, count_offset;
     count_per_chunk = YAKSURI_TMPBUF_EL_SIZE / type->size;
@@ -1351,7 +1454,8 @@ static int pack_d2d_nop2p_stream(yaksuri_request_s * reqpriv, const void *inbuf,
         }
         count_offset += chunk_count;
     }
-    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, tmpbufs_stream_release, chunk);
+    tmpbufs_stream_release(chunk);
+    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, chunk_free_stream_cb, chunk);
 
   fn_exit:
     return rc;
@@ -1375,11 +1479,11 @@ static int pack_d2d_unaligned_stream(yaksuri_request_s * reqpriv, const void *in
 
     int devices[] = { in_device };
     chunk->num_tmpbufs = 1;
-    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices);
+    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices, stream);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     void *d_buf;
-    d_buf = chunk->tmpbufs[0].buf;
+    d_buf = get_stream_buf(chunk->tmpbufs[0]);
 
     intptr_t count_per_chunk, count_offset;
     count_per_chunk = YAKSURI_TMPBUF_EL_SIZE / type->size;
@@ -1402,7 +1506,8 @@ static int pack_d2d_unaligned_stream(yaksuri_request_s * reqpriv, const void *in
 
         count_offset += chunk_count;
     }
-    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, tmpbufs_stream_release, chunk);
+    tmpbufs_stream_release(chunk);
+    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, chunk_free_stream_cb, chunk);
 
   fn_exit:
     return rc;
@@ -1425,8 +1530,11 @@ static void pack_d2rh_stream_cb(void *data)
     intptr_t count_per_chunk = YAKSURI_TMPBUF_EL_SIZE / type->size;
     intptr_t chunk_count = YAKSU_MIN(count_per_chunk, chunk->count - chunk->count_offset);
 
+    void *rh_buf;
+    rh_buf = get_stream_buf(chunk->tmpbufs[1]);
+
     int rc;
-    rc = yaksuri_seq_ipack(chunk->tmpbufs[1].buf, dbuf,
+    rc = yaksuri_seq_ipack(rh_buf, dbuf,
                            chunk_count * type->size / base_type->size, base_type, chunk->info, op);
     assert(rc == YAKSA_SUCCESS);
     chunk->count_offset += chunk_count;
@@ -1451,12 +1559,14 @@ static int pack_d2rh_stream(yaksuri_request_s * reqpriv, const void *inbuf, void
     } else {
         chunk->num_tmpbufs = 2;
     }
-    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices);
+    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices, stream);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     void *d_buf, *rh_buf;
-    d_buf = chunk->tmpbufs[0].buf;
-    rh_buf = chunk->tmpbufs[1].buf;
+    d_buf = get_stream_buf(chunk->tmpbufs[0]);
+    if (chunk->num_tmpbufs > 1) {
+        rh_buf = get_stream_buf(chunk->tmpbufs[1]);
+    }
 
     /* setup chunk for pack_d2rh_stream_cb */
     if (op != YAKSA_OP__REPLACE) {
@@ -1498,7 +1608,8 @@ static int pack_d2rh_stream(yaksuri_request_s * reqpriv, const void *inbuf, void
 
         count_offset += chunk_count;
     }
-    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, tmpbufs_stream_release, chunk);
+    tmpbufs_stream_release(chunk);
+    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, chunk_free_stream_cb, chunk);
 
   fn_exit:
     return rc;
@@ -1519,8 +1630,11 @@ static void pack_d2urh_stream_cb(void *data)
     intptr_t count_per_chunk = YAKSURI_TMPBUF_EL_SIZE / type->size;
     intptr_t chunk_count = YAKSU_MIN(count_per_chunk, chunk->count - chunk->count_offset);
 
+    void *rh_buf;
+    rh_buf = get_stream_buf(chunk->tmpbufs[1]);
+
     int rc;
-    rc = yaksuri_seq_ipack(chunk->tmpbufs[1].buf, dbuf,
+    rc = yaksuri_seq_ipack(rh_buf, dbuf,
                            chunk_count * type->size / base_type->size, base_type, chunk->info, op);
     assert(rc == YAKSA_SUCCESS);
     chunk->count_offset += chunk_count;
@@ -1541,12 +1655,12 @@ static int pack_d2urh_stream(yaksuri_request_s * reqpriv, const void *inbuf, voi
 
     int devices[] = { in_device, -1 };
     chunk->num_tmpbufs = 2;
-    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices);
+    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices, stream);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     void *d_buf, *rh_buf;
-    d_buf = chunk->tmpbufs[0].buf;
-    rh_buf = chunk->tmpbufs[1].buf;
+    d_buf = get_stream_buf(chunk->tmpbufs[0]);
+    rh_buf = get_stream_buf(chunk->tmpbufs[1]);
 
     /* setup chunk for pack_d2urh_stream_cb */
     chunk->inbuf = inbuf;
@@ -1576,7 +1690,8 @@ static int pack_d2urh_stream(yaksuri_request_s * reqpriv, const void *inbuf, voi
 
         count_offset += chunk_count;
     }
-    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, tmpbufs_stream_release, chunk);
+    tmpbufs_stream_release(chunk);
+    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, chunk_free_stream_cb, chunk);
 
   fn_exit:
     return rc;
@@ -1606,13 +1721,17 @@ static int pack_h2d_stream(yaksuri_request_s * reqpriv, const void *inbuf, void 
     } else {
         chunk->num_tmpbufs = 3;
     }
-    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices);
+    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices, stream);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     void *rh_buf, *d_buf, *d_buf2;
-    rh_buf = chunk->tmpbufs[0].buf;
-    d_buf = chunk->tmpbufs[1].buf;
-    d_buf2 = chunk->tmpbufs[2].buf;
+    rh_buf = get_stream_buf(chunk->tmpbufs[0]);
+    if (chunk->num_tmpbufs > 1) {
+        d_buf = get_stream_buf(chunk->tmpbufs[1]);
+    }
+    if (chunk->num_tmpbufs > 2) {
+        d_buf2 = get_stream_buf(chunk->tmpbufs[2]);
+    }
 
     intptr_t count_per_chunk, count_offset;
     count_per_chunk = YAKSURI_TMPBUF_EL_SIZE / type->size;
@@ -1655,7 +1774,8 @@ static int pack_h2d_stream(yaksuri_request_s * reqpriv, const void *inbuf, void 
 
         count_offset += chunk_count;
     }
-    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, tmpbufs_stream_release, chunk);
+    tmpbufs_stream_release(chunk);
+    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, chunk_free_stream_cb, chunk);
 
   fn_exit:
     return rc;
@@ -1689,11 +1809,11 @@ static int unpack_d2d_p2p_stream(yaksuri_request_s * reqpriv, const void *inbuf,
 
     int devices[] = { out_device };
     chunk->num_tmpbufs = 1;
-    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices);
+    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices, stream);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     void *d_buf;
-    d_buf = chunk->tmpbufs[0].buf;
+    d_buf = get_stream_buf(chunk->tmpbufs[0]);
 
     intptr_t count_per_chunk, count_offset;
     count_per_chunk = YAKSURI_TMPBUF_EL_SIZE / type->size;
@@ -1712,7 +1832,8 @@ static int unpack_d2d_p2p_stream(yaksuri_request_s * reqpriv, const void *inbuf,
 
         count_offset += chunk_count;
     }
-    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, tmpbufs_stream_release, chunk);
+    tmpbufs_stream_release(chunk);
+    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, chunk_free_stream_cb, chunk);
 
   fn_exit:
     return rc;
@@ -1738,12 +1859,12 @@ static int unpack_d2d_nop2p_stream(yaksuri_request_s * reqpriv, const void *inbu
 
     int devices[] = { out_device, -1 };
     chunk->num_tmpbufs = 2;
-    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices);
+    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices, stream);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     void *d_buf, *rh_buf;
-    d_buf = chunk->tmpbufs[0].buf;
-    rh_buf = chunk->tmpbufs[1].buf;
+    d_buf = get_stream_buf(chunk->tmpbufs[0]);
+    rh_buf = get_stream_buf(chunk->tmpbufs[1]);
 
     intptr_t count_per_chunk, count_offset;
     count_per_chunk = YAKSURI_TMPBUF_EL_SIZE / type->size;
@@ -1766,7 +1887,8 @@ static int unpack_d2d_nop2p_stream(yaksuri_request_s * reqpriv, const void *inbu
 
         count_offset += chunk_count;
     }
-    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, tmpbufs_stream_release, chunk);
+    tmpbufs_stream_release(chunk);
+    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, chunk_free_stream_cb, chunk);
 
   fn_exit:
     return rc;
@@ -1790,11 +1912,11 @@ static int unpack_d2d_unaligned_stream(yaksuri_request_s * reqpriv, const void *
 
     int devices[] = { in_device };
     chunk->num_tmpbufs = 1;
-    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices);
+    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices, stream);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     void *d_buf;
-    d_buf = chunk->tmpbufs[0].buf;
+    d_buf = get_stream_buf(chunk->tmpbufs[0]);
 
     intptr_t count_per_chunk, count_offset;
     count_per_chunk = YAKSURI_TMPBUF_EL_SIZE / type->size;
@@ -1813,7 +1935,8 @@ static int unpack_d2d_unaligned_stream(yaksuri_request_s * reqpriv, const void *
 
         count_offset += chunk_count;
     }
-    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, tmpbufs_stream_release, chunk);
+    tmpbufs_stream_release(chunk);
+    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, chunk_free_stream_cb, chunk);
 
   fn_exit:
     return rc;
@@ -1836,11 +1959,11 @@ static int unpack_rh2d_stream(yaksuri_request_s * reqpriv, const void *inbuf, vo
 
     int devices[] = { out_device };
     chunk->num_tmpbufs = 1;
-    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices);
+    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices, stream);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     void *d_buf;
-    d_buf = chunk->tmpbufs[0].buf;
+    d_buf = get_stream_buf(chunk->tmpbufs[0]);
 
     intptr_t count_per_chunk, count_offset;
     count_per_chunk = YAKSURI_TMPBUF_EL_SIZE / type->size;
@@ -1859,7 +1982,8 @@ static int unpack_rh2d_stream(yaksuri_request_s * reqpriv, const void *inbuf, vo
 
         count_offset += chunk_count;
     }
-    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, tmpbufs_stream_release, chunk);
+    tmpbufs_stream_release(chunk);
+    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, chunk_free_stream_cb, chunk);
 
   fn_exit:
     return rc;
@@ -1883,7 +2007,10 @@ static void unpack_urh2d_stream_cb(void *data)
     intptr_t count_per_chunk = YAKSURI_TMPBUF_EL_SIZE / type->size;
     intptr_t chunk_count = YAKSU_MIN(count_per_chunk, chunk->count - chunk->count_offset);
 
-    rc = yaksuri_seq_ipack(sbuf, chunk->tmpbufs[1].buf, chunk_count * type->size, byte_type,
+    void *rh_buf;
+    rh_buf = get_stream_buf(chunk->tmpbufs[1]);
+
+    rc = yaksuri_seq_ipack(sbuf, rh_buf, chunk_count * type->size, byte_type,
                            chunk->info, YAKSA_OP__REPLACE);
     assert(rc == YAKSA_SUCCESS);
     chunk->count_offset += chunk_count;
@@ -1904,12 +2031,12 @@ static int unpack_urh2d_stream(yaksuri_request_s * reqpriv, const void *inbuf, v
 
     int devices[] = { out_device, -1 };
     chunk->num_tmpbufs = 2;
-    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices);
+    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices, stream);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     void *d_buf, *rh_buf;
-    d_buf = chunk->tmpbufs[0].buf;
-    rh_buf = chunk->tmpbufs[1].buf;
+    d_buf = get_stream_buf(chunk->tmpbufs[0]);
+    rh_buf = get_stream_buf(chunk->tmpbufs[1]);
 
     /* setup chunk for unpack_urh2d_stream_cb */
     chunk->inbuf = inbuf;
@@ -1938,7 +2065,8 @@ static int unpack_urh2d_stream(yaksuri_request_s * reqpriv, const void *inbuf, v
 
         count_offset += chunk_count;
     }
-    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, tmpbufs_stream_release, chunk);
+    tmpbufs_stream_release(chunk);
+    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, chunk_free_stream_cb, chunk);
 
   fn_exit:
     return rc;
@@ -1958,8 +2086,11 @@ static void unpack_d2h_stream_cb(void *data)
     intptr_t count_per_chunk = YAKSURI_TMPBUF_EL_SIZE / type->size;
     intptr_t chunk_count = YAKSU_MIN(count_per_chunk, chunk->count - chunk->count_offset);
 
+    void *rh_buf;
+    rh_buf = get_stream_buf(chunk->tmpbufs[0]);
+
     int rc;
-    rc = yaksuri_seq_iunpack(chunk->tmpbufs[0].buf, dbuf, chunk_count, type, chunk->info, op);
+    rc = yaksuri_seq_iunpack(rh_buf, dbuf, chunk_count, type, chunk->info, op);
     assert(rc == YAKSA_SUCCESS);
 }
 
@@ -1978,11 +2109,11 @@ static int unpack_d2h_stream(yaksuri_request_s * reqpriv, const void *inbuf, voi
 
     int devices[] = { -1 };
     chunk->num_tmpbufs = 1;
-    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices);
+    rc = alloc_tmpbufs(id, chunk->tmpbufs, chunk->num_tmpbufs, devices, stream);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
     void *rh_buf;
-    rh_buf = chunk->tmpbufs[0].buf;
+    rh_buf = get_stream_buf(chunk->tmpbufs[0]);
 
     /* setup chunk for unpack_d2h_stream_cb */
     chunk->inbuf = inbuf;
@@ -2008,7 +2139,8 @@ static int unpack_d2h_stream(yaksuri_request_s * reqpriv, const void *inbuf, voi
 
         count_offset += chunk_count;
     }
-    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, tmpbufs_stream_release, chunk);
+    tmpbufs_stream_release(chunk);
+    rc = yaksuri_global.gpudriver[id].hooks->launch_hostfn(stream, chunk_free_stream_cb, chunk);
 
   fn_exit:
     return rc;
@@ -2825,5 +2957,6 @@ int yaksuri_progress_init(void)
 
 int yaksuri_progress_finalize(void)
 {
+    stream_buf_list_free();
     return YAKSA_SUCCESS;
 }
