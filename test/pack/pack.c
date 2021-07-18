@@ -664,6 +664,12 @@ int main(int argc, char **argv)
     if (pack_kind == PACK_KIND__STREAM) {
         stream = pack_create_stream();
         assert(stream != NULL);
+        /* The stream was created on device 0, force to use a single device */
+        for (uintptr_t i = 0; i < num_threads; i++) {
+            for (int j = 0; j < MAX_DEVID_LIST; j++) {
+                device_ids[i][j] = 0;
+            }
+        }
     }
 
     for (uintptr_t i = 0; i < num_threads; i++)

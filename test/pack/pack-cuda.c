@@ -104,6 +104,8 @@ void pack_cuda_copy_content(const void *sbuf, void *dbuf, size_t size, mem_type_
 void *pack_cuda_create_stream(void)
 {
     static cudaStream_t stream;
+    /* create stream on the 1st device */
+    cudaSetDevice(0);
     cudaStreamCreate(&stream);
     return &stream;
 }
