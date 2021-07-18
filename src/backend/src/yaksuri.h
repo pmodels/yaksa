@@ -105,5 +105,7 @@ typedef struct {
 int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
                              yaksi_info_s * info, yaksa_op_t op, yaksi_request_s * request);
 int yaksuri_progress_poke(void);
+int yaksuri_progress_init(void);
+int yaksuri_progress_finalize(void);
 
 #endif /* YAKSURI_H_INCLUDED */

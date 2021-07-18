@@ -10,6 +10,8 @@ libyaksa_la_SOURCES += \
 	src/frontend/pup/yaksa_pack.c \
 	src/frontend/pup/yaksa_iunpack.c \
 	src/frontend/pup/yaksa_unpack.c \
+	src/frontend/pup/yaksa_pack_stream.c \
+	src/frontend/pup/yaksa_unpack_stream.c \
 	src/frontend/pup/yaksa_request.c \
 	src/frontend/pup/yaksi_ipack.c \
 	src/frontend/pup/yaksi_ipack_element.c \

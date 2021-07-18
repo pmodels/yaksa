@@ -204,7 +204,7 @@ def generate_host_function(b, darray):
             funcprefix = funcprefix + "%s_" % d
         funcprefix = funcprefix + b.replace(" ", "_")
 
-        yutils.display(OUTFILE, "void yaksuri_cudai_%s(const void *inbuf, void *outbuf, uintptr_t count, yaksa_op_t op, yaksuri_cudai_md_s *md, int n_threads, int n_blocks_x, int n_blocks_y, int n_blocks_z, int device)\n" % funcprefix)
+        yutils.display(OUTFILE, "void yaksuri_cudai_%s(const void *inbuf, void *outbuf, uintptr_t count, yaksa_op_t op, yaksuri_cudai_md_s *md, int n_threads, int n_blocks_x, int n_blocks_y, int n_blocks_z, cudaStream_t stream)\n" % funcprefix)
         yutils.display(OUTFILE, "{\n")
         yutils.display(OUTFILE, "void *args[] = { &inbuf, &outbuf, &count, &md };\n")
 
@@ -217,7 +217,7 @@ def generate_host_function(b, darray):
             funcprefix = funcprefix + b.replace(" ", "_")
             yutils.display(OUTFILE, "case YAKSA_OP__%s:\n" % op)
             yutils.display(OUTFILE, "cerr = cudaLaunchKernel((const void *) yaksuri_cudai_kernel_%s,\n" % funcprefix)
-            yutils.display(OUTFILE, "    dim3(n_blocks_x, n_blocks_y, n_blocks_z), dim3(n_threads), args, 0, yaksuri_cudai_global.stream[device]);\n")
+            yutils.display(OUTFILE, "    dim3(n_blocks_x, n_blocks_y, n_blocks_z), dim3(n_threads), args, 0, stream);\n")
             yutils.display(OUTFILE, "YAKSURI_CUDAI_CUDA_ERR_CHECK(cerr);\n")
             yutils.display(OUTFILE, "break;\n\n")
         yutils.display(OUTFILE, "}\n")
@@ -373,7 +373,7 @@ if __name__ == '__main__':
             OUTFILE.write("int n_blocks_x, ")
             OUTFILE.write("int n_blocks_y, ")
             OUTFILE.write("int n_blocks_z, ")
-            OUTFILE.write("int device);\n")
+            OUTFILE.write("cudaStream_t stream);\n")
         for darray in darraylist:
             # we don't need pup kernels for basic types
             if (len(darray) == 0):
@@ -395,7 +395,7 @@ if __name__ == '__main__':
                 OUTFILE.write("int n_blocks_x, ")
                 OUTFILE.write("int n_blocks_y, ")
                 OUTFILE.write("int n_blocks_z, ")
-                OUTFILE.write("int device);\n")
+                OUTFILE.write("cudaStream_t stream);\n")
 
     yutils.display(OUTFILE, "\n")
     yutils.display(OUTFILE, "#ifdef __cplusplus\n")

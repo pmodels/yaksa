@@ -4,11 +4,17 @@
 ##
 
 pack_testlists = $(top_srcdir)/test/pack/testlist.gen \
-	$(top_srcdir)/test/pack/testlist.threads.gen
+	$(top_srcdir)/test/pack/testlist.threads.gen \
+	$(top_srcdir)/test/pack/testlist.blocking.gen
+
+if BUILD_CUDA_BACKEND
+pack_testlists += $(top_srcdir)/test/pack/testlist.stream.gen
+endif
 
 EXTRA_DIST += $(top_srcdir)/test/pack/testlist.gen \
-	$(top_srcdir)/test/pack/testlist.threads.gen     \
-	$(top_srcdir)/test/pack/testlist.blocking.gen
+	$(top_srcdir)/test/pack/testlist.threads.gen \
+	$(top_srcdir)/test/pack/testlist.blocking.gen \
+	$(top_srcdir)/test/pack/testlist.stream.gen
 
 EXTRA_PROGRAMS += \
 	test/pack/pack

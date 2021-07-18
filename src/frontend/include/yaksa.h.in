@@ -539,6 +539,42 @@ int yaksa_unpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t ou
                  yaksa_info_t info, yaksa_op_t op);
 
 /*!
+ * \brief Asynchronously packs the data represented by the (incount, type) tuple into a contiguous buffer.
+ *
+ * \param[in]  inbuf             Input buffer from which data is being packed
+ * \param[in]  incount           Number of elements of the datatype representing the layout
+ * \param[in]  type              Datatype representing the layout
+ * \param[in]  inoffset          Number of bytes to skip from the layout represented by the
+ *                               (incount, type) tuple
+ * \param[out] outbuf            Output buffer into which data is being packed
+ * \param[in]  max_pack_bytes    Maximum number of bytes that can be packed in the output buffer
+ * \param[out] actual_pack_bytes Actual number of bytes that were packed into the output buffer
+ * \param[in]  info              Info hint to apply
+ * \param[in]  stream            pointer to cudaStream_t
+ */
+int yaksa_pack_stream(const void *inbuf, uintptr_t incount, yaksa_type_t type, uintptr_t inoffset,
+                      void *outbuf, uintptr_t max_pack_bytes, uintptr_t * actual_pack_bytes,
+                      yaksa_info_t info, yaksa_op_t op, void *stream);
+
+/*!
+ * \brief Asynchronously unpacks data from a contiguous buffer into a buffer represented by the (incount, type) tuple.
+ *
+ * \param[in]  inbuf             Input buffer from which data is being unpacked
+ * \param[in]  insize            Number of bytes in the input buffer
+ * \param[out] outbuf            Output buffer into which data is being unpacked
+ * \param[in]  outcount          Number of elements of the datatype representing the layout
+ * \param[in]  type              Datatype representing the layout
+ * \param[in]  outoffset         Number of bytes to skip from the layout represented by the
+ *                               (outcount, type) tuple
+ * \param[out] actual_unpack_bytes Actual number of bytes that were unpacked into the output buffer
+ * \param[in]  info              Info hint to apply
+ * \param[in]  stream            Pointer to cudaStream_t
+ */
+int yaksa_unpack_stream(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t outcount,
+                        yaksa_type_t type, uintptr_t outoffset, uintptr_t * actual_unpack_bytes,
+                        yaksa_info_t info, yaksa_op_t op, void *stream);
+
+/*!
  * \brief gets the number of contiguous segments in the (count, type) tuple
  *
  * \param[in]  count             Number of elements of the datatype representing the layout

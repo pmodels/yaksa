@@ -29,6 +29,12 @@ enum {
     OVERLAP__IRREGULAR,
 };
 
+enum {
+    PACK_KIND__NONBLOCKING,
+    PACK_KIND__BLOCKING,
+    PACK_KIND__STREAM,
+};
+
 #define MAX_DTP_BASESTRLEN (1024)
 
 static int verbose = 0;
@@ -74,8 +80,12 @@ int max_segments = -1;
 int pack_order = PACK_ORDER__UNSET;
 int overlap = -1;
 int use_subdevices = 0;
-int blocking = 0;
+int pack_kind = PACK_KIND__NONBLOCKING;
 DTP_pool_s *dtp;
+
+/* For -stream tests */
+/* TODO: test multiple streams */
+void *stream;
 
 #define MAX_DEVID_LIST   (1024)
 int **device_ids;
@@ -94,14 +104,12 @@ yaksa_op_t float_ops[] =
 
 yaksa_op_t complex_ops[] = { YAKSA_OP__SUM, YAKSA_OP__PROD, YAKSA_OP__REPLACE };
 
-enum {
-    OPLIST_TYPE__UNSET,
-    OPLIST_TYPE__INT,
-    OPLIST_TYPE__FLOAT,
-    OPLIST_TYPE__COMPLEX,
-} oplist_type = OPLIST_TYPE__UNSET;
+yaksa_op_t single_op = YAKSA_OP__REPLACE;
+yaksa_op_t *op_list = &single_op;
+int op_list_len = 1;
 
 #define MAX_OP_LIST  (1024)
+
 yaksa_op_t **ops;
 
 void *runtest(void *arg);
@@ -246,10 +254,16 @@ void *runtest(void *arg)
          * their contents are equivalent -- this is useful for
          * correctness in the accumulate operations */
         uintptr_t actual_pack_bytes;
-        if (blocking) {
+        if (pack_kind == PACK_KIND__BLOCKING) {
             rc = yaksa_pack(dbuf_h + dobj.DTP_buf_offset, dobj.DTP_type_count, dobj.DTP_datatype,
                             0, tbuf_h, tbufsize, &actual_pack_bytes, NULL, YAKSA_OP__REPLACE);
             assert(rc == YAKSA_SUCCESS);
+        } else if (pack_kind == PACK_KIND__STREAM) {
+            rc = yaksa_pack_stream(dbuf_h + dobj.DTP_buf_offset, dobj.DTP_type_count,
+                                   dobj.DTP_datatype, 0, tbuf_h, tbufsize, &actual_pack_bytes, NULL,
+                                   YAKSA_OP__REPLACE, stream);
+            assert(rc == YAKSA_SUCCESS);
+            pack_stream_synchronize(stream);
         } else {
             rc = yaksa_ipack(dbuf_h + dobj.DTP_buf_offset, dobj.DTP_type_count, dobj.DTP_datatype,
                              0, tbuf_h, tbufsize, &actual_pack_bytes, NULL, YAKSA_OP__REPLACE,
@@ -346,12 +360,19 @@ void *runtest(void *arg)
         for (int j = 0; j < segments; j++) {
             uintptr_t actual_pack_bytes;
 
-            if (blocking) {
+            if (pack_kind == PACK_KIND__BLOCKING) {
                 rc = yaksa_pack(sbuf_d + sobj.DTP_buf_offset, sobj.DTP_type_count,
                                 sobj.DTP_datatype, segment_starts[j],
                                 (char *) tbuf_d + segment_starts[j], segment_lengths[j],
                                 &actual_pack_bytes, pack_info, pack_op);
                 assert(rc == YAKSA_SUCCESS);
+            } else if (pack_kind == PACK_KIND__STREAM) {
+                rc = yaksa_pack_stream(sbuf_d + sobj.DTP_buf_offset, sobj.DTP_type_count,
+                                       sobj.DTP_datatype, segment_starts[j],
+                                       (char *) tbuf_d + segment_starts[j], segment_lengths[j],
+                                       &actual_pack_bytes, pack_info, pack_op, stream);
+                assert(rc == YAKSA_SUCCESS);
+                pack_stream_synchronize(stream);
             } else {
                 rc = yaksa_ipack(sbuf_d + sobj.DTP_buf_offset, sobj.DTP_type_count,
                                  sobj.DTP_datatype, segment_starts[j],
@@ -369,12 +390,19 @@ void *runtest(void *arg)
             }
 
             uintptr_t actual_unpack_bytes;
-            if (blocking) {
+            if (pack_kind == PACK_KIND__BLOCKING) {
                 rc = yaksa_unpack((char *) tbuf_d + segment_starts[j], actual_pack_bytes,
                                   dbuf_d + dobj.DTP_buf_offset, dobj.DTP_type_count,
                                   dobj.DTP_datatype, segment_starts[j], &actual_unpack_bytes,
                                   unpack_info, unpack_op);
                 assert(rc == YAKSA_SUCCESS);
+            } else if (pack_kind == PACK_KIND__STREAM) {
+                rc = yaksa_unpack_stream((char *) tbuf_d + segment_starts[j], actual_pack_bytes,
+                                         dbuf_d + dobj.DTP_buf_offset, dobj.DTP_type_count,
+                                         dobj.DTP_datatype, segment_starts[j], &actual_unpack_bytes,
+                                         unpack_info, unpack_op, stream);
+                assert(rc == YAKSA_SUCCESS);
+                pack_stream_synchronize(stream);
             } else {
                 rc = yaksa_iunpack((char *) tbuf_d + segment_starts[j], actual_pack_bytes,
                                    dbuf_d + dobj.DTP_buf_offset, dobj.DTP_type_count,
@@ -518,11 +546,58 @@ int main(int argc, char **argv)
             --argc;
             ++argv;
             if (!strcmp(*argv, "int")) {
-                oplist_type = OPLIST_TYPE__INT;
+                op_list = int_ops;
+                op_list_len = sizeof(int_ops) / sizeof(yaksa_op_t);
             } else if (!strcmp(*argv, "float")) {
-                oplist_type = OPLIST_TYPE__FLOAT;
+                op_list = float_ops;
+                op_list_len = sizeof(float_ops) / sizeof(yaksa_op_t);
             } else if (!strcmp(*argv, "complex")) {
-                oplist_type = OPLIST_TYPE__COMPLEX;
+                op_list = complex_ops;
+                op_list_len = sizeof(complex_ops) / sizeof(yaksa_op_t);
+            } else if (!strcmp(*argv, "replace")) {
+                single_op = YAKSA_OP__REPLACE;
+                op_list = &single_op;
+                op_list_len = 1;
+            } else if (!strcmp(*argv, "sum")) {
+                single_op = YAKSA_OP__SUM;
+                op_list = &single_op;
+                op_list_len = 1;
+            } else if (!strcmp(*argv, "prod")) {
+                single_op = YAKSA_OP__PROD;
+                op_list = &single_op;
+                op_list_len = 1;
+            } else if (!strcmp(*argv, "max")) {
+                single_op = YAKSA_OP__MAX;
+                op_list = &single_op;
+                op_list_len = 1;
+            } else if (!strcmp(*argv, "min")) {
+                single_op = YAKSA_OP__MIN;
+                op_list = &single_op;
+                op_list_len = 1;
+            } else if (!strcmp(*argv, "land")) {
+                single_op = YAKSA_OP__LAND;
+                op_list = &single_op;
+                op_list_len = 1;
+            } else if (!strcmp(*argv, "lor")) {
+                single_op = YAKSA_OP__LOR;
+                op_list = &single_op;
+                op_list_len = 1;
+            } else if (!strcmp(*argv, "lxor")) {
+                single_op = YAKSA_OP__LXOR;
+                op_list = &single_op;
+                op_list_len = 1;
+            } else if (!strcmp(*argv, "band")) {
+                single_op = YAKSA_OP__BAND;
+                op_list = &single_op;
+                op_list_len = 1;
+            } else if (!strcmp(*argv, "bor")) {
+                single_op = YAKSA_OP__BOR;
+                op_list = &single_op;
+                op_list_len = 1;
+            } else if (!strcmp(*argv, "bxor")) {
+                single_op = YAKSA_OP__BXOR;
+                op_list = &single_op;
+                op_list_len = 1;
             } else {
                 fprintf(stderr, "unknown oplist type %s\n", *argv);
                 exit(1);
@@ -541,7 +616,9 @@ int main(int argc, char **argv)
                 exit(1);
             }
         } else if (!strcmp(*argv, "-blocking")) {
-            blocking = 1;
+            pack_kind = PACK_KIND__BLOCKING;
+        } else if (!strcmp(*argv, "-stream")) {
+            pack_kind = PACK_KIND__STREAM;
         } else if (!strcmp(*argv, "-verbose")) {
             verbose = 1;
         } else if (!strcmp(*argv, "-use-tiles")) {
@@ -565,8 +642,8 @@ int main(int argc, char **argv)
         fprintf(stderr, "   -segments    number of segments to chop the packing into\n");
         fprintf(stderr, "   -ordering  packing order of segments (normal, reverse, random)\n");
         fprintf(stderr, "   -overlap     should packing overlap (none, regular, irregular)\n");
-        fprintf(stderr,
-                "   -blocking    test blocking pack/unpack (default test nonblocking pack/unpack)\n");
+        fprintf(stderr, "   -blocking    test blocking pack/unpack \n");
+        fprintf(stderr, "   -stream      test pack_stream/unpack_stream \n");
         fprintf(stderr, "   -verbose     verbose output\n");
         fprintf(stderr, "   -num-threads number of threads to spawn\n");
         fprintf(stderr, "   -oplist      oplist type (int, float, complex)\n");
@@ -609,25 +686,23 @@ int main(int argc, char **argv)
             }
         }
 
-        if (oplist_type == OPLIST_TYPE__INT) {
-            int max_ops = sizeof(int_ops) / sizeof(yaksa_op_t);
-            for (int j = 0; j < MAX_OP_LIST; j++) {
-                ops[i][j] = int_ops[rand() % max_ops];
-            }
-        } else if (oplist_type == OPLIST_TYPE__FLOAT) {
-            int max_ops = sizeof(float_ops) / sizeof(yaksa_op_t);
-            for (int j = 0; j < MAX_OP_LIST; j++) {
-                ops[i][j] = float_ops[rand() % max_ops];
-            }
-        } else {
-            int max_ops = sizeof(complex_ops) / sizeof(yaksa_op_t);
-            for (int j = 0; j < MAX_OP_LIST; j++) {
-                ops[i][j] = complex_ops[rand() % max_ops];
-            }
+        for (int j = 0; j < MAX_OP_LIST; j++) {
+            ops[i][j] = op_list[rand() % op_list_len];
         }
     }
 
     pthread_t *threads = (pthread_t *) malloc(num_threads * sizeof(pthread_t));
+
+    if (pack_kind == PACK_KIND__STREAM) {
+        stream = pack_create_stream();
+        assert(stream != NULL);
+        /* The stream was created on device 0, force to use a single device */
+        for (uintptr_t i = 0; i < num_threads; i++) {
+            for (int j = 0; j < MAX_DEVID_LIST; j++) {
+                device_ids[i][j] = 0;
+            }
+        }
+    }
 
     for (uintptr_t i = 0; i < num_threads; i++)
         pthread_create(&threads[i], NULL, runtest, (void *) i);
@@ -636,6 +711,10 @@ int main(int argc, char **argv)
         pthread_join(threads[i], NULL);
 
     free(threads);
+
+    if (pack_kind == PACK_KIND__STREAM) {
+        pack_destroy_stream(stream);
+    }
 
     for (uintptr_t i = 0; i < num_threads; i++) {
         int rc = DTP_pool_free(dtp[i]);

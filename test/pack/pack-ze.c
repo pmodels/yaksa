@@ -289,4 +289,20 @@ void pack_ze_copy_content(const void *sbuf, void *dbuf, size_t size, mem_type_e 
     }
 }
 
+void *pack_ze_create_stream(void)
+{
+    assert(0 && "not supported");
+    return NULL;
+}
+
+void pack_ze_destroy_stream(void *stream_p)
+{
+    assert(0 && "not supported");
+}
+
+void pack_ze_stream_synchronize(void *stream_p)
+{
+    assert(0 && "not supported");
+}
+
 #endif /* HAVE_ZE */
