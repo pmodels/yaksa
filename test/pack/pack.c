@@ -104,14 +104,12 @@ yaksa_op_t float_ops[] =
 
 yaksa_op_t complex_ops[] = { YAKSA_OP__SUM, YAKSA_OP__PROD, YAKSA_OP__REPLACE };
 
-enum {
-    OPLIST_TYPE__UNSET,
-    OPLIST_TYPE__INT,
-    OPLIST_TYPE__FLOAT,
-    OPLIST_TYPE__COMPLEX,
-} oplist_type = OPLIST_TYPE__UNSET;
+yaksa_op_t single_op = YAKSA_OP__REPLACE;
+yaksa_op_t *op_list = &single_op;
+int op_list_len = 1;
 
 #define MAX_OP_LIST  (1024)
+
 yaksa_op_t **ops;
 
 void *runtest(void *arg);
@@ -548,11 +546,58 @@ int main(int argc, char **argv)
             --argc;
             ++argv;
             if (!strcmp(*argv, "int")) {
-                oplist_type = OPLIST_TYPE__INT;
+                op_list = int_ops;
+                op_list_len = sizeof(int_ops) / sizeof(yaksa_op_t);
             } else if (!strcmp(*argv, "float")) {
-                oplist_type = OPLIST_TYPE__FLOAT;
+                op_list = float_ops;
+                op_list_len = sizeof(float_ops) / sizeof(yaksa_op_t);
             } else if (!strcmp(*argv, "complex")) {
-                oplist_type = OPLIST_TYPE__COMPLEX;
+                op_list = complex_ops;
+                op_list_len = sizeof(complex_ops) / sizeof(yaksa_op_t);
+            } else if (!strcmp(*argv, "replace")) {
+                single_op = YAKSA_OP__REPLACE;
+                op_list = &single_op;
+                op_list_len = 1;
+            } else if (!strcmp(*argv, "sum")) {
+                single_op = YAKSA_OP__SUM;
+                op_list = &single_op;
+                op_list_len = 1;
+            } else if (!strcmp(*argv, "prod")) {
+                single_op = YAKSA_OP__PROD;
+                op_list = &single_op;
+                op_list_len = 1;
+            } else if (!strcmp(*argv, "max")) {
+                single_op = YAKSA_OP__MAX;
+                op_list = &single_op;
+                op_list_len = 1;
+            } else if (!strcmp(*argv, "min")) {
+                single_op = YAKSA_OP__MIN;
+                op_list = &single_op;
+                op_list_len = 1;
+            } else if (!strcmp(*argv, "land")) {
+                single_op = YAKSA_OP__LAND;
+                op_list = &single_op;
+                op_list_len = 1;
+            } else if (!strcmp(*argv, "lor")) {
+                single_op = YAKSA_OP__LOR;
+                op_list = &single_op;
+                op_list_len = 1;
+            } else if (!strcmp(*argv, "lxor")) {
+                single_op = YAKSA_OP__LXOR;
+                op_list = &single_op;
+                op_list_len = 1;
+            } else if (!strcmp(*argv, "band")) {
+                single_op = YAKSA_OP__BAND;
+                op_list = &single_op;
+                op_list_len = 1;
+            } else if (!strcmp(*argv, "bor")) {
+                single_op = YAKSA_OP__BOR;
+                op_list = &single_op;
+                op_list_len = 1;
+            } else if (!strcmp(*argv, "bxor")) {
+                single_op = YAKSA_OP__BXOR;
+                op_list = &single_op;
+                op_list_len = 1;
             } else {
                 fprintf(stderr, "unknown oplist type %s\n", *argv);
                 exit(1);
@@ -641,21 +686,8 @@ int main(int argc, char **argv)
             }
         }
 
-        if (oplist_type == OPLIST_TYPE__INT) {
-            int max_ops = sizeof(int_ops) / sizeof(yaksa_op_t);
-            for (int j = 0; j < MAX_OP_LIST; j++) {
-                ops[i][j] = int_ops[rand() % max_ops];
-            }
-        } else if (oplist_type == OPLIST_TYPE__FLOAT) {
-            int max_ops = sizeof(float_ops) / sizeof(yaksa_op_t);
-            for (int j = 0; j < MAX_OP_LIST; j++) {
-                ops[i][j] = float_ops[rand() % max_ops];
-            }
-        } else {
-            int max_ops = sizeof(complex_ops) / sizeof(yaksa_op_t);
-            for (int j = 0; j < MAX_OP_LIST; j++) {
-                ops[i][j] = complex_ops[rand() % max_ops];
-            }
+        for (int j = 0; j < MAX_OP_LIST; j++) {
+            ops[i][j] = op_list[rand() % op_list_len];
         }
     }
 
