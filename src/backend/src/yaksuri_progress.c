@@ -2817,3 +2817,13 @@ int yaksuri_progress_poke(void)
   fn_fail:
     goto fn_exit;
 }
+
+int yaksuri_progress_init(void)
+{
+    return YAKSA_SUCCESS;
+}
+
+int yaksuri_progress_finalize(void)
+{
+    return YAKSA_SUCCESS;
+}
