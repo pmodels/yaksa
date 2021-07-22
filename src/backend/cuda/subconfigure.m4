@@ -91,6 +91,10 @@ EOF
         fi
         rm -f conftest.*
     fi
+
+    if test "$with_cuda" -a "${have_cuda}" = "no"; then
+        AC_MSG_ERROR([CUDA was requested but it is not functional])
+    fi
 fi
 AM_CONDITIONAL([BUILD_CUDA_BACKEND], [test x${have_cuda} = xyes])
 AM_CONDITIONAL([BUILD_CUDA_TESTS], [test x${have_cuda} = xyes])
