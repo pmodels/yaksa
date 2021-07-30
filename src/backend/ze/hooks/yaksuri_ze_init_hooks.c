@@ -272,7 +272,7 @@ int yaksuri_ze_init_hook(yaksur_gpudriver_hooks_s ** hooks)
     (*hooks)->finalize = finalize_hook;
     (*hooks)->ipack = yaksuri_zei_ipack;
     (*hooks)->iunpack = yaksuri_zei_iunpack;
-    (*hooks)->synchronize = NULL;       /* unsupported */
+    (*hooks)->synchronize = yaksuri_zei_synchronize;
     (*hooks)->flush_all = yaksuri_zei_flush_all;
     (*hooks)->pup_is_supported = yaksuri_zei_pup_is_supported;
     (*hooks)->get_iov_pack_threshold = yaksuri_zei_get_iov_pack_threshold;
