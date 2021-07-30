@@ -101,4 +101,25 @@ void pack_cuda_copy_content(int tid, const void *sbuf, void *dbuf, size_t size, 
     }
 }
 
+void *pack_cuda_create_stream(void)
+{
+    static cudaStream_t stream;
+    /* create stream on the 1st device */
+    cudaSetDevice(0);
+    cudaStreamCreate(&stream);
+    return &stream;
+}
+
+void pack_cuda_destroy_stream(void *stream_p)
+{
+    cudaStream_t stream = *(cudaStream_t *) stream_p;
+    cudaStreamDestroy(stream);
+}
+
+void pack_cuda_stream_synchronize(void *stream_p)
+{
+    cudaStream_t stream = *(cudaStream_t *) stream_p;
+    cudaStreamSynchronize(stream);
+}
+
 #endif /* HAVE_CUDA */

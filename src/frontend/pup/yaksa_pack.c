@@ -31,8 +31,9 @@ int yaksa_pack(const void *inbuf, uintptr_t incount, yaksa_type_t type, uintptr_
 
     yaksi_request_s *yaksi_request;
     yaksi_request = NULL;
-    rc = yaksi_request_create(&yaksi_request, true /* is_blocking */);
+    rc = yaksi_request_create(&yaksi_request);
     YAKSU_ERR_CHECK(rc, fn_fail);
+    yaksi_request_set_blocking(yaksi_request);
 
     yaksi_info_s *yaksi_info;
     yaksi_info = (yaksi_info_s *) info;

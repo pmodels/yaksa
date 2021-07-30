@@ -120,6 +120,9 @@ int yaksur_init_hook(yaksi_info_s * info)
         yaksuri_global.gpudriver[id].ndevices = ndevices;
     }
 
+    rc = yaksuri_progress_init();
+    YAKSU_ERR_CHECK(rc, fn_fail);
+
   fn_exit:
     return rc;
   fn_fail:
@@ -129,6 +132,9 @@ int yaksur_init_hook(yaksi_info_s * info)
 int yaksur_finalize_hook(void)
 {
     int rc = YAKSA_SUCCESS;
+
+    rc = yaksuri_progress_finalize();
+    YAKSU_ERR_CHECK(rc, fn_fail);
 
     rc = yaksuri_seq_finalize_hook();
     YAKSU_ERR_CHECK(rc, fn_fail);

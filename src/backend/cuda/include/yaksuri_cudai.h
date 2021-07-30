@@ -37,10 +37,10 @@ extern "C" {
 typedef struct yaksuri_cudai_type_s {
     void (*pack) (const void *inbuf, void *outbuf, uintptr_t count, yaksa_op_t op,
                   yaksuri_cudai_md_s * md, int n_threads, int n_blocks_x, int n_blocks_y,
-                  int n_blocks_z, int device);
+                  int n_blocks_z, cudaStream_t stream);
     void (*unpack) (const void *inbuf, void *outbuf, uintptr_t count, yaksa_op_t op,
                     yaksuri_cudai_md_s * md, int n_threads, int n_blocks_x, int n_blocks_y,
-                    int n_blocks_z, int device);
+                    int n_blocks_z, cudaStream_t stream);
     const char *name;
     yaksuri_cudai_md_s *md;
     pthread_mutex_t mdmutex;
@@ -80,11 +80,18 @@ int yaksuri_cudai_get_ptr_attr(const void *inbuf, void *outbuf, yaksi_info_s * i
 int yaksuri_cudai_md_alloc(yaksi_type_s * type);
 int yaksuri_cudai_populate_pupfns(yaksi_type_s * type);
 
+int yaksuri_cudai_ipack_with_stream(const void *inbuf, void *outbuf, uintptr_t count,
+                                    yaksi_type_s * type, yaksi_info_s * info, yaksa_op_t op,
+                                    int target, void *stream);
+int yaksuri_cudai_iunpack_with_stream(const void *inbuf, void *outbuf, uintptr_t count,
+                                      yaksi_type_s * type, yaksi_info_s * info, yaksa_op_t op,
+                                      int target, void *stream);
 int yaksuri_cudai_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
                         yaksi_info_s * info, yaksa_op_t op, int target);
 int yaksuri_cudai_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
                           yaksi_info_s * info, yaksa_op_t op, int target);
 int yaksuri_cudai_synchronize(int target);
+int yaksuri_cudai_launch_hostfn(void *stream, yaksur_hostfn_t fn, void *userData);
 int yaksuri_cudai_flush_all(void);
 int yaksuri_cudai_pup_is_supported(yaksi_type_s * type, yaksa_op_t op, bool * is_supported);
 uintptr_t yaksuri_cudai_get_iov_pack_threshold(yaksi_info_s * info);

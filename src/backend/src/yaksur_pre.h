@@ -48,6 +48,8 @@ typedef struct {
     void *priv;
 } yaksur_info_s;
 
+typedef void (*yaksur_hostfn_t) (void *userData);
+
 typedef struct yaksur_gpudriver_hooks_s {
     /* miscellaneous */
     int (*get_num_devices) (int *ndevices);
@@ -66,9 +68,16 @@ typedef struct yaksur_gpudriver_hooks_s {
                   int device);
     int (*iunpack) (const void *inbuf, void *outbuf, uintptr_t count, struct yaksi_type_s * type,
                     struct yaksi_info_s * info, yaksa_op_t op, int device);
+    int (*pack_with_stream) (const void *inbuf, void *outbuf, uintptr_t count,
+                             struct yaksi_type_s * type, struct yaksi_info_s * info, yaksa_op_t op,
+                             int device, void *stream);
+    int (*unpack_with_stream) (const void *inbuf, void *outbuf, uintptr_t count,
+                               struct yaksi_type_s * type, struct yaksi_info_s * info,
+                               yaksa_op_t op, int device, void *stream);
     int (*synchronize) (int device);    /* complete all outstanding tasks that are created by yaksa on the device */
     int (*flush_all) (void);
     int (*pup_is_supported) (struct yaksi_type_s * type, yaksa_op_t op, bool * is_supported);
+    int (*launch_hostfn) (void *stream, yaksur_hostfn_t fn, void *userData);
 
     /* memory management */
     void *(*host_malloc) (uintptr_t size);
