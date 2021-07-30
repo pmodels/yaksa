@@ -120,7 +120,8 @@ int yaksi_type_create_hindexed(intptr_t count, const intptr_t * array_of_blockle
         outtype->num_contig = intype->num_contig * tmp;
     }
 
-    yaksur_type_create_hook(outtype);
+    rc = yaksur_type_create_hook(outtype);
+    YAKSU_ERR_CHECK(rc, fn_fail);
     *newtype = outtype;
 
   fn_exit:

@@ -56,6 +56,9 @@ extern "C" {
     } while (0)
 
 typedef struct {
+    ze_device_handle_t *subdevices;
+    uint32_t nsubdevices;
+    uint32_t deviceId;          /* level zero device Id */
     ze_event_pool_handle_t ep;  /* event pool, one per device */
     int ev_pool_idx;
     int ev_lb, ev_ub;           /* [lb,ub] defines the events being used */
@@ -71,7 +74,6 @@ typedef struct {
     ze_command_queue_group_properties_t *queueProperties;
     uint32_t numQueueGroups;
     pthread_mutex_t mutex;
-    uint32_t deviceId;          /* level zero device Id */
     int dev_id;
 } yaksuri_zei_device_state_s;
 
@@ -79,8 +81,6 @@ typedef struct {
     ze_driver_handle_t driver;
     uint32_t ndevices;
     ze_device_handle_t *device;
-    uint32_t nsubdevices;
-    ze_device_handle_t **subdevices;
     ze_context_handle_t context;
     int throttle_threshold;
     bool **p2p;

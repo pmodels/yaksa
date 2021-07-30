@@ -26,7 +26,7 @@ int pack_cuda_get_ndevices(void)
     return ndevices;
 }
 
-void pack_cuda_init_devices(void)
+void pack_cuda_init_devices(int num_threads)
 {
 }
 
@@ -94,7 +94,7 @@ void pack_cuda_get_ptr_attr(const void *inbuf, void *outbuf, yaksa_info_t * info
         *info = NULL;
 }
 
-void pack_cuda_copy_content(const void *sbuf, void *dbuf, size_t size, mem_type_e type)
+void pack_cuda_copy_content(int tid, const void *sbuf, void *dbuf, size_t size, mem_type_e type)
 {
     if (type == MEM_TYPE__DEVICE) {
         cudaMemcpy(dbuf, sbuf, size, cudaMemcpyDefault);

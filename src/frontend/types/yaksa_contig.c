@@ -55,7 +55,8 @@ int yaksi_type_create_contig(intptr_t count, yaksi_type_s * intype, yaksi_type_s
     outtype->u.contig.count = count;
     outtype->u.contig.child = intype;
 
-    yaksur_type_create_hook(outtype);
+    rc = yaksur_type_create_hook(outtype);
+    YAKSU_ERR_CHECK(rc, fn_fail);
     *newtype = outtype;
 
   fn_exit:
