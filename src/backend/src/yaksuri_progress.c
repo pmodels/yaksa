@@ -2274,7 +2274,14 @@ static int set_subreq_pack_d2d(const void *inbuf, void *outbuf, uintptr_t count,
         (request->backend.inattr.device == request->backend.outattr.device ||
          check_p2p_comm(id, reqpriv->request->backend.inattr.device,
                         reqpriv->request->backend.outattr.device)) && aligned) {
-        rc = singlechunk_pack(id, request->backend.inattr.device, inbuf, outbuf, count,
+        int use_device = reqpriv->request->backend.inattr.device;
+        if (info) {
+            yaksuri_info_s *infopriv = (yaksuri_info_s *) info->backend.priv;
+            if (infopriv->mapped_device >= 0) {
+                use_device = infopriv->mapped_device;
+            }
+        }
+        rc = singlechunk_pack(id, use_device, inbuf, outbuf, count,
                               type, info, op, request, subreq_ptr, stream);
     }
     /* Fast path for other reduce operations with aligned buffer on the same device */
@@ -2537,7 +2544,14 @@ static int set_subreq_unpack_d2d(const void *inbuf, void *outbuf, uintptr_t coun
         (request->backend.inattr.device == request->backend.outattr.device ||
          check_p2p_comm(id, reqpriv->request->backend.inattr.device,
                         reqpriv->request->backend.outattr.device)) && aligned) {
-        rc = singlechunk_unpack(id, request->backend.inattr.device, inbuf, outbuf, count,
+        int use_device = reqpriv->request->backend.inattr.device;
+        if (info) {
+            yaksuri_info_s *infopriv = (yaksuri_info_s *) info->backend.priv;
+            if (infopriv->mapped_device >= 0) {
+                use_device = infopriv->mapped_device;
+            }
+        }
+        rc = singlechunk_unpack(id, use_device, inbuf, outbuf, count,
                                 type, info, op, request, subreq_ptr, stream);
     }
     /* Fast path for other reduce operations with aligned buffer on the same device */
