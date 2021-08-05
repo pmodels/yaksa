@@ -71,6 +71,11 @@ missing
 /src/backend/ze/pup/yaksuri_zei_pup_kernels.c
 /src/backend/ze/hooks/yaksuri_zei_init_kernels.c
 /src/backend/ze/hooks/yaksuri_zei_finalize_kernels.c
+/src/backend/hip/pup/Makefile.populate_pupfns.mk
+/src/backend/hip/pup/Makefile.pup.mk
+/src/backend/hip/pup/yaksuri_hipi_populate_pupfns*
+/src/backend/hip/pup/yaksuri_hipi_pup.h
+/src/backend/hip/pup/yaksuri_hipi_pup_*
 /src/backend/seq/pup/Makefile.populate_pupfns.mk
 /src/backend/seq/pup/Makefile.pup.mk
 /src/backend/seq/pup/yaksuri_seqi_populate_pupfns*
