@@ -44,8 +44,8 @@ int yaksuri_hipi_get_ptr_attr(const void *inbuf, void *outbuf, yaksi_info_s * in
         struct hipPointerAttribute_t attr;
         hipError_t cerr = hipPointerGetAttributes(&attr, inbuf);
         if (cerr == hipErrorInvalidValue) {
-            //attr.memoryType = hipMemoryTypeUnregistered;
-            // HIP does not seem to have something corresponding to cudaMemoryTypeUnregistered
+            /* attr.memoryType = hipMemoryTypeUnregistered;  */
+            /* HIP does not seem to have something corresponding to cudaMemoryTypeUnregistered */
             attr.memoryType = -1;
             attr.device = -1;
             cerr = hipSuccess;
@@ -60,8 +60,8 @@ int yaksuri_hipi_get_ptr_attr(const void *inbuf, void *outbuf, yaksi_info_s * in
         struct hipPointerAttribute_t attr;
         hipError_t cerr = hipPointerGetAttributes(&attr, outbuf);
         if (cerr == hipErrorInvalidValue) {
-            //attr.memoryType = hipMemoryTypeUnregistered;
-            // HIP does not seem to have something corresponding to cudaMemoryTypeUnregistered
+            /* attr.memoryType = hipMemoryTypeUnregistered; */
+            /* HIP does not seem to have something corresponding to cudaMemoryTypeUnregistered */
             attr.memoryType = -1;
             attr.device = -1;
             cerr = hipSuccess;
