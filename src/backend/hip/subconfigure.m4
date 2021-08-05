@@ -85,6 +85,7 @@ EOF
             else
                 have_hip=no
                 AC_MSG_RESULT([no])
+                AC_MSG_ERROR([hipcc compiled applications need libstdc++ to be able to link with a C compiler])
             fi
         else
             have_hip=no
@@ -94,8 +95,6 @@ EOF
     fi
 fi
 AM_CONDITIONAL([BUILD_HIP_BACKEND], [test x${have_hip} = xyes])
-AM_CONDITIONAL([BUILD_HIP_TESTS], [test x${have_hip} = xyes])
-
 
 # --with-hip-p2p
 AC_ARG_ENABLE([hip-p2p],AS_HELP_STRING([--enable-hip-p2p={yes|no|cliques}],[controls HIP P2P capability]),,
