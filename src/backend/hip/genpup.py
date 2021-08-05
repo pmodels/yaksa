@@ -20,8 +20,7 @@ import gencomm
 
 num_paren_open = 0
 blklens = [ "generic" ]
-#builtin_types = [ "_Bool", "char", "wchar_t", "int8_t", "int16_t", "int32_t", "int64_t", "float", "double" ]
-builtin_types = [ "char", "wchar_t", "int8_t", "int16_t", "int32_t", "int64_t", "float", "double" ]
+builtin_types = [ "bool", "char", "wchar_t", "int8_t", "int16_t", "int32_t", "int64_t", "float", "double" ]
 builtin_maps = {
     "YAKSA_TYPE__LONG_DOUBLE": "double",
 }

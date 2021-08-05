@@ -12,6 +12,7 @@ import yutils
 ## pack functions
 derived_types = [ "hvector", "blkhindx", "hindexed", "contig", "resized" ]
 type_ops = {'_Bool': {'REPLACE', 'LAND', 'LOR', 'LXOR'},
+            'bool': {'REPLACE', 'LAND', 'LOR', 'LXOR'},
             'char': {'REPLACE'},
             'wchar_t': {'REPLACE'},
             'int8_t': {'REPLACE', 'SUM', 'PROD', 'MIN', 'MAX', 'LAND', 'LOR', 'LXOR', 'BAND', 'BOR', 'BXOR'},
@@ -96,7 +97,10 @@ def switcher_builtin(backend, OUTFILE, blklens, builtin_types, builtin_maps, typ
     yutils.display(OUTFILE, "switch (%s->u.builtin.handle) {\n" % child_type_str(typelist))
 
     for b in builtin_types:
-        switcher_builtin_element(backend, OUTFILE, blklens, typelist, pupstr, "YAKSA_TYPE__%s" % b.replace(" ", "_"), b.replace(" ", "_"))
+        if b == "bool":
+            switcher_builtin_element(backend, OUTFILE, blklens, typelist, pupstr, "YAKSA_TYPE___BOOL", "bool")
+        else:
+            switcher_builtin_element(backend, OUTFILE, blklens, typelist, pupstr, "YAKSA_TYPE__%s" % b.replace(" ", "_"), b.replace(" ", "_"))
     for key in builtin_maps:
         switcher_builtin_element(backend, OUTFILE, blklens, typelist, pupstr, key, builtin_maps[key])
 
