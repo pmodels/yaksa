@@ -64,11 +64,25 @@ if test "$with_cuda" != "no" ; then
         cat>conftest.cu<<EOF
         __global__ void foo(int x) {}
 EOF
-        ${with_cuda}/bin/nvcc -c conftest.cu 2> /dev/null
+        if test -n "$ac_save_CC" ; then
+            NVCC_FLAGS="-ccbin $ac_save_CC"
+            # if the host compiler is PGI, change the -ccbin to pgc++ instead of pgcc
+            NVCC_FLAGS=`echo $NVCC_FLAGS | sed 's/pgcc/pgc++/g'`
+        else
+            NVCC_FLAGS=""
+        fi
+        # try nvcc from PATH if 'with-cuda' does not contain a valid path
+        if test ${with_cuda} == "yes"; then
+            nvcc_bin="nvcc"
+        else
+            nvcc_bin=${with_cuda}/bin/nvcc
+        fi
+        ${nvcc_bin} $NVCC_FLAGS -c conftest.cu 2> /dev/null
         if test "$?" = "0" ; then
             AC_DEFINE([HAVE_CUDA],[1],[Define is CUDA is available])
             AS_IF([test -n "${with_cuda}"],[NVCC=${with_cuda}/bin/nvcc],[NVCC=nvcc])
             AC_SUBST(NVCC)
+            AC_SUBST(NVCC_FLAGS)
             # nvcc compiled applications need libstdc++ to be able to link
             # with a C compiler
             PAC_PUSH_FLAG([LIBS])
@@ -88,6 +102,7 @@ EOF
         else
             have_cuda=no
             AC_MSG_RESULT([no])
+            AC_MSG_ERROR([CUDA was not functional with provided host compiler (CC)])
         fi
         rm -f conftest.*
     fi
