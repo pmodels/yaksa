@@ -101,6 +101,15 @@ PAC_C_CHECK_COMPILER_OPTION([-std=c11],[c11_available=yes],[c11_available=no])
 PAC_POP_FLAG([CFLAGS])
 if test "${c11_available}" = "yes" ; then
     PAC_APPEND_FLAG([-std=c11],[CFLAGS])
+else
+    # PGI does not support -std option, it uses -c11 for C11
+    PAC_PUSH_FLAG([CFLAGS])
+    PAC_APPEND_FLAG([-c11],[CFLAGS])
+    PAC_C_CHECK_COMPILER_OPTION([-c11],[c11_available=yes],[c11_available=no])
+    PAC_POP_FLAG([CFLAGS])
+    if test "${c11_available}" = "yes" ; then
+        PAC_APPEND_FLAG([-c11],[CFLAGS])
+    fi
 fi
 
 AC_HEADER_STDC
