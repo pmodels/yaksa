@@ -247,6 +247,7 @@ int yaksur_info_create_hook(yaksi_info_s * info)
     yaksuri_info_s *infopriv;
     infopriv = (yaksuri_info_s *) info->backend.priv;
     infopriv->gpudriver_id = YAKSURI_GPUDRIVER_ID__UNSET;
+    infopriv->mapped_device = -1;
 
     rc = yaksuri_seq_info_create_hook(info);
     YAKSU_ERR_CHECK(rc, fn_fail);
@@ -314,6 +315,11 @@ int yaksur_info_keyval_append(yaksi_info_s * info, const char *key, const void *
         } else {
             assert(0);
         }
+        goto fn_exit;
+    } else if (!strncmp(key, "yaksa_mapped_device", YAKSA_INFO_MAX_KEYLEN)) {
+        yaksuri_info_s *infopriv = info->backend.priv;
+        assert(vallen == sizeof(int));
+        infopriv->mapped_device = *((const int *) val);
         goto fn_exit;
     }
 

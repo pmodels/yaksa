@@ -100,6 +100,7 @@ typedef struct yaksuri_request {
 
 typedef struct {
     yaksuri_gpudriver_id_e gpudriver_id;
+    int mapped_device;
 } yaksuri_info_s;
 
 int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
