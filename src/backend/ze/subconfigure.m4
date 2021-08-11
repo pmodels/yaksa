@@ -43,6 +43,8 @@ if test "$with_ze" != "no" ; then
     fi
     if test "${have_ze}" = "yes" ; then
         AC_DEFINE([HAVE_ZE],[1],[Define is ZE is available])
+    elif test "$with_ze" != ""; then
+        AC_MSG_ERROR([ZE was requested but it is not functional])
     fi
 fi
 AM_CONDITIONAL([BUILD_ZE_BACKEND], [test x${have_ze} = xyes])
