@@ -93,6 +93,11 @@ int yaksur_init_hook(yaksi_info_s * info)
     rc = yaksuri_ze_init_hook(&yaksuri_global.gpudriver[id].hooks);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
+    /* HIP hooks */
+    id = YAKSURI_GPUDRIVER_ID__HIP;
+    yaksuri_global.gpudriver[id].hooks = NULL;
+    rc = yaksuri_hip_init_hook(&yaksuri_global.gpudriver[id].hooks);
+    YAKSU_ERR_CHECK(rc, fn_fail);
     /* final setup for all drivers */
     for (id = YAKSURI_GPUDRIVER_ID__UNSET; id < YAKSURI_GPUDRIVER_ID__LAST; id++) {
         if (id == YAKSURI_GPUDRIVER_ID__UNSET || yaksuri_global.gpudriver[id].hooks == NULL)
@@ -310,6 +315,8 @@ int yaksur_info_keyval_append(yaksi_info_s * info, const char *key, const void *
             infopriv->gpudriver_id = YAKSURI_GPUDRIVER_ID__CUDA;
         } else if (!strncmp(val, "ze", vallen)) {
             infopriv->gpudriver_id = YAKSURI_GPUDRIVER_ID__ZE;
+        } else if (!strncmp(val, "hip", vallen)) {
+            infopriv->gpudriver_id = YAKSURI_GPUDRIVER_ID__HIP;
         } else if (!strncmp(val, "nogpu", vallen)) {
             infopriv->gpudriver_id = YAKSURI_GPUDRIVER_ID__LAST;
         } else {

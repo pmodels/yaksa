@@ -228,6 +228,7 @@ AC_CHECK_ALIGNOF(long double)
 supported_backends="seq"
 m4_include([src/backend/cuda/subconfigure.m4])
 m4_include([src/backend/ze/subconfigure.m4])
+m4_include([src/backend/hip/subconfigure.m4])
 
 
 dnl ----------------------------------------------------------------------------

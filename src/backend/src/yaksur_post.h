@@ -9,6 +9,7 @@
 #include "yaksuri_seq_post.h"
 #include "yaksuri_cuda_post.h"
 #include "yaksuri_ze_post.h"
+#include "yaksuri_hip_post.h"
 
 int yaksur_init_hook(yaksi_info_s * info);
 int yaksur_finalize_hook(void);
