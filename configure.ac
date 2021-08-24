@@ -47,16 +47,16 @@ else
     if test "$V3" = "" ; then V3="0"; fi
     if test "$V3" -le 9 ; then V3="0$V3" ; fi
     if test "$V4" = "a" ; then
-	V4=0
+        V4=0
     elif test "$V4" = "b" ; then
-	V4=1
+        V4=1
     elif test "$V4" = "rc" ; then
-	V4=2
+        V4=2
     elif test "$V4" = "" ; then
-	V4=3
-	V5=0
+        V4=3
+        V5=0
     elif test "$V4" = "p" ; then
-	V4=3
+        V4=3
     fi
     if test "$V5" -le 9 ; then V5="0$V5" ; fi
 
@@ -142,13 +142,20 @@ for option in ${enable_fast} ; do
     case "$option" in
         O*)
             PAC_APPEND_FLAG([-${option}],[CFLAGS])
-	    ;;
-	ndebug)
-	    PAC_APPEND_FLAG([-DNDEBUG],[CFLAGS])
-	    ;;
-	*)
-	    # ignore unknown options
-	    ;;
+            ;;
+        ndebug)
+            PAC_APPEND_FLAG([-DNDEBUG],[CFLAGS])
+            ;;
+        all|yes)
+            PAC_APPEND_FLAG([-O2],[CFLAGS])
+            PAC_APPEND_FLAG([-DNDEBUG],[CFLAGS])
+            ;;
+        none|no)
+            PAC_APPEND_FLAG([-O0],[CFLAGS])
+            ;;
+        *)
+            # ignore unknown options
+            ;;
     esac
 done
 PAC_POP_FLAG(IFS)
@@ -256,7 +263,7 @@ AH_BOTTOM([
 AC_CONFIG_FILES([Makefile
                  Doxyfile
                  maint/yaksa.pc
-		 src/frontend/include/yaksa.h
+                 src/frontend/include/yaksa.h
 ])
 AC_OUTPUT
 
