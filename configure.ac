@@ -146,6 +146,13 @@ for option in ${enable_fast} ; do
         ndebug)
             PAC_APPEND_FLAG([-DNDEBUG],[CFLAGS])
             ;;
+        all|yes)
+            PAC_APPEND_FLAG([-O2],[CFLAGS])
+            PAC_APPEND_FLAG([-DNDEBUG],[CFLAGS])
+            ;;
+        none|no)
+            PAC_APPEND_FLAG([-O0],[CFLAGS])
+            ;;
         *)
             # ignore unknown options
             ;;
