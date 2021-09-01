@@ -51,6 +51,7 @@ missing
 /test/pack/testlist.gen
 /test/pack/testlist.threads.gen
 /test/pack/testlist.blocking.gen
+/test/pack/testlist.stream.gen
 /test/simple/testlist.gen
 /README
 
