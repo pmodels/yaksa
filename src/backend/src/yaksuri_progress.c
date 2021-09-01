@@ -326,7 +326,8 @@ static void stream_buf_list_free(void)
 {
     if (stream_buf_list_capacity > 0) {
         for (int i = 0; i < stream_buf_list_count; i++) {
-            int rc = yaksu_buffer_pool_elem_free(stream_buf_list[i].pool, stream_buf_list[i].buf);
+            int rc ATTRIBUTE((unused)) =
+                yaksu_buffer_pool_elem_free(stream_buf_list[i].pool, stream_buf_list[i].buf);
             assert(rc == YAKSA_SUCCESS);
         }
         free(stream_buf_list);
@@ -1535,7 +1536,7 @@ static void pack_d2rh_stream_cb(void *data)
     void *rh_buf;
     rh_buf = get_stream_buf(chunk->tmpbufs[1]);
 
-    int rc;
+    int rc ATTRIBUTE((unused));
     rc = yaksuri_seq_ipack(rh_buf, dbuf,
                            chunk_count * type->size / base_type->size, base_type, chunk->info, op);
     assert(rc == YAKSA_SUCCESS);
@@ -1637,7 +1638,7 @@ static void pack_d2urh_stream_cb(void *data)
     void *rh_buf;
     rh_buf = get_stream_buf(chunk->tmpbufs[1]);
 
-    int rc;
+    int rc ATTRIBUTE((unused));
     rc = yaksuri_seq_ipack(rh_buf, dbuf,
                            chunk_count * type->size / base_type->size, base_type, chunk->info, op);
     assert(rc == YAKSA_SUCCESS);
@@ -1705,7 +1706,7 @@ static int pack_d2urh_stream(yaksuri_request_s * reqpriv, const void *inbuf, voi
 
 static void pack_h2d_stream_cb(void *data)
 {
-    int rc;
+    int rc ATTRIBUTE((unused));
     struct callback_chunk *chunk = data;
 
     yaksi_type_s *type = chunk->type;
@@ -2030,7 +2031,7 @@ static int unpack_rh2d_stream(yaksuri_request_s * reqpriv, const void *inbuf, vo
 
 static void unpack_urh2d_stream_cb(void *data)
 {
-    int rc;
+    int rc ATTRIBUTE((unused));
     struct callback_chunk *chunk = data;
 
     yaksi_type_s *type = chunk->type;
@@ -2126,7 +2127,7 @@ static void unpack_d2h_stream_cb(void *data)
     void *rh_buf;
     rh_buf = get_stream_buf(chunk->tmpbufs[0]);
 
-    int rc;
+    int rc ATTRIBUTE((unused));
     rc = yaksuri_seq_iunpack(rh_buf, dbuf, chunk_count, type, chunk->info, op);
     assert(rc == YAKSA_SUCCESS);
     chunk->count_offset += chunk_count;
