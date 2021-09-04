@@ -797,31 +797,51 @@ static int pack_d2urh_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * su
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+    yaksa_op_t op = subreq->u.multiple.op;
+    yaksi_type_s *type = subreq->u.multiple.type;
 
     *chunk = NULL;
 
-    int devices[] = { reqpriv->request->backend.inattr.device, -1 };
-    rc = alloc_chunk(id, reqpriv, subreq, 2, devices, chunk);
-    YAKSU_ERR_CHECK(rc, fn_fail);
+    void *d_buf = NULL, *rh_buf;
+    /* no need to bounce to device buffer if type is contig and copy only */
+    if (op == YAKSA_OP__REPLACE && type->is_contig) {
+        int devices[] = { -1 };
+        rc = alloc_chunk(id, reqpriv, subreq, 1, devices, chunk);
+        YAKSU_ERR_CHECK(rc, fn_fail);
 
-    if (*chunk == NULL)
-        goto fn_exit;
+        if (*chunk == NULL)
+            goto fn_exit;
 
-    void *d_buf, *rh_buf;
-    d_buf = (*chunk)->tmpbufs[0].buf;
-    rh_buf = (*chunk)->tmpbufs[1].buf;
+        rh_buf = (*chunk)->tmpbufs[0].buf;
+    } else {
+        int devices[] = { -1, reqpriv->request->backend.inattr.device };
+        rc = alloc_chunk(id, reqpriv, subreq, 2, devices, chunk);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+
+        if (*chunk == NULL)
+            goto fn_exit;
+
+        rh_buf = (*chunk)->tmpbufs[0].buf;
+        d_buf = (*chunk)->tmpbufs[1].buf;
+    }
 
     const char *sbuf;
     sbuf = (const char *) subreq->u.multiple.inbuf +
         (*chunk)->count_offset * subreq->u.multiple.type->extent;
 
-    rc = ipack(id, sbuf, d_buf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
-               YAKSA_OP__REPLACE, reqpriv->request->backend.inattr.device, NULL);
-    YAKSU_ERR_CHECK(rc, fn_fail);
+    if (d_buf) {
+        rc = ipack(id, sbuf, d_buf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+                   YAKSA_OP__REPLACE, reqpriv->request->backend.inattr.device, NULL);
+        YAKSU_ERR_CHECK(rc, fn_fail);
 
-    rc = icopy(id, d_buf, rh_buf, (*chunk)->count, subreq->u.multiple.type,
-               reqpriv->info, YAKSA_OP__REPLACE, reqpriv->request->backend.inattr.device, NULL);
-    YAKSU_ERR_CHECK(rc, fn_fail);
+        rc = icopy(id, d_buf, rh_buf, (*chunk)->count, subreq->u.multiple.type,
+                   reqpriv->info, YAKSA_OP__REPLACE, reqpriv->request->backend.inattr.device, NULL);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+    } else {
+        rc = ipack(id, sbuf, rh_buf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+                   YAKSA_OP__REPLACE, reqpriv->request->backend.inattr.device, NULL);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+    }
 
     rc = event_record(id, reqpriv->request->backend.inattr.device, &(*chunk)->event);
     YAKSU_ERR_CHECK(rc, fn_fail);
@@ -841,7 +861,7 @@ static int pack_d2urh_release(yaksuri_request_s * reqpriv, yaksuri_subreq_s * su
     yaksi_type_s *type = subreq->u.multiple.type;
     yaksi_type_s *base_type = get_base_type(type);
 
-    rc = yaksuri_seq_ipack(chunk->tmpbufs[1].buf, dbuf,
+    rc = yaksuri_seq_ipack(chunk->tmpbufs[0].buf, dbuf,
                            chunk->count * type->size / base_type->size, base_type,
                            reqpriv->info, subreq->u.multiple.op);
     YAKSU_ERR_CHECK(rc, fn_fail);
@@ -1140,19 +1160,27 @@ static int unpack_urh2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * 
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_gpudriver_id_e id = reqpriv->gpudriver_id;
+    yaksa_op_t op = subreq->u.multiple.op;
+    yaksi_type_s *type = subreq->u.multiple.type;
 
     *chunk = NULL;
 
-    int devices[] = { reqpriv->request->backend.outattr.device, -1 };
-    rc = alloc_chunk(id, reqpriv, subreq, 2, devices, chunk);
-    YAKSU_ERR_CHECK(rc, fn_fail);
-
+    /* no need to bounce to device buffer if type is contig and copy only */
+    if (op == YAKSA_OP__REPLACE && type->is_contig) {
+        int devices[] = { -1 };
+        rc = alloc_chunk(id, reqpriv, subreq, 1, devices, chunk);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+    } else {
+        int devices[] = { -1, reqpriv->request->backend.outattr.device };
+        rc = alloc_chunk(id, reqpriv, subreq, 2, devices, chunk);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+    }
     if (*chunk == NULL)
         goto fn_exit;
 
     void *d_buf, *rh_buf;
-    d_buf = (*chunk)->tmpbufs[0].buf;
-    rh_buf = (*chunk)->tmpbufs[1].buf;
+    rh_buf = (*chunk)->tmpbufs[0].buf;
+    d_buf = (*chunk)->tmpbufs[1].buf;
 
     const char *sbuf;
     char *dbuf;
@@ -1169,13 +1197,19 @@ static int unpack_urh2d_acquire(yaksuri_request_s * reqpriv, yaksuri_subreq_s * 
                            byte_type, reqpriv->info, YAKSA_OP__REPLACE);
     YAKSU_ERR_CHECK(rc, fn_fail);
 
-    rc = icopy(id, rh_buf, d_buf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
-               YAKSA_OP__REPLACE, reqpriv->request->backend.outattr.device, NULL);
-    YAKSU_ERR_CHECK(rc, fn_fail);
+    if (op == YAKSA_OP__REPLACE && type->is_contig) {
+        rc = iunpack(id, rh_buf, dbuf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+                     op, reqpriv->request->backend.outattr.device, NULL);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+    } else {
+        rc = icopy(id, rh_buf, d_buf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+                   YAKSA_OP__REPLACE, reqpriv->request->backend.outattr.device, NULL);
+        YAKSU_ERR_CHECK(rc, fn_fail);
 
-    rc = iunpack(id, d_buf, dbuf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
-                 subreq->u.multiple.op, reqpriv->request->backend.outattr.device, NULL);
-    YAKSU_ERR_CHECK(rc, fn_fail);
+        rc = iunpack(id, d_buf, dbuf, (*chunk)->count, subreq->u.multiple.type, reqpriv->info,
+                     subreq->u.multiple.op, reqpriv->request->backend.outattr.device, NULL);
+        YAKSU_ERR_CHECK(rc, fn_fail);
+    }
 
     rc = event_record(id, reqpriv->request->backend.outattr.device, &(*chunk)->event);
     YAKSU_ERR_CHECK(rc, fn_fail);
