@@ -264,7 +264,8 @@ static int simple_release(yaksuri_request_s * reqpriv, yaksuri_subreq_s * subreq
     DL_DELETE(subreq->u.multiple.chunks, chunk);
     free(chunk);
 
-    if (subreq->u.multiple.chunks == NULL) {
+    if (subreq->u.multiple.chunks == NULL &&
+        subreq->u.multiple.issued_count == subreq->u.multiple.count) {
         DL_DELETE(reqpriv->subreqs, subreq);
         yaksi_type_free(subreq->u.multiple.type);
         free(subreq);
