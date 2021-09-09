@@ -86,21 +86,26 @@ static void free_to_marker(yaksuri_zei_device_state_s * device_state, ze_command
     }
 }
 
+/* return NULL event if there is no task left, this could happen
+ * in multi-threading programs
+ */
 int yaksuri_zei_event_record(int device, void **event_)
 {
     int rc = YAKSA_SUCCESS;
-    ze_result_t zerr;
     ze_event_handle_t ze_event;
     yaksuri_zei_event_s *event;
     int idx;
 
-    event = (yaksuri_zei_event_s *) malloc(sizeof(yaksuri_zei_event_s));
-
     yaksuri_zei_device_state_s *device_state = yaksuri_zei_global.device_states + device;
     pthread_mutex_lock(&device_state->mutex);
-    rc = create_ze_event(device, &ze_event, &idx);
-    YAKSU_ERR_CHECK(rc, fn_fail);
+    if (device_state->last_event_idx < 0) {
+        *event_ = NULL;
+        goto fn_exit;
+    }
+    idx = ZE_EVENT_POOL_INDEX(device_state->last_event_idx);
+    ze_event = device_state->events[idx];
 
+    event = (yaksuri_zei_event_s *) malloc(sizeof(yaksuri_zei_event_s));
     event->dev_id = device;
     event->ze_event = ze_event;
     event->cl = NULL;
@@ -109,8 +114,6 @@ int yaksuri_zei_event_record(int device, void **event_)
     if (device_state->num_cl) {
         ze_command_list_handle_t cl = device_state->cl[device_state->num_cl - 1];
         assert(cl);
-        zerr = zeCommandListAppendSignalEvent(cl, event->ze_event);
-        YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
         event->cl = cl;
     }
     assert(event->cl);
@@ -128,7 +131,11 @@ int yaksuri_zei_event_query(void *event_, int *completed)
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_zei_event_s *event = (yaksuri_zei_event_s *) event_;
+
     *completed = 1;
+    if (event == NULL)
+        goto fn_exit;
+
     ze_result_t zerr = zeEventQueryStatus(event->ze_event);
     if (zerr == ZE_RESULT_NOT_READY) {
         *completed = 0;
