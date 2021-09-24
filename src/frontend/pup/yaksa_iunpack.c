@@ -9,9 +9,10 @@
 #include <string.h>
 #include <assert.h>
 
-int yaksa_iunpack(const void *inbuf, uintptr_t insize, void *outbuf, uintptr_t outcount,
-                  yaksa_type_t type, uintptr_t outoffset, uintptr_t * actual_unpack_bytes,
-                  yaksa_info_t info, yaksa_op_t op, yaksa_request_t * request)
+YAKSA_API_PUBLIC int yaksa_iunpack(const void *inbuf, uintptr_t insize, void *outbuf,
+                                   uintptr_t outcount, yaksa_type_t type, uintptr_t outoffset,
+                                   uintptr_t * actual_unpack_bytes, yaksa_info_t info,
+                                   yaksa_op_t op, yaksa_request_t * request)
 {
     int rc = YAKSA_SUCCESS;
 

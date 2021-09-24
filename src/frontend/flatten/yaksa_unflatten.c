@@ -127,7 +127,7 @@ static inline int unflatten(yaksi_type_s ** type, const void *flattened_type)
     goto fn_exit;
 }
 
-int yaksa_unflatten(yaksa_type_t * type, const void *flattened_type)
+YAKSA_API_PUBLIC int yaksa_unflatten(yaksa_type_t * type, const void *flattened_type)
 {
     int rc = YAKSA_SUCCESS;
     yaksi_type_s *yaksi_type;

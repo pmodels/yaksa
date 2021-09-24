@@ -91,7 +91,7 @@ int yaksi_flatten_size(yaksi_type_s * type, uintptr_t * flattened_type_size)
     goto fn_exit;
 }
 
-int yaksa_flatten_size(yaksa_type_t type, uintptr_t * flattened_type_size)
+YAKSA_API_PUBLIC int yaksa_flatten_size(yaksa_type_t type, uintptr_t * flattened_type_size)
 {
     int rc = YAKSA_SUCCESS;
     yaksi_type_s *yaksi_type;

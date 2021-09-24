@@ -128,10 +128,11 @@ int yaksi_type_create_subarray(int ndims, const intptr_t * array_of_sizes,
     goto fn_exit;
 }
 
-int yaksa_type_create_subarray(int ndims, const intptr_t * array_of_sizes,
-                               const intptr_t * array_of_subsizes,
-                               const intptr_t * array_of_starts, yaksa_subarray_order_e order,
-                               yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t * newtype)
+YAKSA_API_PUBLIC int yaksa_type_create_subarray(int ndims, const intptr_t * array_of_sizes,
+                                                const intptr_t * array_of_subsizes,
+                                                const intptr_t * array_of_starts,
+                                                yaksa_subarray_order_e order, yaksa_type_t oldtype,
+                                                yaksa_info_t info, yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 
