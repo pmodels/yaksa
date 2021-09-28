@@ -150,10 +150,11 @@ int yaksi_type_create_struct(intptr_t count, const intptr_t * array_of_blockleng
     goto fn_exit;
 }
 
-int yaksa_type_create_struct(intptr_t count, const intptr_t * array_of_blocklengths,
-                             const intptr_t * array_of_displs,
-                             const yaksa_type_t * array_of_types, yaksa_info_t info,
-                             yaksa_type_t * newtype)
+YAKSA_API_PUBLIC int yaksa_type_create_struct(intptr_t count,
+                                              const intptr_t * array_of_blocklengths,
+                                              const intptr_t * array_of_displs,
+                                              const yaksa_type_t * array_of_types,
+                                              yaksa_info_t info, yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 

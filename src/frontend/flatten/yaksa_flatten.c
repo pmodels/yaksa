@@ -98,7 +98,7 @@ static int flatten(yaksi_type_s * type, void *flattened_type)
     goto fn_exit;
 }
 
-int yaksa_flatten(yaksa_type_t type, void *flattened_type)
+YAKSA_API_PUBLIC int yaksa_flatten(yaksa_type_t type, void *flattened_type)
 {
     int rc = YAKSA_SUCCESS;
     yaksi_type_s *yaksi_type;

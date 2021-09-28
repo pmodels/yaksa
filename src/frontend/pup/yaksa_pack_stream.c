@@ -7,9 +7,10 @@
 #include "yaksu.h"
 #include <assert.h>
 
-int yaksa_pack_stream(const void *inbuf, uintptr_t incount, yaksa_type_t type, uintptr_t inoffset,
-                      void *outbuf, uintptr_t max_pack_bytes, uintptr_t * actual_pack_bytes,
-                      yaksa_info_t info, yaksa_op_t op, void *stream)
+YAKSA_API_PUBLIC int yaksa_pack_stream(const void *inbuf, uintptr_t incount, yaksa_type_t type,
+                                       uintptr_t inoffset, void *outbuf, uintptr_t max_pack_bytes,
+                                       uintptr_t * actual_pack_bytes, yaksa_info_t info,
+                                       yaksa_op_t op, void *stream)
 {
     int rc = YAKSA_SUCCESS;
 

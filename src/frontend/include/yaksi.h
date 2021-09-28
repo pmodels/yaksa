@@ -23,6 +23,16 @@
 #endif /* MPL_HAVE_GCC_ATTRIBUTE */
 #endif /* ATTRIBUTE */
 
+#if defined(YAKSA_C_HAVE_VISIBILITY)
+#if defined(__GNUC__) && !defined(__clang__)
+#define YAKSA_API_PUBLIC __attribute__((visibility ("default"), externally_visible))
+#else
+#define YAKSA_API_PUBLIC __attribute__((visibility ("default")))
+#endif
+#else
+#define YAKSA_API_PUBLIC
+#endif
+
 #define YAKSI_ENV_DEFAULT_NESTING_LEVEL  (3)
 
 extern yaksu_atomic_int yaksi_is_initialized;

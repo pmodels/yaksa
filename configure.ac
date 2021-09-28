@@ -112,6 +112,9 @@ else
     fi
 fi
 
+PAC_CHECK_VISIBILITY
+PAC_APPEND_FLAG([$YAKSA_VISIBILITY_CFLAGS],[CFLAGS])
+
 AC_HEADER_STDC
 
 # required pre-Automake-1.14

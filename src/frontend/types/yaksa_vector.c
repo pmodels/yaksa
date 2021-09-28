@@ -83,8 +83,9 @@ int yaksi_type_create_hvector(intptr_t count, intptr_t blocklength, intptr_t str
     goto fn_exit;
 }
 
-int yaksa_type_create_hvector(intptr_t count, intptr_t blocklength, intptr_t stride,
-                              yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t * newtype)
+YAKSA_API_PUBLIC int yaksa_type_create_hvector(intptr_t count, intptr_t blocklength,
+                                               intptr_t stride, yaksa_type_t oldtype,
+                                               yaksa_info_t info, yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 
@@ -112,8 +113,9 @@ int yaksa_type_create_hvector(intptr_t count, intptr_t blocklength, intptr_t str
     goto fn_exit;
 }
 
-int yaksa_type_create_vector(intptr_t count, intptr_t blocklength, intptr_t stride,
-                             yaksa_type_t oldtype, yaksa_info_t info, yaksa_type_t * newtype)
+YAKSA_API_PUBLIC int yaksa_type_create_vector(intptr_t count, intptr_t blocklength, intptr_t stride,
+                                              yaksa_type_t oldtype, yaksa_info_t info,
+                                              yaksa_type_t * newtype)
 {
     int rc = YAKSA_SUCCESS;
 

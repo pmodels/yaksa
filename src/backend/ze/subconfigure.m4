@@ -11,14 +11,17 @@
 # --with-ze
 PAC_SET_HEADER_LIB_PATH([ze])
 if test "$with_ze" != "no" ; then
-    if test x"${with_ze}" != x ; then
-        PAC_CHECK_HEADER_LIB([level_zero/ze_api.h],[ze_loader],[zeCommandQueueCreate],[have_ze=yes],[have_ze=no])
-        AC_MSG_CHECKING([whether ocloc is installed])
-        if ! command -v ocloc &> /dev/null; then
+    PAC_CHECK_HEADER_LIB([level_zero/ze_api.h],[ze_loader],[zeCommandQueueCreate],[have_ze=yes],[have_ze=no])
+    AC_MSG_CHECKING([whether ocloc is installed])
+    if ! command -v ocloc &> /dev/null; then
+        if test "$with_ze" = "yes" ; then
             AC_MSG_ERROR([ocloc not found; either install it or disable ze support])
         else
-            AC_MSG_RESULT([yes])
+            AC_MSG_RESULT([no])
+            have_ze=no
         fi
+    else
+        AC_MSG_RESULT([yes])
     fi
     # ze_api.h relies on support for c11
     if test "${have_ze}" = "yes" ; then
