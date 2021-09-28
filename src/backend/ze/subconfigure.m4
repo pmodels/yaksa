@@ -67,15 +67,25 @@ if test "${have_ze}" = "yes" ; then
     fi
 fi
 
-# --ze-native=[skl|dg1|ats]
+extra_ocloc_options=
+
+# --ze-revision-id=[integer]
+# PVC native compilation requires revision_id
+AC_ARG_ENABLE([ze-revision-id],AS_HELP_STRING([--enable-ze-revision-id=int],[specify revision id]),,
+              [enable_ze_revision_id=-1])
+if test $enable_ze_revision_id != -1; then
+    extra_ocloc_options="-revision_id $enable_ze_revision_id"
+fi
+
+# --ze-native=[skl|dg1|ats|pvc]
 AC_ARG_ENABLE([ze-native],AS_HELP_STRING([--enable-ze-native=device],[compile GPU kernel to native binary]),,
-              [enable_ze_native=])
-if test "${have_ze}" = "yes" -a x"${enable_ze_native}" != x; then
-    AC_MSG_CHECKING([whether ocloc works])
+              [enable_ze_native=no])
+if test "${have_ze}" = "yes" -a x"${enable_ze_native}" != xno; then
+    AC_MSG_CHECKING([whether ocloc works with target device])
     cat>conftest.cl<<EOF
     __kernel void foo(int x) {}
 EOF
-    ocloc compile -file conftest.cl -device ${enable_ze_native} -options "-cl-std=CL2.0" > /dev/null 2>&1
+    ocloc compile -file conftest.cl -device ${enable_ze_native} ${extra_ocloc_options} -options "-cl-std=CL2.0" > /dev/null 2>&1
     if test "$?" = "0" ; then
         AC_MSG_RESULT([yes])
     else
@@ -91,7 +101,9 @@ else
     AC_DEFINE(ZE_NATIVE, 0, [No native format])
 fi
 AC_SUBST(enable_ze_native)
-AM_CONDITIONAL([BUILD_ZE_NATIVE],[test x"$enable_ze_native" != x])
+AC_SUBST(extra_ocloc_options)
+AM_CONDITIONAL([BUILD_ZE_NATIVE],[test x"$enable_ze_native" != xno])
+
 
 ##########################################################################
 ##### analyze the user arguments and setup internal infrastructure
@@ -99,4 +111,7 @@ AM_CONDITIONAL([BUILD_ZE_NATIVE],[test x"$enable_ze_native" != x])
 
 if test "${have_ze}" = "yes" ; then
     supported_backends="${supported_backends},ze"
+    if test x${enable_ze_native} != xno; then
+        supported_backends="$supported_backends($enable_ze_native)"
+    fi
 fi
