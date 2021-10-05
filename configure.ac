@@ -216,6 +216,13 @@ if test "${have_c11_atomics}" = "yes"; then
 fi
 AM_CONDITIONAL([HAVE_C11_ATOMICS], [test x${have_c11_atomics} = xyes])
 
+# look for x86 intrinsics
+AC_CHECK_HEADERS([immintrin.h],[have_immintrin=yes],[have_immintrin=no])
+if test "${have_immintrin}" = "yes"; then
+    AC_DEFINE([HAVE_IMMINTRIN_H],[1],[Define if x86 intrinsics are available])
+fi
+AM_CONDITIONAL([HAVE_IMMINTRIN_H], [test x${have_immintrin} = xyes])
+
 # look for pthreads
 AC_CHECK_HEADERS(pthread.h)
 AC_CHECK_LIB([pthread],[pthread_key_create],have_pthreads=yes)
