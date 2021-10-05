@@ -83,6 +83,9 @@ int yaksuri_seq_info_keyval_append(yaksi_info_s * info, const char *key, const v
     } else if (!strncmp(key, "yaksa_seq_iov_unpack_threshold", YAKSA_INFO_MAX_KEYLEN)) {
         assert(vallen == sizeof(uintptr_t));
         seq->iov_unpack_threshold = (uintptr_t) val;
+    } else if (!strncmp(key, "yaksa_seq_stream_copy", YAKSA_INFO_MAX_KEYLEN)) {
+        assert(vallen == sizeof(int));
+        seq->stream_cpy = *((int *) val);
     }
 
     return YAKSA_SUCCESS;

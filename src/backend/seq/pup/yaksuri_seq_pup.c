@@ -29,15 +29,17 @@ int yaksuri_seq_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_ty
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_seqi_type_s *seq_type = (yaksuri_seqi_type_s *) type->backend.seq.priv;
+    int memcpy_type = YAKSU_MEMCPY__SYSTEM;
 
     uintptr_t iov_pack_threshold = YAKSURI_SEQI_INFO__DEFAULT_IOV_PUP_THRESHOLD;
     if (info) {
         yaksuri_seqi_info_s *seq_info = (yaksuri_seqi_info_s *) info->backend.seq.priv;
         iov_pack_threshold = seq_info->iov_pack_threshold;
+        if (seq_info->stream_cpy) memcpy_type = YAKSU_MEMCPY__STREAM;
     }
 
     if (op == YAKSA_OP__REPLACE && type->is_contig) {
-        memcpy(outbuf, (const char *) inbuf + type->true_lb, type->size * count);
+        yaksu_memcpy(outbuf, (const char *)inbuf + type->true_lb, type->size * count, memcpy_type);
     } else if (op == YAKSA_OP__REPLACE && type->size / type->num_contig >= iov_pack_threshold) {
         struct iovec iov[MAX_IOV_LENGTH];
         char *dbuf = (char *) outbuf;
@@ -48,7 +50,7 @@ int yaksuri_seq_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_ty
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             for (uintptr_t i = 0; i < actual_iov_len; i++) {
-                memcpy(dbuf, iov[i].iov_base, iov[i].iov_len);
+                yaksu_memcpy(dbuf, iov[i].iov_base, iov[i].iov_len, memcpy_type);
                 dbuf += iov[i].iov_len;
             }
 
@@ -71,6 +73,7 @@ int yaksuri_seq_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
 {
     int rc = YAKSA_SUCCESS;
     yaksuri_seqi_type_s *seq_type = (yaksuri_seqi_type_s *) type->backend.seq.priv;
+    int memcpy_type = YAKSU_MEMCPY__SYSTEM;
 
     uintptr_t iov_unpack_threshold = YAKSURI_SEQI_INFO__DEFAULT_IOV_PUP_THRESHOLD;
     if (info) {
@@ -79,7 +82,7 @@ int yaksuri_seq_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
     }
 
     if (op == YAKSA_OP__REPLACE && type->is_contig) {
-        memcpy((char *) outbuf + type->true_lb, inbuf, type->size * count);
+        yaksu_memcpy((char *) outbuf + type->true_lb, inbuf, type->size * count, memcpy_type);
     } else if (op == YAKSA_OP__REPLACE && type->size / type->num_contig >= iov_unpack_threshold) {
         struct iovec iov[MAX_IOV_LENGTH];
         const char *sbuf = (const char *) inbuf;
@@ -91,7 +94,7 @@ int yaksuri_seq_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
             YAKSU_ERR_CHECK(rc, fn_fail);
 
             for (uintptr_t i = 0; i < actual_iov_len; i++) {
-                memcpy(iov[i].iov_base, sbuf, iov[i].iov_len);
+                yaksu_memcpy(iov[i].iov_base, sbuf, iov[i].iov_len, memcpy_type);
                 sbuf += iov[i].iov_len;
             }
 

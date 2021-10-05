@@ -23,6 +23,8 @@ typedef struct yaksuri_seqi_type_s {
 typedef struct {
     uintptr_t iov_pack_threshold;
     uintptr_t iov_unpack_threshold;
+    int stream_cpy; /* If this is true, then the copy can be done with a streaming copy
+                     * (non-temporal write that doesn't make memory resident in writer's cache). */
 } yaksuri_seqi_info_s;
 
 int yaksuri_seqi_populate_pupfns(yaksi_type_s * type);
