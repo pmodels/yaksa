@@ -28,6 +28,7 @@ static ze_result_t yaksuri_ze_load_module(int module, ze_module_handle_t ** hand
 
         for (d = 0; d < yaksuri_zei_global.ndevices; d++) {
             ze_module_desc_t desc = { ZE_STRUCTURE_TYPE_MODULE_DESC };
+            desc.pNext = NULL;
 #if ZE_NATIVE
             desc.format = ZE_MODULE_FORMAT_NATIVE;
             desc.pBuildFlags = NULL;
