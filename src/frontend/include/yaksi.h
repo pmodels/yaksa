@@ -18,12 +18,12 @@
 #if !defined ATTRIBUTE
 #if defined HAVE_GCC_ATTRIBUTE
 #define ATTRIBUTE(a_) __attribute__(a_)
-#else /* MPL_HAVE_GCC_ATTRIBUTE */
+#else /* HAVE_GCC_ATTRIBUTE */
 #define ATTRIBUTE(a_)
-#endif /* MPL_HAVE_GCC_ATTRIBUTE */
+#endif /* HAVE_GCC_ATTRIBUTE */
 #endif /* ATTRIBUTE */
 
-#if defined(YAKSA_C_HAVE_VISIBILITY)
+#if defined(YAKSA_C_HAVE_VISIBILITY) && !defined YAKSA_EMBEDDED_BUILD
 #if defined(__GNUC__) && !defined(__clang__)
 #define YAKSA_API_PUBLIC __attribute__((visibility ("default"), externally_visible))
 #else

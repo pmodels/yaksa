@@ -129,6 +129,9 @@ PAC_ARG_STRICT
 # embedded builds
 AC_ARG_ENABLE([embedded],AS_HELP_STRING([--enable-embedded],[enables embedded builds]),,[enable_embedded=no])
 AM_CONDITIONAL([EMBEDDED_BUILD], [test x${enable_embedded} = xyes])
+if test x${enable_embedded} = xyes; then
+    AC_DEFINE(YAKSA_EMBEDDED_BUILD, [1], [Define if yaksa is embedded])
+fi
 
 # --enable-debug
 AC_ARG_ENABLE([g],AS_HELP_STRING([--enable-g],[alias for --enable-debug]),,[enable_g=no])
