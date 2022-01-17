@@ -73,10 +73,10 @@ EOF
             NVCC_FLAGS=""
         fi
         # try nvcc from PATH if 'with-cuda' does not contain a valid path
-        if test ${with_cuda} == "yes"; then
-            nvcc_bin="nvcc"
-        else
+        if test -d ${with_cuda} ; then
             nvcc_bin=${with_cuda}/bin/nvcc
+        else
+            nvcc_bin=nvcc
         fi
         ${nvcc_bin} $NVCC_FLAGS -c conftest.cu 2> /dev/null
         if test "$?" = "0" ; then
