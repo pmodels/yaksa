@@ -66,17 +66,17 @@ if test "$with_cuda" != "no" ; then
 EOF
         if test -n "$ac_save_CC" ; then
             NVCC_FLAGS="-ccbin $ac_save_CC"
-            # - pgcc doesn't work, use pgc++ instead
+            # - pgcc/nvc doesn't work, use pgc++/nvc++ instead
             # - Extra optins such as `gcc -std=gnu99` doesn't work, strip the option
-            NVCC_FLAGS=$(echo $NVCC_FLAGS | sed -e 's/pgcc/pgc++/g' -e's/ -std=.*//g')
+            NVCC_FLAGS=$(echo $NVCC_FLAGS | sed -e 's/nvc/nvc++/g' -e 's/pgcc/pgc++/g' -e's/ -std=.*//g')
         else
             NVCC_FLAGS=""
         fi
         # try nvcc from PATH if 'with-cuda' does not contain a valid path
-        if test ${with_cuda} == "yes"; then
-            nvcc_bin="nvcc"
-        else
+        if test -d ${with_cuda} ; then
             nvcc_bin=${with_cuda}/bin/nvcc
+        else
+            nvcc_bin=nvcc
         fi
         ${nvcc_bin} $NVCC_FLAGS -c conftest.cu 2> /dev/null
         if test "$?" = "0" ; then
