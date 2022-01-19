@@ -61,9 +61,6 @@ if test "$with_cuda" != "no" ; then
     PAC_CHECK_HEADER_LIB([cuda_runtime_api.h],[cudart],[cudaStreamSynchronize],[have_cuda=yes],[have_cuda=no])
     if test "${have_cuda}" = "yes" ; then
         AC_MSG_CHECKING([whether nvcc works])
-        cat>conftest.cu<<EOF
-        __global__ void foo(int x) {}
-EOF
         if test -n "$ac_save_CC" ; then
             NVCC_FLAGS="$NVCC_FLAGS -ccbin $ac_save_CC"
             # - pgcc/nvc doesn't work, use pgc++/nvc++ instead
@@ -76,19 +73,26 @@ EOF
         else
             nvcc_bin=nvcc
         fi
-        ${nvcc_bin} $NVCC_FLAGS -c conftest.cu 2> /dev/null
-        if test "$?" = "0" ; then
+
+        # save language settings, customize ac_ext and ac_compile to support CUDA
+        AC_LANG_PUSH([C])
+        ac_ext=cu
+        ac_compile='$nvcc_bin $NVCC_FLAGS -c conftest.$ac_ext >&5'
+        AC_COMPILE_IFELSE([AC_LANG_PROGRAM([__global__ void foo(int x) {}],[])],
+        [
             AC_DEFINE([HAVE_CUDA],[1],[Define is CUDA is available])
             AS_IF([test -n "${with_cuda}"],[NVCC=${with_cuda}/bin/nvcc],[NVCC=nvcc])
             AC_SUBST(NVCC)
             AC_SUBST(NVCC_FLAGS)
             AC_MSG_RESULT([yes])
-        else
+        ],[
             have_cuda=no
             AC_MSG_RESULT([no])
             AC_MSG_ERROR([CUDA was not functional with provided host compiler (CC)])
-        fi
-        rm -f conftest.*
+        ])
+        # done with CUDA, back to C
+        AC_LANG_POP([C])
+
         # nvcc compiled applications need libstdc++ to be able to link
         # with a C compiler
         AC_MSG_CHECKING([if $CC can link libstdc++])
