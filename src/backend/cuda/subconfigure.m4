@@ -81,7 +81,7 @@ if test "$with_cuda" != "no" ; then
         AC_COMPILE_IFELSE([AC_LANG_PROGRAM([__global__ void foo(int x) {}],[])],
         [
             AC_DEFINE([HAVE_CUDA],[1],[Define is CUDA is available])
-            AS_IF([test -n "${with_cuda}"],[NVCC=${with_cuda}/bin/nvcc],[NVCC=nvcc])
+            AS_IF([test -d "${with_cuda}"],[NVCC=${with_cuda}/bin/nvcc],[NVCC=nvcc])
             AC_SUBST(NVCC)
             AC_SUBST(NVCC_FLAGS)
             AC_MSG_RESULT([yes])
