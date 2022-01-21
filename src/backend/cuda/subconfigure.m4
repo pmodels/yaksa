@@ -47,7 +47,8 @@ AC_ARG_WITH([cuda-sm],
 
                 # Ampere architecture
                 ampere - build compatibility for all Ampere GPUs
-                80     - RTX Ampere - RTX 3080
+                80     - A100, A30
+                86     - RTX Ampere, MX570, A40, A16, A10, A2
 
                 # Other
                 <numeric> - specific SM numeric to use
@@ -136,11 +137,11 @@ fi
 ##########################################################################
 
 if test "${have_cuda}" = "yes" ; then
-    for version in 11000 10000 9000 8000 7000 6000 5000 ; do
+    for version in 11010 11000 10000 9000 8000 7000 6000 5000 ; do
         AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
                               #include <cuda.h>
                               int x[[CUDA_VERSION - $version]];
-                          ],)],[cuda_version=${maj_version}],[])
+                          ],)],[cuda_version=${version}],[])
         if test ! -z ${cuda_version} ; then break ; fi
     done
     PAC_PUSH_FLAG([IFS])
@@ -149,7 +150,10 @@ if test "${have_cuda}" = "yes" ; then
     for sm in ${with_cuda_sm} ; do
         case "$sm" in
             all)
-                if test ${cuda_version} -ge 11000 ; then
+                if test ${cuda_version} -ge 11010 ; then
+                    # maxwell (52) to ampere (86)
+                    supported_cuda_sms="52 53 60 61 62 70 72 75 80 86"
+                elif test ${cuda_version} -ge 11000 ; then
                     # maxwell (52) to ampere (80)
                     supported_cuda_sms="52 53 60 61 62 70 72 75 80"
                 elif test ${cuda_version} -ge 10000 ; then
@@ -203,6 +207,7 @@ if test "${have_cuda}" = "yes" ; then
 
             ampere)
                 PAC_APPEND_FLAG([80],[CUDA_SM])
+                PAC_APPEND_FLAG([86],[CUDA_SM])
                 ;;
 
             none)
