@@ -89,29 +89,32 @@ if test "$with_cuda" != "no" ; then
         ],[
             have_cuda=no
             AC_MSG_RESULT([no])
-            AC_MSG_ERROR([CUDA was not functional with provided host compiler (CC)])
         ])
         # done with CUDA, back to C
         AC_LANG_POP([C])
 
-        # nvcc compiled applications need libstdc++ to be able to link
-        # with a C compiler
-        AC_MSG_CHECKING([if $CC can link libstdc++])
-        PAC_PUSH_FLAG([LIBS])
-        PAC_APPEND_FLAG([-lstdc++],[LIBS])
-        AC_LINK_IFELSE(
-            [AC_LANG_PROGRAM([int x = 5;],[x++;])],
-            [libstdcpp_works=yes],
-            [libstdcpp_works=no])
-        PAC_POP_FLAG([LIBS])
-        if test "${libstdcpp_works}" = "yes" ; then
+        if test "${have_cuda}" != "no" ; then
+            # nvcc compiled applications need libstdc++ to be able to link
+            # with a C compiler
+            AC_MSG_CHECKING([if $CC can link libstdc++])
+            PAC_PUSH_FLAG([LIBS])
             PAC_APPEND_FLAG([-lstdc++],[LIBS])
-            AC_MSG_RESULT([yes])
-        else
-            have_cuda=no
-            AC_MSG_RESULT([no])
+            AC_LINK_IFELSE(
+                [AC_LANG_PROGRAM([int x = 5;],[x++;])],
+                [libstdcpp_works=yes],
+                [libstdcpp_works=no])
+            PAC_POP_FLAG([LIBS])
+            if test "${libstdcpp_works}" = "yes" ; then
+                PAC_APPEND_FLAG([-lstdc++],[LIBS])
+                AC_MSG_RESULT([yes])
+            else
+                have_cuda=no
+                AC_MSG_RESULT([no])
+            fi
         fi
     fi
+
+    # if the user requested CUDA and it didn't work, throw an error
     if test "${have_cuda}" = "no" -a "$with_cuda" != ""; then
         AC_MSG_ERROR([CUDA was requested but it is not functional])
     fi
