@@ -65,17 +65,17 @@ static int finalize_hook(void)
     cudaError_t cerr;
 
     for (int i = 0; i < yaksuri_cudai_global.ndevices; i++) {
-        if (yaksuri_cudai_global.stream[i] != 0) {
+        if (yaksuri_cudai_global.streams[i].created) {
             cerr = cudaSetDevice(i);
             YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
 
-            cerr = cudaStreamDestroy(yaksuri_cudai_global.stream[i]);
+            cerr = cudaStreamDestroy(yaksuri_cudai_global.streams[i].stream);
             YAKSURI_CUDAI_CUDA_ERR_CHKANDJUMP(cerr, rc, fn_fail);
         }
 
         free(yaksuri_cudai_global.p2p[i]);
     }
-    free(yaksuri_cudai_global.stream);
+    free(yaksuri_cudai_global.streams);
     free(yaksuri_cudai_global.p2p);
 
   fn_exit:
@@ -141,8 +141,7 @@ int yaksuri_cuda_init_hook(yaksur_gpudriver_hooks_s ** hooks)
         }
     }
 
-    yaksuri_cudai_global.stream = (cudaStream_t *)
-        calloc(yaksuri_cudai_global.ndevices, sizeof(cudaStream_t));
+    yaksuri_cudai_global.streams = calloc(yaksuri_cudai_global.ndevices, sizeof(cudai_stream));
 
     yaksuri_cudai_global.p2p = (bool **) malloc(yaksuri_cudai_global.ndevices * sizeof(bool *));
     for (int i = 0; i < yaksuri_cudai_global.ndevices; i++) {

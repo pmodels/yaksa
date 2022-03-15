@@ -99,16 +99,18 @@ uintptr_t yaksuri_cudai_get_iov_unpack_threshold(yaksi_info_s * info);
 
 static inline cudaStream_t *yaksuri_cudai_get_stream(int device)
 {
-    if (yaksuri_cudai_global.stream[device] == 0) {
+    if (!yaksuri_cudai_global.streams[device].created) {
         int cur_device;
         cudaGetDevice(&cur_device);
 
         cudaSetDevice(device);
-        cudaStreamCreateWithFlags(&yaksuri_cudai_global.stream[device], cudaStreamNonBlocking);
+        cudaStreamCreateWithFlags(&yaksuri_cudai_global.streams[device].stream,
+                                  cudaStreamNonBlocking);
+        yaksuri_cudai_global.streams[device].created = true;
 
         cudaSetDevice(cur_device);
     }
-    return &yaksuri_cudai_global.stream[device];
+    return &yaksuri_cudai_global.streams[device].stream;
 }
 
 /* *INDENT-OFF* */
