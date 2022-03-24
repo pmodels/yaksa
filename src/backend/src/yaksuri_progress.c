@@ -2342,19 +2342,23 @@ static int set_subreq_pack_d2d(const void *inbuf, void *outbuf, uintptr_t count,
     /* Fast path for REPLACE with aligned outbuf on different devices with P2P
      * support. Note that IPC mapping requires P2P support, thus we don't
      * handle the IPC case explicitly. */
-    if (op == YAKSA_OP__REPLACE && aligned &&
-        check_p2p_comm(id, reqpriv->request->backend.inattr.device,
-                       reqpriv->request->backend.outattr.device)) {
-        int use_device = reqpriv->request->backend.inattr.device;
+    if (op == YAKSA_OP__REPLACE && aligned) {
+        int use_sdev = reqpriv->request->backend.inattr.device;
+        int use_ddev = reqpriv->request->backend.outattr.device;
         if (info) {
             yaksuri_info_s *infopriv = (yaksuri_info_s *) info->backend.priv;
-            if (infopriv->mapped_device >= 0) {
-                use_device = infopriv->mapped_device;
+            if (infopriv->mapped_device >= 0 &&
+                infopriv->mapped_device != reqpriv->request->backend.inattr.device) {
+                use_sdev = infopriv->mapped_device;
+                use_ddev = reqpriv->request->backend.inattr.device;
             }
         }
-        rc = singlechunk_pack(id, use_device, inbuf, outbuf, count,
-                              type, info, op, request, subreq_ptr, stream);
-        goto fn_exit;
+
+        if (check_p2p_comm(id, use_sdev, use_ddev)) {
+            rc = singlechunk_pack(id, use_sdev, inbuf, outbuf, count,
+                                  type, info, op, request, subreq_ptr, stream);
+            goto fn_exit;
+        }
     }
 
     /* Slow paths */
@@ -2616,19 +2620,23 @@ static int set_subreq_unpack_d2d(const void *inbuf, void *outbuf, uintptr_t coun
     /* Fast path for REPLACE with aligned inbuf on different devices with P2P
      * support. Note that IPC mapping requires P2P support, thus we don't
      * handle the IPC case explicitly. */
-    if (op == YAKSA_OP__REPLACE && aligned &&
-        check_p2p_comm(id, reqpriv->request->backend.inattr.device,
-                       reqpriv->request->backend.outattr.device)) {
-        int use_device = reqpriv->request->backend.inattr.device;
+    if (op == YAKSA_OP__REPLACE && aligned) {
+        int use_sdev = reqpriv->request->backend.inattr.device;
+        int use_ddev = reqpriv->request->backend.outattr.device;
         if (info) {
             yaksuri_info_s *infopriv = (yaksuri_info_s *) info->backend.priv;
-            if (infopriv->mapped_device >= 0) {
-                use_device = infopriv->mapped_device;
+            if (infopriv->mapped_device >= 0 &&
+                infopriv->mapped_device != reqpriv->request->backend.inattr.device) {
+                use_sdev = infopriv->mapped_device;
+                use_ddev = reqpriv->request->backend.inattr.device;
             }
         }
-        rc = singlechunk_unpack(id, use_device, inbuf, outbuf, count,
-                                type, info, op, request, subreq_ptr, stream);
-        goto fn_exit;
+
+        if (check_p2p_comm(id, use_sdev, use_ddev)) {
+            rc = singlechunk_unpack(id, use_sdev, inbuf, outbuf, count,
+                                    type, info, op, request, subreq_ptr, stream);
+            goto fn_exit;
+        }
     }
 
     /* Slow paths */
