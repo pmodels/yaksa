@@ -125,7 +125,47 @@ if test "${have_hip}" = "yes" ; then
     IFS=","
     HIP_SM=
     for sm in ${with_hip_sm} ; do
-          PAC_APPEND_FLAG([$sm],[HIP_SM])
+        case "$sm" in
+            all|AMDGCN)
+                HIP_SM="gfx600 gfx601 gfx700 gfx701 gfx702 gfx703 gfx704 gfx801 gfx802 gfx803 gfx810 gfx900 gfx902 gfx904 gfx906 gfx908 gfx909 gfx1010 gfx1011 gfx1012 gfx1030 gfx1031"
+                ;;
+            gfx6)
+                PAC_APPEND_FLAG([gfx600],[HIP_SM])
+                PAC_APPEND_FLAG([gfx601],[HIP_SM])
+                ;;
+            gfx7)
+                PAC_APPEND_FLAG([gfx701],[HIP_SM])
+                PAC_APPEND_FLAG([gfx702],[HIP_SM])
+                PAC_APPEND_FLAG([gfx703],[HIP_SM])
+                PAC_APPEND_FLAG([gfx704],[HIP_SM])
+                ;;
+            gfx8)
+                PAC_APPEND_FLAG([gfx801],[HIP_SM])
+                PAC_APPEND_FLAG([gfx802],[HIP_SM])
+                PAC_APPEND_FLAG([gfx803],[HIP_SM])
+                ;;
+            gfx9)
+                PAC_APPEND_FLAG([gfx900],[HIP_SM])
+                PAC_APPEND_FLAG([gfx902],[HIP_SM])
+                PAC_APPEND_FLAG([gfx904],[HIP_SM])
+                PAC_APPEND_FLAG([gfx906],[HIP_SM])
+                PAC_APPEND_FLAG([gfx908],[HIP_SM])
+                PAC_APPEND_FLAG([gfx909],[HIP_SM])
+                ;;
+            gfx10.1)
+                PAC_APPEND_FLAG([gfx1010],[HIP_SM])
+                PAC_APPEND_FLAG([gfx1011],[HIP_SM])
+                PAC_APPEND_FLAG([gfx1012],[HIP_SM])
+                ;;
+            gfx10.3)
+                PAC_APPEND_FLAG([gfx1030],[HIP_SM])
+                PAC_APPEND_FLAG([gfx1031],[HIP_SM])
+                ;;
+            none)
+                ;;
+            *)
+                PAC_APPEND_FLAG([$sm], [HIP_SM])
+        esac
     done
     PAC_POP_FLAG([IFS])
 
