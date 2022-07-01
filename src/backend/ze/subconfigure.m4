@@ -78,6 +78,7 @@ if test $enable_ze_revision_id != -1; then
 fi
 
 # --ze-native=[skl|dg1|ats|pvc]
+enable_multi_native=no
 AC_ARG_ENABLE([ze-native],AS_HELP_STRING([--enable-ze-native=device],[compile GPU kernel to native binary]),,
               [enable_ze_native=no])
 if test "${have_ze}" = "yes" -a x"${enable_ze_native}" != xno; then
@@ -85,9 +86,13 @@ if test "${have_ze}" = "yes" -a x"${enable_ze_native}" != xno; then
     cat>conftest.cl<<EOF
     __kernel void foo(int x) {}
 EOF
+    rm -f conftest.ar
     ocloc compile -file conftest.cl -device ${enable_ze_native} ${extra_ocloc_options} -options "-cl-std=CL2.0" > /dev/null 2>&1
     if test "$?" = "0" ; then
         AC_MSG_RESULT([yes])
+        if test -f conftest.ar; then
+            enable_multi_native=yes
+        fi
     else
         AC_MSG_RESULT([no])
         enable_ze_native=
@@ -102,7 +107,8 @@ else
 fi
 AC_SUBST(enable_ze_native)
 AC_SUBST(extra_ocloc_options)
-AM_CONDITIONAL([BUILD_ZE_NATIVE],[test x"$enable_ze_native" != xno])
+AM_CONDITIONAL([BUILD_ZE_NATIVE],[test x"$enable_ze_native" != xno -a x"$enable_multi_native" != xyes])
+AM_CONDITIONAL([BUILD_ZE_NATIVE_MULTIPLE],[test x"$enable_multi_native" != xno])
 
 
 ##########################################################################
