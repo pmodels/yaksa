@@ -26,7 +26,7 @@ typedef enum yaksuri_pup_e {
 #define YAKSURI_TMPBUF_NUM_EL   (16)
 
 typedef struct {
-    bool avoid_reghost_pool;
+    bool has_wait_kernel;
     struct {
         yaksu_buffer_pool_s host;
         yaksu_buffer_pool_s *device;
@@ -103,8 +103,7 @@ typedef struct yaksuri_request {
 typedef struct {
     yaksuri_gpudriver_id_e gpudriver_id;
     int mapped_device;
-    bool avoid_reghost_pool;    /* in situation where allocating registered staging buffer
-                                 * may cause issues */
+    bool has_wait_kernel;       /* avoid gpu functions that may cause deadlocks with wait kernel */
 } yaksuri_info_s;
 
 int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,

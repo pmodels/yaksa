@@ -15,7 +15,7 @@ static void *cuda_host_malloc(uintptr_t size)
 {
     void *ptr = NULL;
 
-    if (yaksuri_global.avoid_reghost_pool) {
+    if (yaksuri_global.has_wait_kernel) {
         ptr = malloc(size);
     } else {
         cudaError_t cerr = cudaMallocHost(&ptr, size);
@@ -52,7 +52,7 @@ static void *cuda_gpu_malloc(uintptr_t size, int device)
 
 static void cuda_host_free(void *ptr)
 {
-    if (yaksuri_global.avoid_reghost_pool) {
+    if (yaksuri_global.has_wait_kernel) {
         free(ptr);
     } else {
         cudaError_t cerr = cudaFreeHost(ptr);
