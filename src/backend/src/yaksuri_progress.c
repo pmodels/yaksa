@@ -14,6 +14,17 @@
 #include "yaksuri.h"
 #include "yutlist.h"
 
+/* When there is wait kernel, treat unregistered host buffer the same as
+ * registered host buffer to avoid potential deadlock */
+#define AVOID_UNREGISTERED_HOST(ptr_type_, gpudriver_id_) \
+    do { \
+        if (yaksuri_global.has_wait_kernel && gpudriver_id_ == YAKSURI_GPUDRIVER_ID__CUDA) { \
+            if (ptr_type_ == YAKSUR_PTR_TYPE__UNREGISTERED_HOST) { \
+                ptr_type_ = YAKSUR_PTR_TYPE__REGISTERED_HOST; \
+            } \
+        } \
+    } while (0)
+
 static yaksuri_request_s *pending_reqs = NULL;
 static pthread_mutex_t progress_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -2497,7 +2508,9 @@ static int set_subreq_pack_from_device(const void *inbuf, void *outbuf, uintptr_
 {
     int rc = YAKSA_SUCCESS;
 
-    switch (request->backend.outattr.type) {
+    int ptr_type = request->backend.outattr.type;
+    AVOID_UNREGISTERED_HOST(ptr_type, reqpriv->gpudriver_id);
+    switch (ptr_type) {
         case YAKSUR_PTR_TYPE__GPU:
             rc = set_subreq_pack_d2d(inbuf, outbuf, count, type, info, op, request, reqpriv,
                                      subreq_ptr, stream);
@@ -2740,7 +2753,9 @@ static int set_subreq_unpack_from_device(const void *inbuf, void *outbuf, uintpt
 {
     int rc = YAKSA_SUCCESS;
 
-    switch (request->backend.outattr.type) {
+    int ptr_type = request->backend.outattr.type;
+    AVOID_UNREGISTERED_HOST(ptr_type, reqpriv->gpudriver_id);
+    switch (ptr_type) {
         case YAKSUR_PTR_TYPE__GPU:
             rc = set_subreq_unpack_d2d(inbuf, outbuf, count, type, info, op, request, reqpriv,
                                        subreq_ptr, stream);
@@ -2877,8 +2892,11 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
         stream = NULL;
     }
 
+    int ptr_type;
+    ptr_type = request->backend.inattr.type;
+    AVOID_UNREGISTERED_HOST(ptr_type, reqpriv->gpudriver_id);
     if (reqpriv->optype == YAKSURI_OPTYPE__PACK) {
-        switch (request->backend.inattr.type) {
+        switch (ptr_type) {
             case YAKSUR_PTR_TYPE__GPU:
                 rc = set_subreq_pack_from_device(inbuf, outbuf, count, type, info, op, request,
                                                  reqpriv, &subreq, stream);
@@ -2909,7 +2927,7 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
                 break;
         }
     } else {
-        switch (request->backend.inattr.type) {
+        switch (ptr_type) {
             case YAKSUR_PTR_TYPE__GPU:
                 rc = set_subreq_unpack_from_device(inbuf, outbuf, count, type, info, op, request,
                                                    reqpriv, &subreq, stream);
