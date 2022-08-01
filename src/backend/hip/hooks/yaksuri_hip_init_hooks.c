@@ -190,6 +190,8 @@ int yaksuri_hip_init_hook(yaksur_gpudriver_hooks_s ** hooks)
     (*hooks)->get_iov_unpack_threshold = yaksuri_hipi_get_iov_unpack_threshold;
     (*hooks)->ipack = yaksuri_hipi_ipack;
     (*hooks)->iunpack = yaksuri_hipi_iunpack;
+    (*hooks)->pack_with_stream = yaksuri_hipi_ipack_with_stream;
+    (*hooks)->unpack_with_stream = yaksuri_hipi_iunpack_with_stream;
     (*hooks)->synchronize = yaksuri_hipi_synchronize;
     (*hooks)->flush_all = yaksuri_hipi_flush_all;
     (*hooks)->pup_is_supported = yaksuri_hipi_pup_is_supported;
