@@ -203,6 +203,7 @@ int yaksuri_hip_init_hook(yaksur_gpudriver_hooks_s ** hooks)
     (*hooks)->event_record = yaksuri_hipi_event_record;
     (*hooks)->event_query = yaksuri_hipi_event_query;
     (*hooks)->add_dependency = yaksuri_hipi_add_dependency;
+    (*hooks)->launch_hostfn = yaksuri_hipi_launch_hostfn;
     (*hooks)->type_create = yaksuri_hipi_type_create_hook;
     (*hooks)->type_free = yaksuri_hipi_type_free_hook;
     (*hooks)->info_create = yaksuri_hipi_info_create_hook;

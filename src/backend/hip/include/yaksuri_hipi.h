@@ -91,6 +91,7 @@ int yaksuri_hipi_ipack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_t
 int yaksuri_hipi_iunpack(const void *inbuf, void *outbuf, uintptr_t count, yaksi_type_s * type,
                          yaksi_info_s * info, yaksa_op_t op, int target);
 int yaksuri_hipi_synchronize(int target);
+int yaksuri_hipi_launch_hostfn(void *stream, yaksur_hostfn_t fn, void *userData);
 int yaksuri_hipi_flush_all(void);
 int yaksuri_hipi_pup_is_supported(yaksi_type_s * type, yaksa_op_t op, bool * is_supported);
 uintptr_t yaksuri_hipi_get_iov_pack_threshold(yaksi_info_s * info);
