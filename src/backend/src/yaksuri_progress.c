@@ -2884,8 +2884,8 @@ int yaksuri_progress_enqueue(const void *inbuf, void *outbuf, uintptr_t count, y
     }
 
     void *stream;
-    if (request->kind == YAKSI_REQUEST_KIND__CUDA_STREAM) {
-        assert(id == YAKSURI_GPUDRIVER_ID__CUDA);
+    if (request->kind == YAKSI_REQUEST_KIND__GPU_STREAM) {
+        assert(id == YAKSURI_GPUDRIVER_ID__CUDA || id == YAKSURI_GPUDRIVER_ID__HIP);
         assert(request->stream != NULL);
         stream = request->stream;
     } else {
