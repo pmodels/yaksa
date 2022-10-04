@@ -95,12 +95,12 @@ EOF
         fi
     else
         AC_MSG_RESULT([no])
-        enable_ze_native=
+        enable_ze_native=no
         AC_MSG_ERROR([ocloc compiler is not compatible with ze_native])
     fi
     rm -f conftest.*
 fi
-if test x"${enable_ze_native}" != x; then
+if test x"${enable_ze_native}" != xno; then
     AC_DEFINE(ZE_NATIVE, 1, [Compile kernels to binary])
 else
     AC_DEFINE(ZE_NATIVE, 0, [No native format])
