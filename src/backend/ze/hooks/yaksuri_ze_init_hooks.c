@@ -79,15 +79,10 @@ static int finalize_hook(void)
         yaksuri_zei_device_state_s *device_state = yaksuri_zei_global.device_states + i;
         zerr = zeEventPoolDestroy(device_state->ep);
         YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
-        /* free command list pool */
-        for (int j = 0; j < device_state->cl_pool_cnt; j++) {
-            zerr = zeCommandListDestroy(device_state->cl_pool[j]);
-            YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
-        }
-        pthread_mutex_destroy(&device_state->cl_mutex);
+        if (device_state->cmdlist)
+            zerr = zeCommandListDestroy(device_state->cmdlist);
+        YAKSURI_ZEI_ZE_ERR_CHKANDJUMP(zerr, rc, fn_fail);
         free(device_state->events);
-        free(device_state->cl_pool);
-        free(device_state->cl);
         free(device_state->queueProperties);
     }
     free(yaksuri_zei_global.device_states);
@@ -229,15 +224,6 @@ int yaksuri_ze_init_hook(yaksur_gpudriver_hooks_s ** hooks)
             (ze_event_handle_t *) calloc(ZE_EVENT_POOL_CAP, sizeof(ze_event_handle_t));
         device_state->last_event_idx = -1;
         device_state->ev_lb = device_state->ev_ub = -1;
-        device_state->cl_pool_size = ZE_CMD_LIST_INIT_POOL_SIZE;
-        device_state->cl_pool =
-            (ze_command_list_handle_t *) malloc(sizeof(ze_command_list_handle_t) *
-                                                device_state->cl_pool_size);
-        pthread_mutex_init(&device_state->cl_mutex, NULL);
-        device_state->cl_cap = 8;
-        device_state->cl =
-            (ze_command_list_handle_t *) calloc(device_state->cl_cap,
-                                                sizeof(ze_command_list_handle_t));
         pthread_mutex_init(&device_state->mutex, NULL);
     }
 
