@@ -212,7 +212,8 @@ int yaksi_iunpack_backend(const void *inbuf, void *outbuf, uintptr_t count, yaks
 {
     int rc = YAKSA_SUCCESS;
 
-    rc = yaksur_iunpack(inbuf, outbuf, count, type, info, op, request);
+    rc = (outbuf) ? yaksur_iunpack(inbuf, outbuf, count, type, info, op,
+                                   request) : YAKSA_ERR__NOT_SUPPORTED;
     if (rc == YAKSA_ERR__NOT_SUPPORTED) {
         rc = unpack_backend(inbuf, outbuf, count, type, info, op, request);
         YAKSU_ERR_CHECK(rc, fn_fail);

@@ -214,7 +214,8 @@ int yaksi_ipack_backend(const void *inbuf, void *outbuf, uintptr_t count, yaksi_
 {
     int rc = YAKSA_SUCCESS;
 
-    rc = yaksur_ipack(inbuf, outbuf, count, type, info, op, request);
+    rc = (inbuf) ? yaksur_ipack(inbuf, outbuf, count, type, info, op,
+                                request) : YAKSA_ERR__NOT_SUPPORTED;
     if (rc == YAKSA_ERR__NOT_SUPPORTED) {
         rc = pack_backend(inbuf, outbuf, count, type, info, op, request);
         YAKSU_ERR_CHECK(rc, fn_fail);
