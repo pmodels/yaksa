@@ -41,6 +41,11 @@ static inline int unpack_backend(const void *inbuf, void *outbuf, uintptr_t coun
 {
     int rc = YAKSA_SUCCESS;
 
+    /* always query the ptr attributes for datatypes with absolue addresses */
+    if (!outbuf) {
+        request->always_query_ptr_attr = true;
+    }
+
     switch (type->kind) {
         case YAKSI_TYPE_KIND__BUILTIN:
             switch (type->u.builtin.handle) {

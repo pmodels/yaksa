@@ -41,6 +41,12 @@ static inline int pack_backend(const void *inbuf, void *outbuf, uintptr_t count,
 {
     int rc = YAKSA_SUCCESS;
 
+
+    /* always query the ptr attributes for datatypes with absolue addresses */
+    if (!inbuf) {
+        request->always_query_ptr_attr = true;
+    }
+
     switch (type->kind) {
         case YAKSI_TYPE_KIND__BUILTIN:
             assert(!type->is_contig);
