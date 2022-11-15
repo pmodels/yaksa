@@ -186,6 +186,7 @@ int yaksuri_ze_init_hook(yaksur_gpudriver_hooks_s ** hooks)
                                               sizeof(yaksuri_zei_device_state_s));
     yaksuri_zei_global.throttle_threshold = ZE_THROTTLE_THRESHOLD;
     pool_desc.stype = ZE_STRUCTURE_TYPE_EVENT_POOL_DESC;
+    pool_desc.pNext = NULL;
     pool_desc.flags = 0;
     pool_desc.count = ZE_EVENT_POOL_CAP;
 
