@@ -87,7 +87,7 @@ if test "$with_cuda" != "no" ; then
         # save language settings, customize ac_ext and ac_compile to support CUDA
         AC_LANG_PUSH([C])
         ac_ext=cu
-        ac_compile='$NVCC -c conftest.$ac_ext >&5'
+        ac_compile="$NVCC -c conftest.$ac_ext >&5"
         AC_MSG_CHECKING([whether nvcc works])
         AC_COMPILE_IFELSE([AC_LANG_PROGRAM([__global__ void foo(int x) {}],[])],
         [
