@@ -13,6 +13,7 @@ AC_ARG_WITH([cuda-sm],
             [
   --with-cuda-sm=<options> (https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/)
           Comma-separated list of below options:
+                auto - automatically build compatibility for all GPUs visible, any other specified compatibilities are ignored
                 all - build compatibility for all GPUs supported by the CUDA version (can increase compilation time)
 
                 # Kepler architecture
@@ -63,7 +64,7 @@ AC_ARG_WITH([cuda-sm],
                 # Other
                 <numeric> - specific SM numeric to use
             ],,
-            [with_cuda_sm=all])
+            [with_cuda_sm=auto])
 
 
 # --with-cuda
@@ -160,16 +161,64 @@ fi
 ##########################################################################
 
 if test "${have_cuda}" = "yes" ; then
-    for version in 12000 11080 11010 11000 10000 9000 8000 7000 6000 5000 ; do
+    for version in 12000 11080 11050 11010 11000 10000 9000 8000 7000 6000 5000 ; do
         AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
                               #include <cuda.h>
                               int x[[CUDA_VERSION - $version]];
                           ],)],[cuda_version=${version}],[])
         if test ! -z ${cuda_version} ; then break ; fi
     done
+
+    CUDA_SM=
+    case "$with_cuda_sm" in
+        *auto*)
+            dnl process auto detection
+            PAC_PUSH_FLAG([IFS])
+            IFS=" "
+            AC_MSG_CHECKING([for CUDA compute capability auto detection])
+            AC_LANG_PUSH([C])
+            AC_RUN_IFELSE(
+                [AC_LANG_PROGRAM(
+                  [
+                      #include <cuda_runtime.h>
+                      #include <stdio.h>
+                  ],
+                  [
+                      int count = 0;
+                      if (cudaSuccess != cudaGetDeviceCount(&count)) return -1;
+                      if (count == 0) return -1;
+                      for (int device = 0; device < count; ++device)
+                      {
+                          struct cudaDeviceProp prop;
+                          if (cudaSuccess == cudaGetDeviceProperties(&prop, device))
+                          printf("%d.%d ", prop.major, prop.minor);
+                      }
+                      return 0;
+                  ]
+                )],
+                [
+                    cuda_output=$(./conftest$EXEEXT | xargs -n1 | sort -u | xargs)
+                    for sm in $cuda_output; do
+                        sm_no_decimal=`echo $sm | tr -d '.'`
+                        PAC_APPEND_FLAG([$sm_no_decimal],[CUDA_SM])
+                    done
+                    with_cuda_sm=
+                    AC_MSG_RESULT([yes])
+                ],
+                [
+                    with_cuda_sm=all
+                    AC_MSG_RESULT([no])
+                ]
+              )
+            AC_LANG_POP([C])
+            PAC_POP_FLAG([IFS])
+            ;;
+        *)
+            ;;
+    esac
+
     PAC_PUSH_FLAG([IFS])
     IFS=","
-    CUDA_SM=
     for sm in ${with_cuda_sm} ; do
         case "$sm" in
             all)
