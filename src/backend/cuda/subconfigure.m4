@@ -49,6 +49,16 @@ AC_ARG_WITH([cuda-sm],
                 ampere - build compatibility for all Ampere GPUs
                 80     - A100, A30
                 86     - RTX Ampere, MX570, A40, A16, A10, A2
+                87     - Jetson AGX Orin and Drive AGX Orin
+
+                # Ada architecture
+                ada    - build compatibility for all Ada GPUs
+                89     - GeForce RTX 4090, RTX 4080, RTX 6000, Tesla L40
+
+                # Hopper architecture
+                hopper - build compatibility for all Hopper GPUs
+                90     - NVIDIA H100 (GH100)
+                90a    - add acceleration for features like wgmma and setmaxnreg. Required for NVIDIA CUTLASS
 
                 # Other
                 <numeric> - specific SM numeric to use
@@ -150,7 +160,7 @@ fi
 ##########################################################################
 
 if test "${have_cuda}" = "yes" ; then
-    for version in 11010 11000 10000 9000 8000 7000 6000 5000 ; do
+    for version in 12000 11080 11010 11000 10000 9000 8000 7000 6000 5000 ; do
         AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
                               #include <cuda.h>
                               int x[[CUDA_VERSION - $version]];
@@ -163,7 +173,13 @@ if test "${have_cuda}" = "yes" ; then
     for sm in ${with_cuda_sm} ; do
         case "$sm" in
             all)
-                if test ${cuda_version} -ge 11010 ; then
+                if test ${cuda_version} -ge 12000 ; then
+                    # maxwell (52) to hopper (90a)
+                    supported_cuda_sms="52 53 60 61 62 70 72 75 80 86 87 89 90 90a"
+                elif test ${cuda_version} -ge 11080 ; then
+                    # maxwell (52) to ada (89) and hopper (90)
+                    supported_cuda_sms="52 53 60 61 62 70 72 75 80 86 87 89 90"
+                elif test ${cuda_version} -ge 11010 ; then
                     # maxwell (52) to ampere (86)
                     supported_cuda_sms="52 53 60 61 62 70 72 75 80 86"
                 elif test ${cuda_version} -ge 11000 ; then
@@ -221,6 +237,15 @@ if test "${have_cuda}" = "yes" ; then
             ampere)
                 PAC_APPEND_FLAG([80],[CUDA_SM])
                 PAC_APPEND_FLAG([86],[CUDA_SM])
+                ;;
+
+            ada)
+                PAC_APPEND_FLAG([89],[CUDA_SM])
+                ;;
+
+            hopper)
+                PAC_APPEND_FLAG([90],[CUDA_SM])
+                PAC_APPEND_FLAG([90a],[CUDA_SM])
                 ;;
 
             none)
