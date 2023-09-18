@@ -14,6 +14,7 @@ AC_ARG_WITH([cuda-sm],
   --with-cuda-sm=<options> (https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/)
           Comma-separated list of below options:
                 all - build compatibility for all GPUs supported by the CUDA version (can increase compilation time)
+                all-major - build compatibility for all major GPU versions (sm_*0) supported by the CUDA version
 
                 # Kepler architecture
                 kepler - build compatibility for all Kepler GPUs
@@ -49,6 +50,15 @@ AC_ARG_WITH([cuda-sm],
                 ampere - build compatibility for all Ampere GPUs
                 80     - A100, A30
                 86     - RTX Ampere, MX570, A40, A16, A10, A2
+                87     - Jetson AGX Orin, Drive AGX Orin
+
+                # Ada architecture
+                ada - build compatibility for all Ada GPUs
+                89  - RTX Ada
+
+                # Hopper architecture
+                hopper - build compatibility for all Hopper GPUs
+                90     - H100
 
                 # Other
                 <numeric> - specific SM numeric to use
@@ -151,7 +161,7 @@ fi
 ##########################################################################
 
 if test "${have_cuda}" = "yes" ; then
-    for version in 11010 11000 10000 9000 8000 7000 6000 5000 ; do
+    for version in 11080 11010 11000 10000 9000 8000 7000 6000 5000 ; do
         AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
                               #include <cuda.h>
                               int x[[CUDA_VERSION - $version]];
@@ -164,9 +174,12 @@ if test "${have_cuda}" = "yes" ; then
     for sm in ${with_cuda_sm} ; do
         case "$sm" in
             all)
-                if test ${cuda_version} -ge 11010 ; then
-                    # maxwell (52) to ampere (86)
-                    supported_cuda_sms="52 53 60 61 62 70 72 75 80 86"
+                if test ${cuda_version} -ge 11080 ; then
+                    # maxwell (52) to hopper (90)
+                    supported_cuda_sms="52 53 60 61 62 70 72 75 80 86 87 89 90"
+                elif test ${cuda_version} -ge 11010 ; then
+                    # maxwell (52) to ampere (87)
+                    supported_cuda_sms="52 53 60 61 62 70 72 75 80 86 87"
                 elif test ${cuda_version} -ge 11000 ; then
                     # maxwell (52) to ampere (80)
                     supported_cuda_sms="52 53 60 61 62 70 72 75 80"
@@ -185,6 +198,38 @@ if test "${have_cuda}" = "yes" ; then
                 elif test ${cuda_version} -ge 5000 ; then
                     # kepler (30) to kepler (37)
                     supported_cuda_sms="30 35 37"
+                fi
+
+                for supported_cuda_sm in $supported_cuda_sms ; do
+                    PAC_APPEND_FLAG([$supported_cuda_sm],[CUDA_SM])
+                done
+                ;;
+
+            all-major)
+                if test ${cuda_version} -ge 11080 ; then
+                    # maxwell (52) to hopper (90)
+                    supported_cuda_sms="52 60 70 80 90"
+                elif test ${cuda_version} -ge 11010 ; then
+                    # maxwell (52) to ampere (80)
+                    supported_cuda_sms="52 60 70 80"
+                elif test ${cuda_version} -ge 11000 ; then
+                    # maxwell (52) to ampere (80)
+                    supported_cuda_sms="52 60 70 80"
+                elif test ${cuda_version} -ge 10000 ; then
+                    # kepler (30) to volta (70)
+                    supported_cuda_sms="30 50 60 70"
+                elif test ${cuda_version} -ge 9000 ; then
+                    # kepler (30) to volta (70)
+                    supported_cuda_sms="30 50 60 70"
+                elif test ${cuda_version} -ge 8000 ; then
+                    # kepler (30) to pascal (60)
+                    supported_cuda_sms="30 50 60"
+                elif test ${cuda_version} -ge 6000 ; then
+                    # kepler (30) to maxwell (50)
+                    supported_cuda_sms="30 50"
+                elif test ${cuda_version} -ge 5000 ; then
+                    # kepler (30)
+                    supported_cuda_sms="30"
                 fi
 
                 for supported_cuda_sm in $supported_cuda_sms ; do
@@ -222,6 +267,15 @@ if test "${have_cuda}" = "yes" ; then
             ampere)
                 PAC_APPEND_FLAG([80],[CUDA_SM])
                 PAC_APPEND_FLAG([86],[CUDA_SM])
+                PAC_APPEND_FLAG([87],[CUDA_SM])
+                ;;
+
+            ada)
+                PAC_APPEND_FLAG([89],[CUDA_SM])
+                ;;
+
+            hopper)
+                PAC_APPEND_FLAG([90],[CUDA_SM])
                 ;;
 
             none)
