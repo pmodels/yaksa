@@ -14,7 +14,7 @@ AC_ARG_WITH([cuda-sm],
   --with-cuda-sm=<options> (https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/)
           Comma-separated list of below options:
                 auto - automatically build compatibility for all GPUs visible, any other specified compatibilities are ignored
-                all - build compatibility for all GPUs supported by the CUDA version (can increase compilation time)
+                all-major - build compatibility for all major GPU versions (sm_*0) supported by the CUDA version
 
                 # Kepler architecture
                 kepler - build compatibility for all Kepler GPUs
@@ -206,7 +206,7 @@ if test "${have_cuda}" = "yes" ; then
                     AC_MSG_RESULT([yes])
                 ],
                 [
-                    with_cuda_sm=all
+                    with_cuda_sm=all-major
                     AC_MSG_RESULT([no])
                 ]
               )
@@ -221,34 +221,31 @@ if test "${have_cuda}" = "yes" ; then
     IFS=","
     for sm in ${with_cuda_sm} ; do
         case "$sm" in
-            all)
-                if test ${cuda_version} -ge 12000 ; then
-                    # maxwell (52) to hopper (90a)
-                    supported_cuda_sms="52 53 60 61 62 70 72 75 80 86 87 89 90 90a"
-                elif test ${cuda_version} -ge 11080 ; then
-                    # maxwell (52) to ada (89) and hopper (90)
-                    supported_cuda_sms="52 53 60 61 62 70 72 75 80 86 87 89 90"
+            all-major)
+                if test ${cuda_version} -ge 11080 ; then
+                    # maxwell (52) to hopper (90)
+                    supported_cuda_sms="52 60 70 80 90"
                 elif test ${cuda_version} -ge 11010 ; then
-                    # maxwell (52) to ampere (86)
-                    supported_cuda_sms="52 53 60 61 62 70 72 75 80 86"
+                    # maxwell (52) to ampere (80)
+                    supported_cuda_sms="52 60 70 80"
                 elif test ${cuda_version} -ge 11000 ; then
                     # maxwell (52) to ampere (80)
-                    supported_cuda_sms="52 53 60 61 62 70 72 75 80"
+                    supported_cuda_sms="52 60 70 80"
                 elif test ${cuda_version} -ge 10000 ; then
-                    # kepler (30) to turing (75)
-                    supported_cuda_sms="30 35 37 50 52 53 60 61 62 70 72 75"
+                    # kepler (30) to volta (70)
+                    supported_cuda_sms="30 50 60 70"
                 elif test ${cuda_version} -ge 9000 ; then
-                    # kepler (30) to volta (72)
-                    supported_cuda_sms="30 35 37 50 52 53 60 61 62 70 72"
+                    # kepler (30) to volta (70)
+                    supported_cuda_sms="30 50 60 70"
                 elif test ${cuda_version} -ge 8000 ; then
-                    # kepler (30) to pascal (62)
-                    supported_cuda_sms="30 35 37 50 52 53 60 61 62"
+                    # kepler (30) to pascal (60)
+                    supported_cuda_sms="30 50 60"
                 elif test ${cuda_version} -ge 6000 ; then
-                    # kepler (30) to maxwell (53)
-                    supported_cuda_sms="30 35 37 50 52 53"
+                    # kepler (30) to maxwell (50)
+                    supported_cuda_sms="30 50"
                 elif test ${cuda_version} -ge 5000 ; then
-                    # kepler (30) to kepler (37)
-                    supported_cuda_sms="30 35 37"
+                    # kepler (30)
+                    supported_cuda_sms="30"
                 fi
 
                 for supported_cuda_sm in $supported_cuda_sms ; do
