@@ -88,8 +88,10 @@ int yaksu_handle_pool_free(yaksu_handle_pool_s pool)
     /* free objects from the used list if there are any */
     int count = HASH_COUNT(handle_pool->used_handles);
     if (count) {
+#ifdef YAKSA_DEBUG
         fprintf(stderr, "[WARNING] yaksa: %d leaked handle pool objects\n", count);
         fflush(stderr);
+#endif
 
         HASH_ITER(hh, handle_pool->used_handles, el, el_tmp) {
             HASH_DEL(handle_pool->used_handles, el);
