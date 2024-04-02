@@ -92,6 +92,7 @@ if test "$with_cuda" != "no" ; then
             # append the flags to be passed to nvcc
             NVCC="$nvcc_bin $NVCC_FLAGS"
         else
+            NVCC="$NVCC $NVCC_FLAGS"
             AC_MSG_WARN([Using user-provided nvcc: '${NVCC}'])
         fi
 
