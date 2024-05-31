@@ -84,22 +84,16 @@ void pack_hip_get_ptr_attr(const void *inbuf, void *outbuf, yaksa_info_t * info,
         struct hipPointerAttribute_t attr;
 
         hipError_t cerr = hipPointerGetAttributes(&attr, inbuf);
-        // this special handling required because HIP does not yet support hipMemoryTypeUnregistered
-        if (cerr == hipErrorInvalidValue) {
-            attr.memoryType = -1;
-            attr.device = -1;
+        if (cerr == hipSuccess) {
+            rc = yaksa_info_keyval_append(*info, "yaksa_hip_inbuf_ptr_attr", &attr, sizeof(attr));
+            assert(rc == YAKSA_SUCCESS);
         }
-        rc = yaksa_info_keyval_append(*info, "yaksa_hip_inbuf_ptr_attr", &attr, sizeof(attr));
-        assert(rc == YAKSA_SUCCESS);
 
         cerr = hipPointerGetAttributes(&attr, outbuf);
-        // this special handling required because HIP does not yet support hipMemoryTypeUnregistered
-        if (cerr == hipErrorInvalidValue) {
-            attr.memoryType = -1;
-            attr.device = -1;
+        if (cerr == hipSuccess) {
+            rc = yaksa_info_keyval_append(*info, "yaksa_hip_outbuf_ptr_attr", &attr, sizeof(attr));
+            assert(rc == YAKSA_SUCCESS);
         }
-        rc = yaksa_info_keyval_append(*info, "yaksa_hip_outbuf_ptr_attr", &attr, sizeof(attr));
-        assert(rc == YAKSA_SUCCESS);
     } else
         *info = NULL;
 }
