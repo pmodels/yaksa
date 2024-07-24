@@ -19,10 +19,10 @@ static void attr_convert(struct hipPointerAttribute_t cattr, yaksur_ptr_attr_s *
 {
     if (cattr.ATTRTYPE == hipMemoryTypeHost) {
         attr->type = YAKSUR_PTR_TYPE__REGISTERED_HOST;
-        attr->device = -1;
+        attr->device = cattr.device;
     } else if (cattr.isManaged) {
         attr->type = YAKSUR_PTR_TYPE__MANAGED;
-        attr->device = -1;
+        attr->device = cattr.device;
     } else if (cattr.ATTRTYPE == hipMemoryTypeDevice) {
         attr->type = YAKSUR_PTR_TYPE__GPU;
         attr->device = cattr.device;
