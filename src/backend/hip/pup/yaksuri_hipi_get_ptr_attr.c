@@ -17,8 +17,8 @@ static hipError_t attr_convert(hipError_t cerr, struct hipPointerAttribute_t cat
     if (cerr == hipErrorInvalidValue) {
         /* attr.ATTRTYPE = hipMemoryTypeUnregistered;  */
         /* HIP does not seem to have something corresponding to cudaMemoryTypeUnregistered */
-        attr.ATTRTYPE = YAKSUR_PTR_TYPE__UNREGISTERED_HOST;
-        attr.device = -1;
+        attr->type = YAKSUR_PTR_TYPE__UNREGISTERED_HOST;
+        attr->device = -1;
         return hipSuccess;
     }
 
